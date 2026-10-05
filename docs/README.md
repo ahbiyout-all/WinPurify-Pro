@@ -11,7 +11,9 @@ WinPurify Pro 프로젝트의 주요 아키텍처, 기능 가이드 및 개발 �
 
 ## 📚 문서 목차 (Document Index)
 
-1. [Native C++ PurifyEngineCore 동작 원리 및 심층 아키텍처 백서 (PURIFY_ENGINE_CORE_ARCHITECTURE_SPEC.md)](./PURIFY_ENGINE_CORE_ARCHITECTURE_SPEC.md)
+1. [상용(Commercial) Pro 라이선스 티어 명세서 (COMMERCIAL_PRO_TIER_SPEC.md)](./COMMERCIAL_PRO_TIER_SPEC.md)
+   - Standard(무료) 대 Pro(상용) 대 Enterprise(원격관제) 티어별 기능 차별화, HWID 오프라인 라이선스 검증 메커니즘 및 수익화 모델 명세.
+2. [Native C++ PurifyEngineCore 동작 원리 및 심층 아키텍처 백서 (PURIFY_ENGINE_CORE_ARCHITECTURE_SPEC.md)](./PURIFY_ENGINE_CORE_ARCHITECTURE_SPEC.md)
    - 순수 창작 C++17 x64 코어 엔진 5대 핵심 파이프라인(Restart Manager 락 헌터, VSS/srclient 네이티브 복원 지점, E-코어 쓰로틀링 해제 커널 부스트, 딥 MFT/커널 캐시 고속 스캐너, Winsock TCP/IP 최적화기)의 동작 원리 및 내부 메커니즘 심층 분석.
 2. [Native C++ 엔진 매뉴얼 & P/Invoke 가이드 (PurifyEngineCore_Manual.md)](./PurifyEngineCore_Manual.md)
    - C# <-> C++ P/Invoke 연동 함수 목록, MSVC/MinGW 빌드 명령어 및 빠른 참조 가이드.

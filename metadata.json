@@ -1,8 +1,8 @@
 {
   "name": "Remix WinPurify3-windowform-net",
-  "description": "WinPurify v4.43.0 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
+  "description": "WinPurify v4.45.0 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
   "requestFramePermissions": [],
-  "version": "4.43.0.0",
+  "version": "4.45.0.0",
   "offline_ready": true,
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

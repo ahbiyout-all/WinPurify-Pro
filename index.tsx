@@ -4691,22 +4691,22 @@ const App: React.FC = () => {
       {/* ================================================================= */}
       {showUpdateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-xl bg-slate-900 border border-sky-500/50 rounded-2xl shadow-2xl shadow-sky-500/20 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full max-w-xl bg-slate-900 border border-sky-500/50 rounded-2xl shadow-2xl shadow-sky-500/30 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-sky-600/20 border border-sky-500/40 flex items-center justify-center text-sky-400">
-                  <Download className="w-5 h-5" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sky-400 font-bold text-xl">
+                  🚀
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-slate-100 text-base">GitHub Releases 실시간 자동 업데이트</h3>
+                    <h3 className="font-bold text-slate-100 text-base">WinPurify Pro 업데이트 알림</h3>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/40 text-sky-300 font-bold">
-                      WinPurify-Pro
+                      GitHub Live Sync
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    공식 GitHub 리포지토리(ahbiyout-all/WinPurify-Pro) 배포 패키지 및 플랫폼별 설치 파일 안내
+                    공식 GitHub 저장소의 최신 버전 정보 및 1-Click 업데이트 다운로드
                   </p>
                 </div>
               </div>
@@ -4720,128 +4720,91 @@ const App: React.FC = () => {
 
             {/* Body */}
             <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
-              {/* Version Comparison Card */}
+              {/* 1. Version Info Card */}
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+                <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                  <span>📌 버전 정보 (Version Info)</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Build v{APP_VERSION}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
                     <div className="text-[11px] text-slate-400">현재 앱 버전</div>
-                    <div className="text-base font-bold text-sky-400 mt-0.5">v{APP_VERSION}</div>
+                    <div className="text-lg font-extrabold text-sky-400 mt-0.5">v{APP_VERSION}</div>
                   </div>
-                  <div>
+                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
                     <div className="text-[11px] text-slate-400">GitHub 최신 릴리스</div>
-                    <div className="text-base font-bold text-emerald-400 mt-0.5">
+                    <div className="text-lg font-extrabold text-emerald-400 mt-0.5">
                       v{updateInfo.latestVersion}
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300">
+                <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {isCheckingUpdate ? (
                       <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-spin"></span>
                     ) : (
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
                     )}
-                    <span>{updateInfo.status}</span>
+                    <span className="font-medium">{updateInfo.status}</span>
+                  </div>
+                  <button
+                    disabled={isCheckingUpdate}
+                    onClick={handleCheckGitHubUpdates}
+                    className="text-[11px] text-sky-400 hover:text-sky-300 hover:underline font-semibold disabled:opacity-50"
+                  >
+                    {isCheckingUpdate ? '검사 중...' : '🔄 다시 검사'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. GitHub Repository Path Card */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="text-xs font-bold text-slate-300">📂 공식 GitHub 경로 (Repository Path)</div>
+                <div className="space-y-1.5 text-xs font-mono">
+                  <div className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-850">
+                    <span className="text-slate-400">리포지토리:</span>
+                    <a
+                      href="https://github.com/ahbiyout-all/WinPurify-Pro"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sky-400 hover:underline truncate max-w-[280px]"
+                    >
+                      https://github.com/ahbiyout-all/WinPurify-Pro
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-850">
+                    <span className="text-slate-400">릴리스 배포:</span>
+                    <a
+                      href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-emerald-400 hover:underline truncate max-w-[280px]"
+                    >
+                      https://github.com/ahbiyout-all/WinPurify-Pro/releases
+                    </a>
                   </div>
                 </div>
               </div>
 
-              {/* Windows PC Package Matrix Card */}
-              <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-200">📦 Windows PC 전용 패키지 배포 구성 (초경량 ~5MB &amp; 풀 패키지)</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  {/* Ultra-Slim Single Executable */}
-                  <a
-                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-emerald-500/40 hover:border-emerald-400 transition flex flex-col justify-between block shadow-sm shadow-emerald-950/20"
-                  >
-                    <div>
-                      <div className="text-xs font-bold text-emerald-300 flex items-center justify-between">
-                        <span>⚡ 초경량 단일 파일</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">~5 MB</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-1">
-                        WinPurifyPro-Slim.exe (초고속 즉시 실행 무설치 단일 바이너리)
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-emerald-400 font-semibold mt-2">
-                      Slim 단일 파일 다운로드 →
-                    </div>
-                  </a>
-
-                  {/* Ultra-Slim Portable Zip */}
-                  <a
-                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-teal-500/40 hover:border-teal-400 transition flex flex-col justify-between block shadow-sm shadow-teal-950/20"
-                  >
-                    <div>
-                      <div className="text-xs font-bold text-teal-300 flex items-center justify-between">
-                        <span>🪶 슬림 압축팩</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono">~6 MB</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-1">
-                        WinPurifyPro-Slim-Portable.zip (Slim EXE + 코어 DLL 초경량팩)
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-teal-400 font-semibold mt-2">
-                      Slim Zip 다운로드 →
-                    </div>
-                  </a>
-
-                  {/* PC Windows Installer */}
-                  <a
-                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-sky-500/50 transition flex flex-col justify-between block"
-                  >
-                    <div>
-                      <div className="text-xs font-bold text-slate-100 flex items-center justify-between">
-                        <span>🖥️ 정식 설치 마법사</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono">Setup</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-1">
-                        WinPurifyPro-Setup.exe (Inno Setup 6 자동 인스톨러)
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-sky-400 font-semibold mt-2">
-                      Windows Installer 다운로드 →
-                    </div>
-                  </a>
-
-                  {/* Central Commander Console */}
-                  <a
-                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-purple-500/50 transition flex flex-col justify-between block"
-                  >
-                    <div>
-                      <div className="text-xs font-bold text-slate-100 flex items-center justify-between">
-                        <span>📡 중앙 관제 콘솔</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">~3 MB</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-1">
-                        WinPurifyCommander-Slim.exe (다중 PC 원격 제어 콘솔)
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-purple-400 font-semibold mt-2">
-                      Commander 바이너리 →
-                    </div>
-                  </a>
-                </div>
+              {/* 3. Primary Update Download Button */}
+              <div className="pt-1">
+                <a
+                  href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:via-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition flex items-center justify-center gap-2 group block text-center"
+                >
+                  <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>🚀 WinPurifyPro-Setup.exe 즉시 업데이트 다운로드</span>
+                </a>
               </div>
 
-              {/* Release Notes */}
+              {/* 4. Release Notes */}
               {updateInfo.releaseNotes && (
-                <div className="space-y-1.5">
-                  <div className="text-xs font-bold text-slate-200">📜 릴리스 변경 사항</div>
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 max-h-36 overflow-y-auto text-[11px] font-mono text-slate-400 whitespace-pre-wrap">
+                <div className="space-y-1.5 pt-1">
+                  <div className="text-xs font-bold text-slate-300">📜 릴리스 변경 사항 (Release Notes)</div>
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 max-h-32 overflow-y-auto text-[11px] font-mono text-slate-400 whitespace-pre-wrap">
                     {updateInfo.releaseNotes}
                   </div>
                 </div>
@@ -4854,26 +4817,17 @@ const App: React.FC = () => {
                 href="https://github.com/ahbiyout-all/WinPurify-Pro"
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 font-semibold"
+                className="text-xs text-slate-400 hover:text-sky-300 flex items-center gap-1"
               >
-                <span>GitHub ahbiyout-all/WinPurify-Pro 리포지토리 방문</span>
+                <span>GitHub ahbiyout-all/WinPurify-Pro</span>
               </a>
 
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={isCheckingUpdate}
-                  onClick={handleCheckGitHubUpdates}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition disabled:opacity-50"
-                >
-                  {isCheckingUpdate ? '확인 중...' : '🔍 지금 다시 확인'}
-                </button>
-                <button
-                  onClick={() => setShowUpdateModal(false)}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition cursor-pointer"
-                >
-                  확인 완료
-                </button>
-              </div>
+              <button
+                onClick={() => setShowUpdateModal(false)}
+                className="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer"
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>

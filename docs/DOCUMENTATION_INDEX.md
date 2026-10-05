@@ -8,6 +8,7 @@ Welcome to the **WinPurify Pro** technical documentation repository. Below is th
 
 | Document | Topic & Focus Area |
 |---|---|
+| **[`COMMERCIAL_PRO_TIER_SPEC.md`](./COMMERCIAL_PRO_TIER_SPEC.md)** | **WinPurify Pro 상용(Commercial) 라이선스 티어 및 기능 차별화 명세서** |
 | **[`PATCH_NOTES.md`](./PATCH_NOTES.md)** | **Primary Release History & Semantic Version Changelog** |
 | **[`SECURITY_AUDIT_REPORT.md`](./SECURITY_AUDIT_REPORT.md)** | **종합 보안 취약점 점검 보고서 (4-Tier 방어 아키텍처 & 취약점 조치 내역)** |
 | **[`WorkLog.md`](./WorkLog.md)** | **프로젝트 마일스톤 및 작업 로그 (Work Log)** |

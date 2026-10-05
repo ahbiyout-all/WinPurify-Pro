@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:WinPurifyPro.ViewModels"
         xmlns:conv="clr-namespace:WinPurifyPro.Converters"
         mc:Ignorable="d"
-        Title="WinPurify Pro Central Commander Console v4.43.0 (Fleet Management)"
+        Title="WinPurify Pro Central Commander Console v4.45.0 (Fleet Management)"
         Height="820" Width="1280"
         MinHeight="600" MinWidth="1050"
         WindowStartupLocation="CenterScreen"
@@ -349,7 +349,7 @@
                         <TextBlock Text="Standalone Fleet Console" FontSize="10" FontWeight="Bold" Foreground="#93C5FD" />
                     </Border>
                     <Border Background="#4C1D95" CornerRadius="4" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="v4.43.0" FontSize="10" FontWeight="Bold" Foreground="#DDD6FE" />
+                        <TextBlock Text="v4.45.0" FontSize="10" FontWeight="Bold" Foreground="#DDD6FE" />
                     </Border>
                 </StackPanel>
 
