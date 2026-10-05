@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Version>4.40.0</Version>
+    <AssemblyVersion>4.40.0</AssemblyVersion>
+    <FileVersion>4.40.0</FileVersion>
+    <InformationalVersion>4.40.0 (AhBiYout)</InformationalVersion>
+    <OutputType>WinExe</OutputType>
+    <!-- Multi-Targeting / .NET 10 SDK & .NET 8 LTS Multi-TFM Support (Default: net8.0-windows;net10.0-windows) -->
+    <TargetFrameworks Condition="'$(TargetFramework)' == ''">net8.0-windows;net10.0-windows</TargetFrameworks>
+    <TargetFramework Condition="'$(TargetFrameworks)' == ''">net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>WinPurifyCommander</AssemblyName>
+    <RootNamespace>WinPurifyPro</RootNamespace>
+    <ApplicationIcon>WinPurify.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyTitle>WinPurify Pro Central Commander Console</AssemblyTitle>
+    <Authors>AhBiYout</Authors>
+    <Company>CISNET</Company>
+    <Product>WinPurify Pro Central Commander</Product>
+    <Description>사내/홈 네트워크 다중 Windows PC 일괄 관제 및 원격 고속 정화 데스크톱 콘솔 (개발자: AhBiYout)</Description>
+    <Copyright>Copyright © 2026 AhBiYout All rights reserved.</Copyright>
+    <NeutralLanguage>ko-KR</NeutralLanguage>
+    <RepositoryUrl>https://ahbiyoutvibe.blogspot.com/</RepositoryUrl>
+    <StartupObject>WinPurifyPro.CommanderApp</StartupObject>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <IncludeSymbols>false</IncludeSymbols>
+    <TieredCompilation>true</TieredCompilation>
+  </PropertyGroup>
+
+  <!-- Exclude main WinPurifyPro main window and heavy client-only datasets to minimize Commander size -->
+  <ItemGroup>
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Remove="App.xaml" />
+    <Page Remove="CommanderApp.xaml" />
+    <ApplicationDefinition Include="CommanderApp.xaml" />
+    <Compile Remove="App.xaml.cs" />
+    <Compile Remove="MainWindow.xaml.cs" />
+    <Page Remove="MainWindow.xaml" />
+    <Compile Remove="ViewModels/MainViewModel.cs" />
+    <Compile Remove="Services/SelfDiagnosticTester.cs" />
+    <Compile Remove="Services/SystemTrayService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="WinPurify.ico" />
+    <Resource Include="WinPurify_logo.png" />
+    <Resource Include="WinPurify_icon.png" />
+    <None Update="PurifyEngineCore.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="WinPurify.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="WinPurify_logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="WinPurify_icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="LICENSE_KO.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="LICENSE_EN.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
