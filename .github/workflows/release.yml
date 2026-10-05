@@ -1,4 +1,4 @@
-name: Build & GitHub Release (PC Windows)
+name: Build & GitHub Release (PC Windows Dual .NET 8 & 10)
 
 on:
   push:
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build-windows:
-    name: Build Windows PC Installer & Portable (x64)
+    name: Build Windows PC (.NET 8 LTS & .NET 10 Dual Release)
     runs-on: windows-latest
 
     steps:
@@ -28,10 +28,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET SDK (8.0)
+      - name: Setup .NET SDKs (8.0 LTS & 10.0 Preview)
         uses: actions/setup-dotnet@v4
+        continue-on-error: true
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Setup Node.js for Version Verification
         uses: actions/setup-node@v4
@@ -44,50 +47,78 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress
 
-      - name: Prepare Output and Publish Directories
+      - name: Prepare Isolated Build & Output Directories
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path "publish/App" -Force | Out-Null
-          New-Item -ItemType Directory -Path "publish/Commander" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net8.0/App" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net8.0/Commander" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net10.0/App" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net10.0/Commander" -Force | Out-Null
           New-Item -ItemType Directory -Path "Output" -Force | Out-Null
 
-      - name: Build & Publish WinPurifyPro (net8.0-windows win-x64)
+      - name: Build & Publish .NET 8.0 LTS Edition
         shell: pwsh
         run: |
-          Write-Host "[+] Publishing WinPurify Pro App..." -ForegroundColor Cyan
-          dotnet publish WinPurifyPro.csproj -c Release -f net8.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false -o publish/App
+          Write-Host "==========================================================" -ForegroundColor Cyan
+          Write-Host " Building .NET 8.0 LTS Edition (WinPurify Pro + Commander)" -ForegroundColor Green
+          Write-Host "==========================================================" -ForegroundColor Cyan
 
-          Write-Host "[+] Publishing WinPurify Commander Console..." -ForegroundColor Cyan
-          dotnet publish WinPurifyCommander.csproj -c Release -f net8.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=false -o publish/Commander
+          dotnet publish WinPurifyPro.csproj -c Release -f net8.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false -o publish/net8.0/App
+          dotnet publish WinPurifyCommander.csproj -c Release -f net8.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=false -o publish/net8.0/Commander
 
-          # Copy core assets into publish/App and Output
-          if (Test-Path "PurifyEngineCore.dll") { Copy-Item "PurifyEngineCore.dll" -Destination "publish/App/" -Force }
-          if (Test-Path "WinPurify.ico") { Copy-Item "WinPurify.ico" -Destination "publish/App/" -Force }
-          if (Test-Path "WinPurify_logo.png") { Copy-Item "WinPurify_logo.png" -Destination "publish/App/" -Force }
-          if (Test-Path "WinPurify_icon.png") { Copy-Item "WinPurify_icon.png" -Destination "publish/App/" -Force }
-          if (Test-Path "LICENSE_KO.txt") { Copy-Item "LICENSE_KO.txt" -Destination "publish/App/" -Force }
-          if (Test-Path "LICENSE_EN.txt") { Copy-Item "LICENSE_EN.txt" -Destination "publish/App/" -Force }
-          if (Test-Path "publish/Commander/WinPurifyCommander.exe") { 
-            Copy-Item "publish/Commander/WinPurifyCommander.exe" -Destination "publish/App/WinPurifyCommander.exe" -Force
-            Copy-Item "publish/Commander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander.exe" -Force
+          # Copy core assets to net8.0
+          @("PurifyEngineCore.dll", "WinPurify.ico", "WinPurify_logo.png", "WinPurify_icon.png", "LICENSE_KO.txt", "LICENSE_EN.txt") | ForEach-Object {
+            if (Test-Path $_) { Copy-Item $_ -Destination "publish/net8.0/App/" -Force }
+          }
+          if (Test-Path "publish/net8.0/Commander/WinPurifyCommander.exe") {
+            Copy-Item "publish/net8.0/Commander/WinPurifyCommander.exe" -Destination "publish/net8.0/App/WinPurifyCommander.exe" -Force
+            Copy-Item "publish/net8.0/Commander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander-NET8.exe" -Force
+            Copy-Item "publish/net8.0/Commander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander.exe" -Force
           }
 
-      - name: Compile Inno Setup Installer
-        shell: pwsh
-        run: |
+          # Compile Inno Setup for .NET 8
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) {
-            $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe"
-          }
-          Write-Host "[+] Compiling Inno Setup with ISCC at: $iscc" -ForegroundColor Yellow
-          & $iscc /DAppSourceDir="publish\App" /DOutputDir="Output" /DOutputBaseFilename="WinPurifyPro-Setup" installer.iss
-          Get-ChildItem -Path "Output"
+          if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
+          
+          & $iscc /DAppSourceDir="publish\net8.0\App" /DOutputDir="Output" /DOutputBaseFilename="WinPurifyPro-Setup-NET8" installer.iss
+          & $iscc /DAppSourceDir="publish\net8.0\App" /DOutputDir="Output" /DOutputBaseFilename="WinPurifyPro-Setup" installer.iss
 
-      - name: Create Portable Zip Package
+          # Zip Portable for .NET 8
+          Compress-Archive -Path "publish/net8.0/App/*" -DestinationPath "Output/WinPurifyPro-Portable-NET8-x64.zip" -Force
+          Compress-Archive -Path "publish/net8.0/App/*" -DestinationPath "Output/WinPurifyPro-Portable-x64.zip" -Force
+
+      - name: Build & Publish .NET 10.0 Next-Gen Edition (Optional / Multi-TFM)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Write-Host "==========================================================" -ForegroundColor Cyan
+          Write-Host " Building .NET 10.0 Edition (WinPurify Pro + Commander)" -ForegroundColor Green
+          Write-Host "==========================================================" -ForegroundColor Cyan
+
+          dotnet publish WinPurifyPro.csproj -c Release -f net10.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false -o publish/net10.0/App
+          dotnet publish WinPurifyCommander.csproj -c Release -f net10.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=false -o publish/net10.0/Commander
+
+          # Copy core assets to net10.0
+          @("PurifyEngineCore.dll", "WinPurify.ico", "WinPurify_logo.png", "WinPurify_icon.png", "LICENSE_KO.txt", "LICENSE_EN.txt") | ForEach-Object {
+            if (Test-Path $_) { Copy-Item $_ -Destination "publish/net10.0/App/" -Force }
+          }
+          if (Test-Path "publish/net10.0/Commander/WinPurifyCommander.exe") {
+            Copy-Item "publish/net10.0/Commander/WinPurifyCommander.exe" -Destination "publish/net10.0/App/WinPurifyCommander.exe" -Force
+            Copy-Item "publish/net10.0/Commander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander-NET10.exe" -Force
+          }
+
+          # Compile Inno Setup for .NET 10
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
+          & $iscc /DAppSourceDir="publish\net10.0\App" /DOutputDir="Output" /DOutputBaseFilename="WinPurifyPro-Setup-NET10" installer.iss
+
+          # Zip Portable for .NET 10
+          Compress-Archive -Path "publish/net10.0/App/*" -DestinationPath "Output/WinPurifyPro-Portable-NET10-x64.zip" -Force
+
+      - name: List Generated Release Binaries
         shell: pwsh
         run: |
-          Write-Host "[+] Creating Portable Zip Package..." -ForegroundColor Cyan
-          Compress-Archive -Path "publish/App/*" -DestinationPath "Output/WinPurifyPro-Portable-x64.zip" -Force
+          Write-Host "[+] Generated Artifacts in Output/:" -ForegroundColor Green
           Get-ChildItem -Path "Output"
 
       - name: Upload Windows Artifacts
