@@ -766,6 +766,48 @@ const App: React.FC = () => {
   const [licenseLang, setLicenseLang] = useState<'ko' | 'en'>('ko');
   const [licenseCopied, setLicenseCopied] = useState<boolean>(false);
 
+  // Pro 90-Day Trial License State
+  const [proLicenseKeyInput, setProLicenseKeyInput] = useState<string>('PRO-TRIAL-90DAYS-2026');
+  const [isProActive, setIsProActive] = useState<boolean>(() => {
+    const saved = localStorage.getItem('winpurify_pro_active');
+    const expiry = localStorage.getItem('winpurify_trial_expiry');
+    if (saved === 'true' && expiry) {
+      return Date.now() < parseInt(expiry, 10);
+    }
+    return true; // Default active for trial experience
+  });
+  const [proRemainingDays, setProRemainingDays] = useState<number>(() => {
+    const expiry = localStorage.getItem('winpurify_trial_expiry');
+    if (expiry) {
+      const remaining = Math.ceil((parseInt(expiry, 10) - Date.now()) / (1000 * 60 * 60 * 24));
+      return Math.max(0, remaining);
+    }
+    return 90; // Default 90 days
+  });
+  const [proActivationMsg, setProActivationMsg] = useState<string>('💎 90일 임시 시험용 Pro 라이선스가 활성화되었습니다. 특수 고급 기능(C++ 네이티브 가속, 세이프포인트 복원, 무음 스케줄러, 원격 플릿 관제)을 모두 이용할 수 있습니다.');
+
+  const handleActivateProTrial = (customKey?: string) => {
+    const keyToUse = customKey || proLicenseKeyInput || 'PRO-TRIAL-90DAYS-2026';
+    const now = Date.now();
+    const expiry = now + 90 * 24 * 60 * 60 * 1000; // 90 days from now
+    localStorage.setItem('winpurify_pro_active', 'true');
+    localStorage.setItem('winpurify_pro_key', keyToUse);
+    localStorage.setItem('winpurify_trial_activated', now.toString());
+    localStorage.setItem('winpurify_trial_expiry', expiry.toString());
+    setIsProActive(true);
+    setProRemainingDays(90);
+    setProActivationMsg(`💎 90일 임시 시험용 Pro 키(${keyToUse})가 활성화되었습니다! (특수 Pro 모듈 전체 해제 / D-90일 남음)`);
+  };
+
+  const handleDeactivatePro = () => {
+    localStorage.removeItem('winpurify_pro_active');
+    localStorage.removeItem('winpurify_pro_key');
+    localStorage.removeItem('winpurify_trial_activated');
+    localStorage.removeItem('winpurify_trial_expiry');
+    setIsProActive(false);
+    setProActivationMsg('Standard 무료 라이선스로 전환되었습니다.');
+  };
+
   const [isAccountPurging, setIsAccountPurging] = useState<boolean>(false);
   const [terminateProcessesBeforePurge, setTerminateProcessesBeforePurge] = useState<boolean>(true);
   const [accountPurgeStatus, setAccountPurgeStatus] = useState<string>('스캔 완료: 선택된 계정을 안전하게 정화할 수 있습니다.');
@@ -1589,6 +1631,16 @@ const App: React.FC = () => {
               <span id="version-badge" className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-semibold border border-blue-500/30">
                 v{APP_VERSION} Enterprise
               </span>
+              {isProActive && (
+                <button
+                  onClick={() => setShowLicenseModal(true)}
+                  className="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 hover:bg-amber-500/30 transition flex items-center gap-1 cursor-pointer"
+                  title="90일 임시 시험용 Pro 라이선스 활성화 상태 (특수 고급 기능 전체 가능)"
+                >
+                  <span>💎 Pro Trial Mode</span>
+                  <span className="text-[10px] text-amber-200 font-mono">(D-{proRemainingDays}일)</span>
+                </button>
+              )}
               <span className={`text-[11px] ${currentTheme.headerSub} hidden sm:inline`}>|</span>
               <span className={`text-[11px] ${currentTheme.headerSub} font-medium hidden sm:inline`}>
                 Dev: <strong className="text-sky-400">AhBiYout</strong>
@@ -3908,6 +3960,70 @@ const App: React.FC = () => {
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* 💎 90일 임시 시험용 Pro 라이선스 키 등록 / 활성화 카드 */}
+            <div className="px-6 py-3.5 bg-gradient-to-r from-amber-950/70 via-slate-900 to-amber-950/50 border-b border-amber-500/30">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-sm">
+                    💎
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-amber-300 flex items-center gap-2">
+                      <span>Pro 90일 무료 임시 시험용 라이선스 키 등록</span>
+                      {isProActive && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">
+                          PRO ACTIVE (D-{proRemainingDays}일 남음)
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      C++ 코어 가속, 무제한 세이프포인트 복원, 백그라운드 무음 스케줄러, 원격 플릿 관제 등 <strong>모든 Pro 특수 고급 기능을 90일간 제한 없이 시험 체험</strong>할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+
+                {!isProActive ? (
+                  <button
+                    onClick={() => handleActivateProTrial('PRO-TRIAL-90DAYS-2026')}
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <span>⚡ 90일 임시 시험용 Pro 키 즉시 발급 및 활성화</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleDeactivatePro}
+                    className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold transition cursor-pointer shrink-0"
+                  >
+                    <span>Standard 무료 버전으로 전환</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Key Input Bar */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="text"
+                  value={proLicenseKeyInput}
+                  onChange={(e) => setProLicenseKeyInput(e.target.value)}
+                  placeholder="예: PRO-TRIAL-90DAYS-2026"
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-amber-500/40 text-amber-300 text-xs font-mono focus:outline-none focus:border-amber-400"
+                />
+                <button
+                  onClick={() => handleActivateProTrial(proLicenseKeyInput)}
+                  className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition cursor-pointer shrink-0"
+                >
+                  임시 Pro 키 활성화
+                </button>
+              </div>
+
+              {proActivationMsg && (
+                <div className="mt-2 text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+                  <span>✅</span>
+                  <span>{proActivationMsg}</span>
+                </div>
+              )}
             </div>
 
             {/* Language Selector Bar & Action Controls */}

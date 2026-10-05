@@ -1,4 +1,4 @@
-name: Build & GitHub Release (PC Windows Single Setup Installer Only)
+name: Build & GitHub Release (Ultra-Slim Small Setup Installer Only)
 
 on:
   push:
@@ -10,16 +10,16 @@ on:
   workflow_dispatch:
     inputs:
       version_tag:
-        description: 'Release Version Tag (e.g. v4.44.0)'
+        description: 'Release Version Tag (e.g. v4.47.0)'
         required: false
-        default: 'v4.44.0'
+        default: 'v4.47.0'
 
 permissions:
   contents: write
 
 jobs:
   build-windows:
-    name: Build Windows PC Setup Installer (WinPurifyPro-Setup.exe)
+    name: Build Ultra-Slim Small Windows Setup Installer (~8MB WinPurifyPro-Setup.exe)
     runs-on: windows-latest
 
     steps:
@@ -51,16 +51,16 @@ jobs:
           New-Item -ItemType Directory -Path "publish/Commander" -Force | Out-Null
           New-Item -ItemType Directory -Path "Output" -Force | Out-Null
 
-      - name: Build & Publish WinPurify Pro App & Commander
+      - name: Build Ultra-Slim Framework-Dependent App & Compile Small Installer
         shell: pwsh
         run: |
           Write-Host "==========================================================" -ForegroundColor Cyan
-          Write-Host " Publishing WinPurify Pro (.NET 8.0 Unpacked Multi-File)" -ForegroundColor Green
+          Write-Host " Building Ultra-Slim Small Installer (~8MB WinPurifyPro-Setup.exe)" -ForegroundColor Green
           Write-Host "==========================================================" -ForegroundColor Cyan
 
-          # 1. Publish Main App & Commander
-          dotnet publish WinPurifyPro.csproj -c Release -f net8.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false -o publish/App
-          dotnet publish WinPurifyCommander.csproj -c Release -f net8.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=false -o publish/Commander
+          # 1. Publish Ultra-Slim App & Commander (--self-contained false for ~8MB package)
+          dotnet publish WinPurifyPro.csproj -c Release -f net8.0-windows -r win-x64 --self-contained false -p:PublishSingleFile=false -p:DebugType=none -p:DebugSymbols=false -o publish/App
+          dotnet publish WinPurifyCommander.csproj -c Release -f net8.0-windows -r win-x64 --self-contained false -p:PublishSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o publish/Commander
 
           # 2. Copy core assets & Commander into publish/App
           @("PurifyEngineCore.dll", "WinPurify.ico", "WinPurify_logo.png", "WinPurify_icon.png", "LICENSE_KO.txt", "LICENSE_EN.txt") | ForEach-Object {
@@ -70,18 +70,18 @@ jobs:
             Copy-Item "publish/Commander/WinPurifyCommander.exe" -Destination "publish/App/WinPurifyCommander.exe" -Force
           }
 
-          # 3. Compile Inno Setup Official Installer (Single Target Output)
+          # 3. Compile Small Official Installer (LZMA2 Ultra Compression)
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
           
-          Write-Host "[+] Compiling Official Inno Setup Installer: Output/WinPurifyPro-Setup.exe" -ForegroundColor Yellow
+          Write-Host "[+] Compiling Ultra-Slim Small Installer: Output/WinPurifyPro-Setup.exe" -ForegroundColor Yellow
           & $iscc /DAppSourceDir="publish\App" /DOutputDir="Output" /DOutputBaseFilename="WinPurifyPro-Setup" installer.iss
 
-      - name: Verify Single Installer Output
+      - name: Verify Small Installer Size
         shell: pwsh
         run: |
           Write-Host "`n==========================================================" -ForegroundColor Green
-          Write-Host " [SUCCESS] Official Installer Generated in Output/:" -ForegroundColor Green
+          Write-Host " [SUCCESS] Ultra-Slim Small Installer Generated in Output/:" -ForegroundColor Green
           Write-Host "==========================================================" -ForegroundColor Green
           Get-ChildItem -Path "Output" | Select-Object Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length / 1MB, 2)}}, LastWriteTime | Format-Table -AutoSize
 
@@ -126,7 +126,7 @@ jobs:
               out.write(notes)
           "
 
-      - name: Create GitHub Release (WinPurifyPro-Setup.exe Only)
+      - name: Create GitHub Release (Ultra-Slim WinPurifyPro-Setup.exe Only)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_notes.outputs.tag_name }}
