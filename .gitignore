@@ -1,0 +1,87 @@
+# ==============================================================================
+# WinPurify Pro - Git Ignore Rules
+# Author: AhBiYout (Repository: AhBiYout/AhBiYout-all)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# .NET / C# Build Outputs & Intermediate Files
+# ------------------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+publish/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ARM/
+ARM64/
+bld/
+[Bb]uild/
+*.pdb
+*.ilk
+*.aps
+*.intermediate.manifest
+
+# Visual Studio Local Cache & User Settings
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+*.dbmdl
+*.jsproj.user
+
+# Visual Studio Code & JetBrains Rider
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.DotSettings.user
+
+# ------------------------------------------------------------------------------
+# Node.js / Web Build Outputs & Dependencies
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+dist-web/
+.parcel-cache/
+.vite/
+
+# ------------------------------------------------------------------------------
+# Inno Setup & Packaging Outputs
+# ------------------------------------------------------------------------------
+Output/
+_Output/
+*.iss.bak
+mobile-dist/
+temp_apk_build/
+temp_ipa_build/
+
+# ------------------------------------------------------------------------------
+# Runtime Logs, Temporary Files & Environment Markers
+# ------------------------------------------------------------------------------
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+installed.tag
+app-update-temp/
+
+# ------------------------------------------------------------------------------
+# OS-Specific Cache Files
+# ------------------------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon

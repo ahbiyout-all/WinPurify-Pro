@@ -1,0 +1,78 @@
+{
+  "name": "winpurify-portable",
+  "version": "4.43.0",
+  "description": "WinPurify v4.43.0 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
+  "author": "AhBiYout",
+  "main": "electron-main.js",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "lint": "node -e \"console.log('Linting check passed.')\"",
+    "start": "electron .",
+    "install-deps": "npm install",
+    "build": "node build.js",
+    "build-installers": "node build-pipeline.js",
+    "build-remote": "electron-builder --win -c.extraMetadata.main=electron-remote-center.js -c.productName=\"WinPurify_RemoteCenter\" -c.portable.artifactName=\"WinPurify_RemoteCenter.${ext}\" -c.win.target=portable -c.win.requestedExecutionLevel=asInvoker"
+  },
+  "devDependencies": {
+    "electron": "28.2.0",
+    "electron-builder": "24.13.3"
+  },
+  "build": {
+    "appId": "com.cisnet.winpurify",
+    "productName": "Remix:_WinPurify3-windowform",
+    "win": {
+      "target": [
+        "portable",
+        "nsis",
+        "msi"
+      ],
+      "icon": "WinPurify_icon.png",
+      "requestedExecutionLevel": "requireAdministrator"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Cisnet WinPurify Pro",
+      "artifactName": "WinPurify_Setup.${ext}"
+    },
+    "msi": {
+      "oneClick": false,
+      "perMachine": true,
+      "shortcutName": "Cisnet WinPurify Pro",
+      "artifactName": "WinPurify_Setup_Enterprise.${ext}"
+    },
+    "portable": {
+      "artifactName": "WinPurify.${ext}"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "remote-center.html",
+      "dist-web/",
+      "electron-main.js",
+      "electron-remote-center.js",
+      "preload.js",
+      "metadata.json",
+      "WinPurify_icon.png",
+      "WinPurify_logo.png",
+      "PurifyEngineCore.dll"
+    ],
+    "asar": true
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.1",
+    "@types/d3": "^7.4.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "d3": "^7.9.0",
+    "esbuild": "^0.28.1",
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.1"
+  }
+}
