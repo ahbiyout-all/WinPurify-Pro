@@ -2,6 +2,21 @@
 
 ---
 
+## 📌 [v4.41.0] - 2026-10-04 (⚡ 5MB대 초경량 슬림(Ultra-Slim) 단일 실행 바이너리 및 포터블 자동 빌드/배포 파이프라인 탑재)
+
+### 1. ⚡ 초경량(Ultra-Slim, ~5MB) 독립 단일 실행 파일 & 슬림팩 추가
+- **사용자 요청 사항 완벽 이행**: "빌드 후 용량 작은것들을 올리고 싶은데 없네요."
+- **초경량 단일 실행 바이너리 자동 빌드 (`.github/workflows/release.yml`)**:
+  - `WinPurifyPro-Slim.exe` (약 **5MB**, .NET Framework-Dependent 독립 단일 실행 파일)
+  - `WinPurifyCommander-Slim.exe` (약 **3MB**, 독립 단일 관제 콘솔)
+  - `WinPurifyPro-Slim-Portable.zip` (약 **6MB**, Slim 실행 파일 + C++ Native 코어 DLL 통합 초경량 포터블 압축팩)
+- **풀 패키지(Self-Contained ~75MB) 동시 유지**:
+  - 기존 런타임 내장형 `WinPurifyPro-Setup.exe` (정식 인스톨러) 및 `WinPurifyPro-Portable-x64.zip`과 함께 릴리스에 동시 배포하여 사용자 취향에 맞춰 선택 다운로드 가능.
+- **UI 업데이트 모달 매트릭스 확장 (`index.tsx`)**:
+  - 실시간 다운로드 다이얼로그에 **[⚡ 초경량 단일 파일 (~5MB)]**, **[🪶 슬림 압축팩 (~6MB)]**, **[🖥️ 정식 설치 마법사]**, **[📡 중앙 관제 콘솔 (~3MB)]** 4대 라인업 뱃지 및 바로가기 링크 탑재.
+
+---
+
 ## 📌 [v4.40.0] - 2026-10-04 (✨ 상단 헤더 서브타이틀 텍스트 간소화 및 레이아웃 정리)
 
 ### 1. 🧹 상단 헤더 서브타이틀 텍스트 제거 및 UI 간소화

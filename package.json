@@ -1,7 +1,7 @@
 {
   "name": "winpurify-portable",
-  "version": "4.40.0",
-  "description": "WinPurify v4.40.0 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
+  "version": "4.41.0",
+  "description": "WinPurify v4.41.0 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
   "author": "AhBiYout",
   "main": "electron-main.js",
   "scripts": {

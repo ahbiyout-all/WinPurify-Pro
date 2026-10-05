@@ -1,4 +1,4 @@
-name: Build & GitHub Release (PC Windows Dual .NET 8 & 10)
+name: Build & GitHub Release (PC Windows Dual .NET 8 & 10 + Ultra-Slim Binaries)
 
 on:
   push:
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build-windows:
-    name: Build Windows PC (.NET 8 LTS & .NET 10 Dual Release)
+    name: Build Windows PC (Full & Ultra-Slim Editions)
     runs-on: windows-latest
 
     steps:
@@ -47,26 +47,37 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress
 
-      - name: Prepare Isolated Build & Output Directories
+      - name: Prepare Build & Output Directories
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "publish/net8.0/App" -Force | Out-Null
           New-Item -ItemType Directory -Path "publish/net8.0/Commander" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net8.0/Slim" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net8.0/SlimCommander" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net8.0/SlimPackage" -Force | Out-Null
           New-Item -ItemType Directory -Path "publish/net10.0/App" -Force | Out-Null
           New-Item -ItemType Directory -Path "publish/net10.0/Commander" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net10.0/Slim" -Force | Out-Null
+          New-Item -ItemType Directory -Path "publish/net10.0/SlimCommander" -Force | Out-Null
           New-Item -ItemType Directory -Path "Output" -Force | Out-Null
 
-      - name: Build & Publish .NET 8.0 LTS Edition
+      - name: Build .NET 8.0 LTS (Full Package + Ultra-Slim Binaries)
         shell: pwsh
         run: |
           Write-Host "==========================================================" -ForegroundColor Cyan
-          Write-Host " Building .NET 8.0 LTS Edition (WinPurify Pro + Commander)" -ForegroundColor Green
+          Write-Host " [1/2] Building .NET 8.0 LTS (Full & Ultra-Slim ~5MB)" -ForegroundColor Green
           Write-Host "==========================================================" -ForegroundColor Cyan
 
+          # 1. Full Self-Contained Unpacked App (~75MB)
           dotnet publish WinPurifyPro.csproj -c Release -f net8.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false -o publish/net8.0/App
           dotnet publish WinPurifyCommander.csproj -c Release -f net8.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=false -o publish/net8.0/Commander
 
-          # Copy core assets to net8.0
+          # 2. Ultra-Slim Framework-Dependent Single-Files (~5MB / ~3MB)
+          Write-Host "[+] Building Ultra-Slim Single-Files (.NET 8)..." -ForegroundColor Yellow
+          dotnet publish WinPurifyPro.csproj -c Release -f net8.0-windows -r win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:DebugSymbols=false -o publish/net8.0/Slim
+          dotnet publish WinPurifyCommander.csproj -c Release -f net8.0-windows -r win-x64 --self-contained false -p:PublishSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o publish/net8.0/SlimCommander
+
+          # Copy core assets to net8.0 App
           @("PurifyEngineCore.dll", "WinPurify.ico", "WinPurify_logo.png", "WinPurify_icon.png", "LICENSE_KO.txt", "LICENSE_EN.txt") | ForEach-Object {
             if (Test-Path $_) { Copy-Item $_ -Destination "publish/net8.0/App/" -Force }
           }
@@ -76,27 +87,50 @@ jobs:
             Copy-Item "publish/net8.0/Commander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander.exe" -Force
           }
 
-          # Compile Inno Setup for .NET 8
+          # Export Ultra-Slim Binaries into Output/ (~5MB / ~3MB)
+          if (Test-Path "publish/net8.0/Slim/WinPurifyPro.exe") {
+            Copy-Item "publish/net8.0/Slim/WinPurifyPro.exe" -Destination "Output/WinPurifyPro-Slim.exe" -Force
+            Copy-Item "publish/net8.0/Slim/WinPurifyPro.exe" -Destination "Output/WinPurifyPro-Slim-NET8.exe" -Force
+            Copy-Item "publish/net8.0/Slim/WinPurifyPro.exe" -Destination "publish/net8.0/SlimPackage/WinPurifyPro.exe" -Force
+          }
+          if (Test-Path "publish/net8.0/SlimCommander/WinPurifyCommander.exe") {
+            Copy-Item "publish/net8.0/SlimCommander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander-Slim.exe" -Force
+            Copy-Item "publish/net8.0/SlimCommander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander-Slim-NET8.exe" -Force
+            Copy-Item "publish/net8.0/SlimCommander/WinPurifyCommander.exe" -Destination "publish/net8.0/SlimPackage/WinPurifyCommander.exe" -Force
+          }
+
+          # Create Ultra-Slim Portable Zip Package (~6MB)
+          @("PurifyEngineCore.dll", "WinPurify.ico", "LICENSE_KO.txt", "LICENSE_EN.txt") | ForEach-Object {
+            if (Test-Path $_) { Copy-Item $_ -Destination "publish/net8.0/SlimPackage/" -Force }
+          }
+          Compress-Archive -Path "publish/net8.0/SlimPackage/*" -DestinationPath "Output/WinPurifyPro-Slim-Portable.zip" -Force
+          Compress-Archive -Path "publish/net8.0/SlimPackage/*" -DestinationPath "Output/WinPurifyPro-Slim-Portable-NET8.zip" -Force
+
+          # Inno Setup Full Installers
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
-          
           & $iscc /DAppSourceDir="publish\net8.0\App" /DOutputDir="Output" /DOutputBaseFilename="WinPurifyPro-Setup-NET8" installer.iss
           & $iscc /DAppSourceDir="publish\net8.0\App" /DOutputDir="Output" /DOutputBaseFilename="WinPurifyPro-Setup" installer.iss
 
-          # Zip Portable for .NET 8
+          # Full Self-Contained Portable Zips (~75MB)
           Compress-Archive -Path "publish/net8.0/App/*" -DestinationPath "Output/WinPurifyPro-Portable-NET8-x64.zip" -Force
           Compress-Archive -Path "publish/net8.0/App/*" -DestinationPath "Output/WinPurifyPro-Portable-x64.zip" -Force
 
-      - name: Build & Publish .NET 10.0 Next-Gen Edition (Optional / Multi-TFM)
+      - name: Build .NET 10.0 Next-Gen (Full & Ultra-Slim Binaries)
         shell: pwsh
         continue-on-error: true
         run: |
           Write-Host "==========================================================" -ForegroundColor Cyan
-          Write-Host " Building .NET 10.0 Edition (WinPurify Pro + Commander)" -ForegroundColor Green
+          Write-Host " [2/2] Building .NET 10.0 (Full & Ultra-Slim ~5MB)" -ForegroundColor Green
           Write-Host "==========================================================" -ForegroundColor Cyan
 
+          # Full Self-Contained App
           dotnet publish WinPurifyPro.csproj -c Release -f net10.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false -o publish/net10.0/App
           dotnet publish WinPurifyCommander.csproj -c Release -f net10.0-windows -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=false -o publish/net10.0/Commander
+
+          # Ultra-Slim Single-Files
+          dotnet publish WinPurifyPro.csproj -c Release -f net10.0-windows -r win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:DebugSymbols=false -o publish/net10.0/Slim
+          dotnet publish WinPurifyCommander.csproj -c Release -f net10.0-windows -r win-x64 --self-contained false -p:PublishSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o publish/net10.0/SlimCommander
 
           # Copy core assets to net10.0
           @("PurifyEngineCore.dll", "WinPurify.ico", "WinPurify_logo.png", "WinPurify_icon.png", "LICENSE_KO.txt", "LICENSE_EN.txt") | ForEach-Object {
@@ -107,6 +141,14 @@ jobs:
             Copy-Item "publish/net10.0/Commander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander-NET10.exe" -Force
           }
 
+          # Export Ultra-Slim Binaries for .NET 10
+          if (Test-Path "publish/net10.0/Slim/WinPurifyPro.exe") {
+            Copy-Item "publish/net10.0/Slim/WinPurifyPro.exe" -Destination "Output/WinPurifyPro-Slim-NET10.exe" -Force
+          }
+          if (Test-Path "publish/net10.0/SlimCommander/WinPurifyCommander.exe") {
+            Copy-Item "publish/net10.0/SlimCommander/WinPurifyCommander.exe" -Destination "Output/WinPurifyCommander-Slim-NET10.exe" -Force
+          }
+
           # Compile Inno Setup for .NET 10
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
@@ -115,11 +157,13 @@ jobs:
           # Zip Portable for .NET 10
           Compress-Archive -Path "publish/net10.0/App/*" -DestinationPath "Output/WinPurifyPro-Portable-NET10-x64.zip" -Force
 
-      - name: List Generated Release Binaries
+      - name: List Generated Release Binaries with Sizes
         shell: pwsh
         run: |
-          Write-Host "[+] Generated Artifacts in Output/:" -ForegroundColor Green
-          Get-ChildItem -Path "Output"
+          Write-Host "`n==========================================================" -ForegroundColor Green
+          Write-Host " [SUCCESS] Generated Release Binaries in Output/:" -ForegroundColor Green
+          Write-Host "==========================================================" -ForegroundColor Green
+          Get-ChildItem -Path "Output" | Select-Object Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length / 1MB, 2)}}, LastWriteTime | Format-Table -AutoSize
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4

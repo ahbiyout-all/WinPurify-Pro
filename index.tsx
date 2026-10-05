@@ -4749,8 +4749,50 @@ const App: React.FC = () => {
 
               {/* Windows PC Package Matrix Card */}
               <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-200">📦 Windows PC 전용 패키지 배포 구성</div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="text-xs font-bold text-slate-200">📦 Windows PC 전용 패키지 배포 구성 (초경량 ~5MB &amp; 풀 패키지)</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  {/* Ultra-Slim Single Executable */}
+                  <a
+                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-emerald-500/40 hover:border-emerald-400 transition flex flex-col justify-between block shadow-sm shadow-emerald-950/20"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-emerald-300 flex items-center justify-between">
+                        <span>⚡ 초경량 단일 파일</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">~5 MB</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1">
+                        WinPurifyPro-Slim.exe (초고속 즉시 실행 무설치 단일 바이너리)
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-emerald-400 font-semibold mt-2">
+                      Slim 단일 파일 다운로드 →
+                    </div>
+                  </a>
+
+                  {/* Ultra-Slim Portable Zip */}
+                  <a
+                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-teal-500/40 hover:border-teal-400 transition flex flex-col justify-between block shadow-sm shadow-teal-950/20"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-teal-300 flex items-center justify-between">
+                        <span>🪶 슬림 압축팩</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono">~6 MB</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1">
+                        WinPurifyPro-Slim-Portable.zip (Slim EXE + 코어 DLL 초경량팩)
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-teal-400 font-semibold mt-2">
+                      Slim Zip 다운로드 →
+                    </div>
+                  </a>
+
                   {/* PC Windows Installer */}
                   <a
                     href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
@@ -4759,8 +4801,9 @@ const App: React.FC = () => {
                     className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-sky-500/50 transition flex flex-col justify-between block"
                   >
                     <div>
-                      <div className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                      <div className="text-xs font-bold text-slate-100 flex items-center justify-between">
                         <span>🖥️ 정식 설치 마법사</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono">Setup</span>
                       </div>
                       <div className="text-[10px] text-slate-400 mt-1">
                         WinPurifyPro-Setup.exe (Inno Setup 6 자동 인스톨러)
@@ -4768,26 +4811,6 @@ const App: React.FC = () => {
                     </div>
                     <div className="text-[10px] text-sky-400 font-semibold mt-2">
                       Windows Installer 다운로드 →
-                    </div>
-                  </a>
-
-                  {/* Portable Zip */}
-                  <a
-                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-emerald-500/50 transition flex flex-col justify-between block"
-                  >
-                    <div>
-                      <div className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
-                        <span>📦 무설치 포터블</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-1">
-                        WinPurifyPro-Portable-x64.zip (압축 해제 즉시 구동)
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-emerald-400 font-semibold mt-2">
-                      Portable x64 다운로드 →
                     </div>
                   </a>
 
@@ -4799,11 +4822,12 @@ const App: React.FC = () => {
                     className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-purple-500/50 transition flex flex-col justify-between block"
                   >
                     <div>
-                      <div className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                      <div className="text-xs font-bold text-slate-100 flex items-center justify-between">
                         <span>📡 중앙 관제 콘솔</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">~3 MB</span>
                       </div>
                       <div className="text-[10px] text-slate-400 mt-1">
-                        WinPurifyCommander.exe (다중 PC 원격 제어 및 플릿 관리)
+                        WinPurifyCommander-Slim.exe (다중 PC 원격 제어 콘솔)
                       </div>
                     </div>
                     <div className="text-[10px] text-purple-400 font-semibold mt-2">

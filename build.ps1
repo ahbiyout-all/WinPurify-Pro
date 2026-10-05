@@ -12,9 +12,9 @@ if ($Net10) {
 
 $IsDual = ($Dual -or $Sequential -or ($Mode -eq "Dual") -or ($Mode -eq "Sequential"))
 
-# WinPurify Pro v4.40.0 PowerShell 1-Click Automation Builder
+# WinPurify Pro v4.41.0 PowerShell 1-Click Automation Builder
 Write-Host "=====================================================================" -ForegroundColor Cyan
-Write-Host "   WinPurify Pro v4.40.0 Unified Automation Builder" -ForegroundColor Cyan
+Write-Host "   WinPurify Pro v4.41.0 Unified Automation Builder" -ForegroundColor Cyan
 Write-Host "   Target: Native C++ Core + .NET 8 / .NET 10 WPF Suite" -ForegroundColor Cyan
 if ($IsDual) {
     Write-Host "   Mode: Sequential Dual-TFM Build (.NET 10.0 & .NET 8.0 Isolated Paths)" -ForegroundColor Cyan
@@ -108,7 +108,7 @@ function Build-FrameworkTarget([string]$tfm, [string]$targetMode) {
 
         if ($iscc -and (Test-Path "installer.iss")) {
             Write-Host "[+] Running ISCC: $iscc with Isolated Paths" -ForegroundColor Yellow
-            $setupFilename = "WinPurifyPro_v4.40.0_${tfmDir}_Setup"
+            $setupFilename = "WinPurifyPro_v4.41.0_${tfmDir}_Setup"
             $isccArgs = @(
                 "/DAppSourceDir=$pubBase\App",
                 "/DOutputDir=$pubBase\Installer",
