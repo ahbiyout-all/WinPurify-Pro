@@ -517,8 +517,8 @@ const App: React.FC = () => {
     isNewer: false,
     releaseTitle: `WinPurify Pro v${APP_VERSION}`,
     releaseNotes: '',
-    releaseUrl: 'https://github.com/AhBiYout/AhBiYout-all/releases',
-    downloadUrl: 'https://github.com/AhBiYout/AhBiYout-all/releases/latest',
+    releaseUrl: 'https://github.com/ahbiyout-all/WinPurify-Pro/releases',
+    downloadUrl: 'https://github.com/ahbiyout-all/WinPurify-Pro/releases/latest',
     publishedAt: '',
     status: '확인 대기 중'
   });
@@ -540,18 +540,18 @@ const App: React.FC = () => {
       setShowUpdateModal(true);
     }
     setIsCheckingUpdate(true);
-    setUpdateInfo(prev => ({ ...prev, status: 'GitHub Releases API (AhBiYout/AhBiYout-all) 실시간 조회 중...' }));
+    setUpdateInfo(prev => ({ ...prev, status: 'GitHub Releases API (ahbiyout-all/WinPurify-Pro) 실시간 조회 중...' }));
     if (isManual) {
-      addLog('[자동 업데이트] GitHub API (https://api.github.com/repos/AhBiYout/AhBiYout-all/releases/latest) 실시간 릴리스 조회 중...');
+      addLog('[자동 업데이트] GitHub API (https://api.github.com/repos/ahbiyout-all/WinPurify-Pro/releases/latest) 실시간 릴리스 조회 중...');
     }
 
     try {
-      const res = await fetch('https://api.github.com/repos/AhBiYout/AhBiYout-all/releases/latest');
+      const res = await fetch('https://api.github.com/repos/ahbiyout-all/WinPurify-Pro/releases/latest');
       if (res.ok) {
         const data = await res.json();
         const tag = (data.tag_name || '').replace(/^v/i, '').trim();
         const isNewer = compareSemVer(tag, APP_VERSION) > 0;
-        let dlUrl = data.html_url || 'https://github.com/AhBiYout/AhBiYout-all/releases/latest';
+        let dlUrl = data.html_url || 'https://github.com/ahbiyout-all/WinPurify-Pro/releases/latest';
         if (data.assets && Array.isArray(data.assets) && data.assets.length > 0) {
           const exeAsset = data.assets.find((a: any) => a.name?.endsWith('.exe'));
           if (exeAsset) dlUrl = exeAsset.browser_download_url;
@@ -562,7 +562,7 @@ const App: React.FC = () => {
           isNewer,
           releaseTitle: data.name || `WinPurify Pro v${tag}`,
           releaseNotes: data.body || '릴리스 변경 내역이 등록되어 있습니다.',
-          releaseUrl: data.html_url || 'https://github.com/AhBiYout/AhBiYout-all/releases',
+          releaseUrl: data.html_url || 'https://github.com/ahbiyout-all/WinPurify-Pro/releases',
           downloadUrl: dlUrl,
           publishedAt: data.published_at ? new Date(data.published_at).toLocaleDateString('ko-KR') : '',
           status: isNewer 
@@ -579,7 +579,7 @@ const App: React.FC = () => {
       } else {
         setUpdateInfo(prev => ({
           ...prev,
-          status: `GitHub 저장소(https://github.com/AhBiYout/AhBiYout-all) 배포 상태 정상. 현재 공식 버전 v${APP_VERSION} 가동 중.`
+          status: `GitHub 저장소(https://github.com/ahbiyout-all/WinPurify-Pro) 배포 상태 정상. 현재 공식 버전 v${APP_VERSION} 가동 중.`
         }));
       }
     } catch (err: any) {
@@ -1739,7 +1739,7 @@ const App: React.FC = () => {
           <button 
             id="github-update-header-btn"
             onClick={() => handleCheckGitHubUpdates()}
-            title="GitHub Releases (AhBiYout/AhBiYout-all)를 실시간 조회하여 최신 버전 확인 및 Windows PC 설치 파일을 확인합니다."
+            title="GitHub Releases (ahbiyout-all/WinPurify-Pro)를 실시간 조회하여 최신 버전 확인 및 Windows PC 설치 파일을 확인합니다."
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 border border-sky-700/80 text-sky-300 text-xs font-bold transition shadow-sm cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-sky-400" />
@@ -4702,11 +4702,11 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-slate-100 text-base">GitHub Releases 실시간 자동 업데이트</h3>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/40 text-sky-300 font-bold">
-                      AhBiYout-all
+                      WinPurify-Pro
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    공식 GitHub 리포지토리(AhBiYout/AhBiYout-all) 배포 패키지 및 플랫폼별 설치 파일 안내
+                    공식 GitHub 리포지토리(ahbiyout-all/WinPurify-Pro) 배포 패키지 및 플랫폼별 설치 파일 안내
                   </p>
                 </div>
               </div>
@@ -4753,7 +4753,7 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {/* PC Windows Installer */}
                   <a
-                    href="https://github.com/AhBiYout/AhBiYout-all/releases"
+                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
                     target="_blank"
                     rel="noreferrer"
                     className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-sky-500/50 transition flex flex-col justify-between block"
@@ -4773,7 +4773,7 @@ const App: React.FC = () => {
 
                   {/* Portable Zip */}
                   <a
-                    href="https://github.com/AhBiYout/AhBiYout-all/releases"
+                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
                     target="_blank"
                     rel="noreferrer"
                     className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-emerald-500/50 transition flex flex-col justify-between block"
@@ -4793,7 +4793,7 @@ const App: React.FC = () => {
 
                   {/* Central Commander Console */}
                   <a
-                    href="https://github.com/AhBiYout/AhBiYout-all/releases"
+                    href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
                     target="_blank"
                     rel="noreferrer"
                     className="p-3 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-purple-500/50 transition flex flex-col justify-between block"
@@ -4827,12 +4827,12 @@ const App: React.FC = () => {
             {/* Footer */}
             <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
               <a
-                href="https://github.com/AhBiYout/AhBiYout-all"
+                href="https://github.com/ahbiyout-all/WinPurify-Pro"
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 font-semibold"
               >
-                <span>GitHub AhBiYout/AhBiYout-all 리포지토리 방문</span>
+                <span>GitHub ahbiyout-all/WinPurify-Pro 리포지토리 방문</span>
               </a>
 
               <div className="flex items-center gap-2">

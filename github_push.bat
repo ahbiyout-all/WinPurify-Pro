@@ -4,8 +4,9 @@ setlocal EnableDelayedExpansion
 
 echo =====================================================================
 echo  WinPurify Pro - GitHub Automated Sync & Push Tool
-echo  Account:    AhBiYout
-echo  Repository: AhBiYout-all
+echo  Account:    ahbiyout-all
+echo  Repository: WinPurify-Pro
+echo  Target URL: https://github.com/ahbiyout-all/WinPurify-Pro
 echo =====================================================================
 echo.
 
@@ -26,18 +27,18 @@ set APP_VER=%RAW_VER:"=%
 echo [+] Current Synchronized Version: v%APP_VER%
 echo.
 
-:: Step 3: Check Git Remote Origin
-echo [*] Step 2: Verifying Git remote origin repository...
+:: Step 3: Check and set Git Remote Origin
+echo [*] Step 2: Configuring Git remote origin repository...
 git remote get-url origin >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [!] Remote origin not found. Adding origin https://github.com/AhBiYout/AhBiYout-all.git ...
-    git remote add origin https://github.com/AhBiYout/AhBiYout-all.git
+    echo [!] Remote origin not found. Adding origin https://github.com/ahbiyout-all/WinPurify-Pro.git ...
+    git remote add origin https://github.com/ahbiyout-all/WinPurify-Pro.git
 ) else (
-    git remote set-url origin https://github.com/AhBiYout/AhBiYout-all.git
-    echo [+] Remote origin is set to https://github.com/AhBiYout/AhBiYout-all.git
+    git remote set-url origin https://github.com/ahbiyout-all/WinPurify-Pro.git
+    echo [+] Remote origin is set to https://github.com/ahbiyout-all/WinPurify-Pro.git
 )
 
-:: Step 4: Git Status check
+:: Step 4: Git Status check & staging
 echo.
 echo [*] Step 3: Staging all changed files (excluding .gitignore rules)...
 git add -A
@@ -46,7 +47,7 @@ git status --short
 echo.
 set /p COMMIT_MSG="Enter commit description (Press Enter for default: 'Release v%APP_VER%'): "
 if "%COMMIT_MSG%"=="" (
-    set COMMIT_MSG=Release v%APP_VER% - WinPurify Pro Full Update (AhBiYout)
+    set COMMIT_MSG=Release v%APP_VER% - WinPurify Pro Full Update (ahbiyout-all)
 )
 
 :: Step 5: Commit changes
@@ -64,8 +65,8 @@ git tag -fa "v%APP_VER%" -m "WinPurify Pro v%APP_VER% Release"
 
 :: Step 7: Push to GitHub
 echo.
-echo [*] Step 6: Pushing commits and tags to GitHub (AhBiYout/AhBiYout-all)...
-echo [+] Target: https://github.com/AhBiYout/AhBiYout-all
+echo [*] Step 6: Pushing commits and tags to GitHub (ahbiyout-all/WinPurify-Pro)...
+echo [+] Target: https://github.com/ahbiyout-all/WinPurify-Pro
 echo.
 
 git branch -M main
@@ -80,9 +81,11 @@ git push origin "v%APP_VER%" --force
 echo.
 echo =====================================================================
 echo  [SUCCESS] All files and version tag v%APP_VER% successfully pushed!
-echo  GitHub Repository: https://github.com/AhBiYout/AhBiYout-all
-echo  GitHub Actions:    https://github.com/AhBiYout/AhBiYout-all/actions
-echo  GitHub Releases:   https://github.com/AhBiYout/AhBiYout-all/releases
+echo  GitHub Actions will now automatically build and publish releases!
+echo.
+echo  GitHub Repository: https://github.com/ahbiyout-all/WinPurify-Pro
+echo  GitHub Actions:    https://github.com/ahbiyout-all/WinPurify-Pro/actions
+echo  GitHub Releases:   https://github.com/ahbiyout-all/WinPurify-Pro/releases
 echo =====================================================================
 echo.
 pause

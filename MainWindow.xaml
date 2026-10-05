@@ -353,7 +353,7 @@
                         <Button Style="{StaticResource SidebarQuickButton}" Content="🔔 시스템 트레이 &amp; 알림" Command="{Binding OpenTraySettingsModalCommand}" Background="#4338CA"
                                 ToolTip="백그라운드 시스템 트레이 상주, 작업 진행사항 실시간 툴팁 및 풍선/토스트 알림 설정을 구성합니다." />
                         <Button Style="{StaticResource SidebarQuickButton}" Content="🚀 GitHub 실시간 업데이트" Command="{Binding OpenUpdateModalCommand}" Background="#0284C7"
-                                ToolTip="GitHub Releases(AhBiYout/AhBiYout-all)를 실시간 조회하여 최신 버전 유무를 확인하고 원클릭 자동 업데이트를 수행합니다." />
+                                ToolTip="GitHub Releases(ahbiyout-all/WinPurify-Pro)를 실시간 조회하여 최신 버전 유무를 확인하고 원클릭 자동 업데이트를 수행합니다." />
                         <Button Style="{StaticResource SidebarQuickButton}" Content="🩺 무결성 셀프 진단" Command="{Binding RunDiagnosticsCommand}" Background="#0D9488"
                                 ToolTip="관리자 권한, C++ Native 코어 로드 상태, Robocopy I/O 엔진 등 시스템 정합성을 진단합니다." />
                         <Button Style="{StaticResource SidebarQuickButton}" Content="↩️ 세이프포인트 롤백" Command="{Binding RollbackSafepointCommand}" IsEnabled="{Binding HasSafepoint}" Background="#7C3AED" Margin="0"
@@ -1116,10 +1116,10 @@
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="🚀 GitHub Releases 실시간 자동 업데이트" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" />
                                 <Border Background="#0284C7" CornerRadius="4" Padding="6,2" Margin="8,0,0,0">
-                                    <TextBlock Text="AhBiYout-all" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" />
+                                    <TextBlock Text="WinPurify-Pro" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" />
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="공식 GitHub 리포지토리(AhBiYout/AhBiYout-all)를 실시간 감지하여 원클릭 패치 및 설치를 수행합니다." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0" TextWrapping="Wrap" />
+                            <TextBlock Text="공식 GitHub 리포지토리(ahbiyout-all/WinPurify-Pro)를 실시간 감지하여 원클릭 패치 및 설치를 수행합니다." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0" TextWrapping="Wrap" />
                         </StackPanel>
                         <Button Grid.Column="1" Content="✕" Width="28" Height="28" Background="#1E293B" Foreground="#94A3B8" BorderThickness="0" FontWeight="Bold" Cursor="Hand" Command="{Binding CloseUpdateModalCommand}">
                             <Button.Resources>

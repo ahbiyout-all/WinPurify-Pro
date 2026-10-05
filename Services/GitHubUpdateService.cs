@@ -24,17 +24,17 @@ namespace WinPurifyPro.Services
 
     /// <summary>
     /// GitHub Releases 기반 실시간 자동 업데이트 및 버전 감지 서비스
-    /// Repository: https://github.com/AhBiYout/AhBiYout-all
+    /// Repository: https://github.com/ahbiyout-all/WinPurify-Pro
     /// </summary>
     public sealed class GitHubUpdateService
     {
         private static readonly Lazy<GitHubUpdateService> _instance = new(() => new GitHubUpdateService());
         public static GitHubUpdateService Instance => _instance.Value;
 
-        public const string GitHubOwner = "AhBiYout";
-        public const string GitHubRepo = "AhBiYout-all";
-        public const string GitHubReleasesApiUrl = "https://api.github.com/repos/AhBiYout/AhBiYout-all/releases/latest";
-        public const string GitHubRepoUrl = "https://github.com/AhBiYout/AhBiYout-all";
+        public const string GitHubOwner = "ahbiyout-all";
+        public const string GitHubRepo = "WinPurify-Pro";
+        public const string GitHubReleasesApiUrl = "https://api.github.com/repos/ahbiyout-all/WinPurify-Pro/releases/latest";
+        public const string GitHubRepoUrl = "https://github.com/ahbiyout-all/WinPurify-Pro";
 
         private readonly HttpClient _httpClient;
 
@@ -45,7 +45,7 @@ namespace WinPurifyPro.Services
                 Timeout = TimeSpan.FromSeconds(15)
             };
             // GitHub REST API requires a User-Agent header
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "WinPurifyPro-AutoUpdater/4.37.0 (AhBiYout-all)");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "WinPurifyPro-AutoUpdater/4.40.0 (ahbiyout-all)");
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
         }
 

@@ -1868,7 +1868,7 @@ namespace WinPurifyPro.ViewModels
             if (isManual)
             {
                 IsUpdateModalOpen = true;
-                AddLog("[자동 업데이트] GitHub API (AhBiYout/AhBiYout-all) 최신 릴리스 검사 시작...");
+                AddLog("[자동 업데이트] GitHub API (ahbiyout-all/WinPurify-Pro) 최신 릴리스 검사 시작...");
             }
             else
             {
