@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Version>4.42.0</Version>
+    <AssemblyVersion>4.42.0.0</AssemblyVersion>
+    <FileVersion>4.42.0.0</FileVersion>
+    <InformationalVersion>4.42.0 (AhBiYout)</InformationalVersion>
+    <OutputType>WinExe</OutputType>
+    <!-- Multi-Targeting / .NET 10 SDK & .NET 8 LTS Multi-TFM Support (Default: net8.0-windows;net10.0-windows) -->
+    <TargetFrameworks Condition="'$(TargetFramework)' == ''">net8.0-windows;net10.0-windows</TargetFrameworks>
+    <TargetFramework Condition="'$(TargetFrameworks)' == ''">net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>WinPurify.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyTitle>WinPurify Pro Next-Gen Optimization Suite</AssemblyTitle>
+    <Authors>AhBiYout</Authors>
+    <Company>CISNET</Company>
+    <Product>WinPurify Pro</Product>
+    <Description>초고속 네이티브 C++ 코어 기반 Windows 11/10 하이브리드 최적화 및 시스템 정화 솔루션 (개발자: AhBiYout, 블로그: https://ahbiyoutvibe.blogspot.com/, 홈페이지: http://www.cisnet.co.kr/)</Description>
+    <Copyright>Copyright © 2026 AhBiYout All rights reserved.</Copyright>
+    <NeutralLanguage>ko-KR</NeutralLanguage>
+    <RepositoryUrl>https://ahbiyoutvibe.blogspot.com/</RepositoryUrl>
+  </PropertyGroup>
+
+  <!-- Exclude only standalone Commander ApplicationDefinition from main client build (CommanderMainWindow is included for instant in-process execution) -->
+  <ItemGroup>
+    <Compile Remove="CommanderApp.xaml.cs" />
+    <Page Remove="CommanderApp.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="WinPurify.ico" />
+    <Resource Include="WinPurify_logo.png" />
+    <Resource Include="WinPurify_icon.png" />
+    <None Update="PurifyEngineCore.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="WinPurify.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="WinPurify_logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="WinPurify_icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="LICENSE_KO.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="LICENSE_EN.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,42 @@
+#include <windows.h>
+
+#define VER_FILEVERSION             4,42,0,0
+#define VER_FILEVERSION_STR         "4.42.0.0\0"
+#define VER_PRODUCTVERSION          4,42,0,0
+#define VER_PRODUCTVERSION_STR       "4.42.0\0"
+
+1 ICON "WinPurify.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     VER_FILEVERSION
+PRODUCTVERSION  VER_PRODUCTVERSION
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+FILEFLAGS       VS_FF_DEBUG
+#else
+FILEFLAGS       0x0L
+#endif
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_DLL
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041204b0" // Korean (0x0412), Unicode (0x04B0)
+        BEGIN
+            VALUE "CompanyName",      "CISNET (http://www.cisnet.co.kr/)\0"
+            VALUE "FileDescription",  "PurifyEngineCore - WinPurify Pro Native 64-bit Kernel Optimizer\0"
+            VALUE "FileVersion",      VER_FILEVERSION_STR
+            VALUE "InternalName",     "PurifyEngineCore.dll\0"
+            VALUE "LegalCopyright",   "Copyright (C) 2026 CISNET / AhBiYout. All rights reserved.\0"
+            VALUE "OriginalFilename", "PurifyEngineCore.dll\0"
+            VALUE "ProductName",      "WinPurify Pro\0"
+            VALUE "ProductVersion",   VER_PRODUCTVERSION_STR
+            VALUE "Comments",         "Developer: AhBiYout | Blog: https://ahbiyoutvibe.blogspot.com/ | Company: http://www.cisnet.co.kr/\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0412, 1200
+    END
+END
