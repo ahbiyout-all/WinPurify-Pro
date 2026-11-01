@@ -1,13 +1,13 @@
 # 📢 Google Blogger [작성 모드 (서식 있는 텍스트)] 공식 포스팅 양식
 
 > **용도**: 구글 블로거(Blogger.com) 포스팅 시 **[작성 모드]**에서 그대로 복사하여 붙여넣을 수 있는 서식 있는 마크다운/텍스트 문서입니다.
-> **최신 버전**: v4.60.0  
+> **최신 버전**: v4.62.0  
 > **생성 일자**: 2026-11-01  
 
 ---
 
 # [1] 제목 (Title)
-WinPurify Pro v4.60.0 - 차세대 C++ 네이티브 코어 & Recharts 텔레메트리 기반 Windows 11/10 초고속 PC 최적화 및 시스템 정화 솔루션
+WinPurify Pro v4.62.0 - Central Commander & WinPurify Pro 한 PC 동시 실행(Coexistence) 전면 지원 & C++ 네이티브 가속 Windows 11/10 최적화 솔루션
 
 ---
 
@@ -17,27 +17,27 @@ WinPurify Pro v4.60.0 - 차세대 C++ 네이티브 코어 & Recharts 텔레메�
 
 .NET 런타임 가비지 컬렉션(GC) 지연과 PowerShell 실행 오버헤드를 극복하기 위해 **순수 창작 C++ 네이티브 가속 코어(`PurifyEngineCore.dll`)**를 탑재하여, 기존 C# 관리 코드 대비 최대 15배 빠른 커널 레벨 디렉토리/레지스트리 탐색 속도를 제공합니다.
 
-또한, **Recharts 실시간 비주얼 텔레메트리 엔진**을 결합하여 144개 전수 모듈의 탐색 속도(files/sec), 누적 회수 디스크 용량(GB/MB), 시스템 최적화 효율 지수(%)를 인터랙티브 차트로 한눈에 파악할 수 있습니다.
+특히 최신 **v4.62.0**에서는 **한 PC에서 Central Commander(중앙 관제 콘솔)와 WinPurify Pro 메인 앱을 동시에 나란히 실행**할 수 있도록 소켓 및 뮤텍스 아키텍처를 전면 개편하여, 관리자가 자신의 로컬 PC를 정밀 정화하면서 사내/홈 LAN 상의 다중 PC 원격 관제를 끊김 없이 동시에 수행할 수 있습니다.
 
 ---
 
 # [3] 업데이트 (Latest Features & Highlights)
 
-### ✨ v4.60.0 주요 신규 기능 및 개선 하이라이트
-* **📈 Recharts 시각화 텔레메트리 대시보드 구축 (`showTelemetryModal`)**:
+### ✨ v4.62.0 주요 신규 기능 및 개선 하이라이트
+* **⚡ Central Commander & WinPurify Pro 한 PC 동시 실행(Coexistence) 전면 지원**:
+  * Central Commander와 WinPurify Pro 메인 앱이 동일 시스템 내에서 충돌 없이 동시에 함께 실행될 수 있도록 아키텍처 전면 개편.
+  * 상호 실행 차단 해제: 독립 글로벌 뮤텍스(`Global\WinPurifyPro_App_Mutex_Global_6904B914`, `Global\WinPurifyPro_Commander_Mutex_Global_6904B914`)를 통해 자기 자신의 중복 실행만 방지하고 두 프로그램은 나란히 동시 구동.
+  * 소켓 포트 충돌 원천 차단: UDP Discovery 리스너에 `SO_REUSEADDR`을 적용하고, TCP 9870 포트가 이미 활성화된 경우 자동 공유 채널 모드로 전환하여 바인딩 에러 없이 양방향 통신 지원.
+  * 메인 앱 내 `LaunchCommanderProcess`: 메인 앱을 종료하지 않고 백그라운드로 커맨더를 동시 기동.
+  * 웹 대시보드 UI에 `[중앙 관제 (동시 실행 중)]` 실시간 펄스 뱃지 및 동시 실행 상태 배너 연동.
+* **📈 Recharts 시각화 텔레메트리 대시보드 (`showTelemetryModal`)**:
   * 기간별(최근 7일/30일/90일/전체) 누적 회수 디스크 용량 추이(GB) 및 주간 정크 청소 용량(MB) `ComposedChart` 시각화.
   * 시스템 최적화 효율 점수(%) 및 부팅/앱 응답 속도 개선율(%) `LineChart` 분석.
-  * 4대 핵심 KPI 카드를 통한 회수 스토리지(`52.8 GB`), 효율 지수(`99.4%`), 가속율(`+58.2%`), 누적 실행 건수(`1,280회`) 한눈에 파악.
-* **🔍 144개 전수 모듈 실시간 스캔 차트 연동**:
-  * 스캔 진행 시 시간(sec) 흐름에 따른 스캔 진행률(%), 탐색 발견 용량(MB), I/O 처리 속도(files/s) 이중 Y축 `AreaChart` 실시간 스트리밍.
-  * 8대 카테고리별 공간 회수 `BarChart` 및 정화 상태 분포 Donut `PieChart` 지원.
-* **🚀 GitHub Actions CI/CD 파이프라인 최신화 (Node.js 22 LTS)**:
+* **🚀 GitHub Actions CI/CD 최신화 (Node.js 22 LTS)**:
   * GitHub Actions Node.js 20 EOL 대응을 위해 `node-version: 22`로 완벽 전환하여 CI/CD 빌드 경고 메시지 완전 차단.
-  * 릴리스 자산으로 오직 공식 정식 인스톨러(`WinPurifyPro-Setup.exe`) 1종만 빌드 및 첨부.
 * **🛡️ Inno Setup 무소음 설치 & 방화벽 사전 자동 등록**:
-  * 폴더 풀림(Unpacked Multi-File) 정식 설치 구현.
-  * 기존 앱 감지 시 클린 언인스톨 / 덮어쓰기 업데이트 질의 대화상자 제공.
-  * 무인 설치(`/SILENT`, `/VERYSILENT`) 및 Windows 방화벽 예외 규칙 무소음 백그라운드 등록 (`WinPurify Pro` 기본 및 `WinPurify Pro v4.60.0` 버전 규칙).
+  * 폴더 풀림(Unpacked Multi-File) 정식 설치 및 무인 설치(`/SILENT`, `/VERYSILENT`) 지원.
+  * Windows 방화벽 예외 규칙 자동 등록 (`WinPurify Pro v4.62.0` 및 범용 규칙).
 
 ---
 

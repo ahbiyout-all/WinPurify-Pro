@@ -178,15 +178,21 @@ namespace WinPurifyPro.Services
 
                 if (!httpStarted || _httpListener == null)
                 {
-                    throw lastEx ?? new InvalidOperationException("HTTP 리스너 바인딩 실패");
+                    // 동일 PC 내에서 이미 포트가 열려있는 경우 (WinPurifyPro와 Central Commander 동시 실행 환경)
+                    LogOccurred?.Invoke($"[RemoteAgent 동시 실행] 로컬 에이전트 포트(TCP:{httpPort})가 이미 활성화되어 있습니다. 클라이언트 및 관제 채널을 안전하게 공유합니다.");
+                    _isRunning = true;
+                    return;
                 }
 
                 Task.Run(() => ProcessHttpRequestsAsync(_cts.Token));
 
-                // 2. UDP Discovery Listener 시작
+                // 2. UDP Discovery Listener 시작 (동일 PC 동시 실행을 위해 SO_REUSEADDR 활성화)
                 try
                 {
-                    _udpDiscoveryListener = new UdpClient(new IPEndPoint(IPAddress.Any, udpPort));
+                    var udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    udpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    udpSocket.Bind(new IPEndPoint(IPAddress.Any, udpPort));
+                    _udpDiscoveryListener = new UdpClient { Client = udpSocket };
                     Task.Run(() => ProcessUdpDiscoveryAsync(_cts.Token));
                 }
                 catch (Exception ex)

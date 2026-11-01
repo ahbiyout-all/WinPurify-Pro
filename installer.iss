@@ -5,7 +5,7 @@
 ; =====================================================================
 
 #define MyAppName "WinPurify Pro"
-#define MyAppVersion "4.60.0"
+#define MyAppVersion "4.62.0"
 #define MyAppPublisher "AhBiYout"
 #define MyAppURL "https://ahbiyoutvibe.blogspot.com/"
 #define MyAppExeName "WinPurifyPro.exe"
@@ -48,8 +48,8 @@ VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup Installer (Unpacked Multi-File Individual Assemblies)
 VersionInfoProductName={#MyAppName}
-; 실행 중인 프로세스 감지 및 안전 종료
-AppMutex=WinPurifyPro_App_Mutex_Global_6904B914
+; 실행 중인 프로세스 감지 및 안전 종료 (메인 앱 및 Central Commander 동시 감지)
+AppMutex=WinPurifyPro_App_Mutex_Global_6904B914,WinPurifyPro_Commander_Mutex_Global_6904B914
 CloseApplications=yes
 CloseApplicationsFilter=*.exe
 RestartApplications=no

@@ -2,6 +2,50 @@
 
 ---
 
+## 📌 [v4.62.0] - 2026-11-01 (⚡ Central Commander & WinPurify Pro 한 PC 동시 실행(Coexistence) 전면 지원)
+
+### ⚡ 한 PC 동시 실행 및 프로세스 공존 아키텍처 구축 (Simultaneous Coexistence Architecture)
+- **Central Commander & WinPurify Pro 한 PC 동시 실행 전면 지원**:
+  - Central Commander(중앙 관제 콘솔)와 WinPurify Pro 메인 앱이 한 대의 컴퓨터에서 충돌 없이 동시에 나란히 실행될 수 있도록 전면 개선.
+  - 관리자가 자신의 로컬 PC에서 144개 모듈 최적화 및 C++ 커널 가속을 실행하는 동시에, 사내/홈 LAN 상의 다중 PC 원격 관제 콘솔을 함께 띄워놓고 작업 가능.
+- **독립 글로벌 뮤텍스 분리 및 비간섭 단일 인스턴스 제어 (`SingleInstanceService.cs`)**:
+  - `Global\WinPurifyPro_App_Mutex_Global_6904B914`: WinPurify Pro 메인 앱 자기 자신의 중복 실행만 방지.
+  - `Global\WinPurifyPro_Commander_Mutex_Global_6904B914`: Central Commander 콘솔 자기 자신의 중복 실행만 방지.
+  - 메인 앱과 커맨더 간의 상호 차단 코드를 완전히 제거하여 두 프로그램이 독립 인스턴스로 동시 구동.
+- **소켓 포트 공유 및 바인딩 충돌 방지 (`RemoteAgentService.cs`)**:
+  - **UDP Discovery 리스너 (포트 9871)**: `SocketOptionName.ReuseAddress (SO_REUSEADDR)`를 적용하여 한 머신에서 여러 프로세스가 안전하게 브로드캐스트 패킷을 동시 수신/공유.
+  - **TCP REST 에이전트 리스너 (포트 9870)**: 동일 머신에서 이미 포트가 열려 있는 경우 예외 크래시 없이 `[RemoteAgent 동시 실행] 로컬 에이전트 포트(TCP 9870)가 이미 활성화되어 있습니다. 클라이언트 및 관제 채널을 안전하게 공유합니다.`로 자동 공유 모드 전환.
+- **메인 뷰모델(`MainViewModel.cs`) 동시 기동 파이프라인**:
+  - `LaunchCommanderProcess`: WinPurify Pro를 종료하지 않고 Central Commander 프로세스를 나란히 실행(`Process.Start`). 이미 켜져 있다면 기존 커맨더 창을 최상위로 활성화(`ActivateCommanderWindow`).
+- **웹 대시보드 UI(`index.tsx`) 실시간 동시 실행 HUD & 안내 연동**:
+  - 헤더 `[중앙 관제 (동시 실행 중)]` 펄스 뱃지 및 동시 실행 상태 배너 탑재.
+  - 커맨더 실행 중에도 메인 최적화 및 144개 모듈 검사가 정상 가동되도록 동시 구동 모드 활성화.
+
+---
+
+## 📌 [v4.61.0] - 2026-11-01 (🛡️ Central Commander 구동 시 WinPurify Pro 상호 배타적 단일 인스턴스 보호 시스템 도입)
+
+### 🛡️ 상호 배타적 단일 인스턴스 보호 시스템 구축 (Mutual Exclusion & Single Instance Controller)
+- **Central Commander 구동 중 WinPurify Pro 실행 차단 (Mandatory Execution Guard)**:
+  - Central Commander(중앙 관제 콘솔)가 실행 중인 상태에서 WinPurify Pro를 기동하려고 시도할 경우, 시스템 충돌 및 중복 실행을 사전에 차단하고 안내 팝업을 표시한 뒤 안전하게 종료(`Shutdown`)하도록 구현.
+  - **차단 사유 및 보호 원칙**:
+    1. **네트워크 포트 충돌 원천 방지**: 중앙 관제용 REST 제어 포트(TCP 9870) 및 브로드캐스트 탐색 포트(UDP 9871) 소켓 바인딩 충돌 차단.
+    2. **Native C++ 커널 가속 엔진 경합 방지**: `PurifyEngineCore.dll`의 파일 락 해제, 메모리 트림, 레지스트리 스냅샷 등 로우레벨 커널 튜너 리소스 동시 접근 차단.
+    3. **백그라운드 에이전트 동기화 무결성**: `WinPurifyAgentService`와의 중복 명령 수신 및 설정 변조 위험 차단.
+  - **기존 인스턴스 전면 활성화**: 이미 켜져 있는 Central Commander 윈도우를 감지하여 자동으로 포그라운드(Foreground) 최상위로 복원(`SetForegroundWindow`, `ShowWindow`).
+- **글로벌 뮤텍스 체계 분리 및 정밀 상호 감지 (`SingleInstanceService.cs`)**:
+  - 메인 앱 전용 뮤텍스: `Global\WinPurifyPro_App_Mutex_Global_6904B914`
+  - 커맨더 콘솔 전용 뮤텍스: `Global\WinPurifyPro_Commander_Mutex_Global_6904B914`
+  - `Mutex.TryOpenExisting` 및 정밀 프로세스(`Process.GetProcessesByName`) 2중 검사 알고리즘 탑재.
+- **Inno Setup 인스톨러(`installer.iss`) 감지 뮤텍스 동기화**:
+  - `AppMutex=WinPurifyPro_App_Mutex_Global_6904B914,WinPurifyPro_Commander_Mutex_Global_6904B914`로 확장 등록하여 설치/업데이트 중 메인 앱뿐만 아니라 커맨더가 실행 중인 경우에도 자동 감지 및 종료 유도.
+- **웹 대시보드 UI(`index.tsx`) 실시간 상호 배타성 HUD & 충돌 알림 모달 구축**:
+  - 헤더 `[관제 실행 중 (Lock)]` 펄스 뱃지 및 클릭 연동.
+  - 헤더 하단 상호 배타적 실행 제한 알림 바 렌더링.
+  - 커맨더 실행 중 메인 최적화/스캔 시도 시 `showCommanderConflictModal` 경고 팝업 및 잠금 해제/콘솔 이동 옵션 제공.
+
+---
+
 ## 📌 [v4.60.0] - 2026-11-01 (📰 구글 블로그 포스팅용 공식 서식 문서 파이프라인 생성 및 문서 센터 최신화)
 
 ### 📰 구글 블로거 포스팅용 공식 문서 생성 (Google Blogger Publishing Suite)

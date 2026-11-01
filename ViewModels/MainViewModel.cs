@@ -871,9 +871,9 @@ namespace WinPurifyPro.ViewModels
             UnregisterScheduleCommand = new RelayCommand(async _ => await RemoveScheduleAsync(), _ => !IsBusy);
             RunScheduleNowCommand = new RelayCommand(async _ => await RunScheduleNowAsync(), _ => !IsBusy);
             RefreshScheduleStatusCommand = new RelayCommand(async _ => await RefreshScheduleStatusAsync(), _ => !IsBusy);
-            OpenCommanderModalCommand = new RelayCommand(_ => { });
+            OpenCommanderModalCommand = new RelayCommand(_ => IsCommanderModalOpen = true);
             CloseCommanderModalCommand = new RelayCommand(_ => IsCommanderModalOpen = false);
-            LaunchCommanderProcessCommand = new RelayCommand(_ => { });
+            LaunchCommanderProcessCommand = new RelayCommand(_ => LaunchCommanderProcess());
 
             // Account & Credential Purge Command Bindings
             OpenCredentialPurgeModalCommand = new RelayCommand(_ => OpenCredentialPurgeModal());
@@ -1698,15 +1698,69 @@ namespace WinPurifyPro.ViewModels
 
         private void OpenCommanderModal()
         {
+            IsCommanderModalOpen = true;
         }
 
         private string? FindCommanderExecutable()
         {
+            try
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string[] candidates = new[]
+                {
+                    Path.Combine(baseDir, "WinPurifyCommander.exe"),
+                    Path.Combine(baseDir, "Commander", "WinPurifyCommander.exe"),
+                    Path.Combine(baseDir, "WinPurifyPro.exe")
+                };
+
+                foreach (var path in candidates)
+                {
+                    if (File.Exists(path)) return path;
+                }
+            }
+            catch { }
             return null;
         }
 
         private void LaunchCommanderProcess(string? specificPath = null)
         {
+            try
+            {
+                // 이미 Central Commander가 실행 중인 경우 기존 창을 최상위로 활성화
+                if (SingleInstanceService.IsCommanderRunning())
+                {
+                    SingleInstanceService.ActivateCommanderWindow();
+                    AddLog("[Central Commander 동시 실행] 이미 실행 중인 Central Commander 콘솔 창을 화면 최상위로 활성화하였습니다.");
+                    return;
+                }
+
+                string? exe = specificPath ?? FindCommanderExecutable();
+                if (exe != null)
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = exe,
+                        UseShellExecute = true,
+                        WorkingDirectory = Path.GetDirectoryName(exe)
+                    };
+
+                    if (exe.EndsWith("WinPurifyPro.exe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        psi.Arguments = "--commander";
+                    }
+
+                    Process.Start(psi);
+                    AddLog("[Central Commander 동시 실행] Central Commander 콘솔을 성공적으로 가동하였습니다. (WinPurify Pro와 동시 실행 중)");
+                }
+                else
+                {
+                    MessageBox.Show("WinPurifyCommander.exe 실행 파일을 찾을 수 없습니다.", "실행 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Central Commander 동시 실행 중 오류: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public async void OpenCredentialPurgeModal()

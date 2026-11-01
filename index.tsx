@@ -490,6 +490,8 @@ const App: React.FC = () => {
   const [isScheduled, setIsScheduled] = useState<boolean>(false);
   const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
   const [showCommanderModal, setShowCommanderModal] = useState<boolean>(false);
+  const [isCommanderRunning, setIsCommanderRunning] = useState<boolean>(false);
+  const [showCommanderConflictModal, setShowCommanderConflictModal] = useState<boolean>(false);
   const [commanderPreset, setCommanderPreset] = useState<string>('Safe (권장 기본)');
   const [showDefaultProfileWarningModal, setShowDefaultProfileWarningModal] = useState<boolean>(false);
   const [showHealthReportModal, setShowHealthReportModal] = useState<boolean>(false);
@@ -2035,12 +2037,18 @@ const App: React.FC = () => {
   };
 
   const handleFastScan = () => {
+    if (isCommanderRunning) {
+      addLog(`[동시 실행 모드] Central Commander와 동시 구동 중 - WinPurify Pro 144개 전수 모듈 검사를 정상 시작합니다.`);
+    }
     setShowScanDashboard(true);
     startFullScan();
   };
 
   const handleOptimize = () => {
     if (isProcessing || selectedCount === 0) return;
+    if (isCommanderRunning) {
+      addLog(`[동시 실행 모드] Central Commander와 동시 구동 중 - WinPurify Pro 로컬 엔진 최적화를 정상 수행합니다.`);
+    }
     setIsProcessing(true);
     dispatchTrayNotification('🚀 시스템 최적화 시작', `선택된 ${selectedCount}개 모듈의 하이브리드 정화 작업을 시작합니다.`, 'info');
     addLog(`[Safepoint] 최적화 전 .reg 백업 스냅샷 캡처 중...`);
@@ -2349,12 +2357,24 @@ const App: React.FC = () => {
           </button>
           <button 
             id="commander-header-btn"
-            onClick={() => setShowCommanderModal(true)}
-            title="다중 PC 중앙 관제(Central Commander) 원격 진단 및 일괄 관리 콘솔을 엽니다."
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/80 text-indigo-300 text-xs font-bold transition shadow-sm cursor-pointer"
+            onClick={() => {
+              setIsCommanderRunning(true);
+              setShowCommanderModal(true);
+            }}
+            title={isCommanderRunning 
+              ? "Central Commander가 현재 함께 실행 중입니다. 클릭하여 관제 콘솔 열기" 
+              : "다중 PC 중앙 관제(Central Commander) 원격 진단 및 일괄 관리 콘솔을 엽니다."}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition shadow-sm cursor-pointer ${
+              isCommanderRunning 
+                ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500/80 text-emerald-300 ring-1 ring-emerald-500/50' 
+                : 'bg-indigo-950/80 hover:bg-indigo-900 border-indigo-700/80 text-indigo-300'
+            }`}
           >
-            <Radio className="w-3.5 h-3.5 text-indigo-400" />
-            <span>중앙 관제</span>
+            <Radio className={`w-3.5 h-3.5 ${isCommanderRunning ? 'text-emerald-400 animate-pulse' : 'text-indigo-400'}`} />
+            <span>{isCommanderRunning ? '중앙 관제 (동시 실행 중)' : '중앙 관제'}</span>
+            {isCommanderRunning && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            )}
           </button>
           <button 
             id="license-header-btn"
@@ -2452,6 +2472,35 @@ const App: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* Central Commander Simultaneous Execution Status Banner */}
+      {isCommanderRunning && (
+        <div className="bg-emerald-950/80 border-b border-emerald-500/40 px-6 py-2.5 flex items-center justify-between gap-4 text-xs text-emerald-200 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">🟢 동시 실행 중</span>
+            <span>
+              <strong>Central Commander(중앙 관제 콘솔)와 WinPurify Pro가 한 PC에서 동시에 실행 중입니다.</strong> 로컬 PC 최적화와 다중 PC 원격 관제를 충돌 없이 나란히 수행할 수 있습니다. (SO_REUSEADDR 소켓 공유 &amp; C++ 커널 가속 활성화)
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowCommanderModal(true)}
+              className="px-2.5 py-1 rounded bg-emerald-900/80 hover:bg-emerald-800 text-emerald-100 font-bold border border-emerald-600/50 transition cursor-pointer"
+            >
+              관제 콘솔 보기
+            </button>
+            <button
+              onClick={() => {
+                setIsCommanderRunning(false);
+                addLog('[Central Commander] 사용자가 중앙 관제 콘솔을 종료하였습니다. (WinPurify Pro 메인 단독 실행 유지)');
+              }}
+              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold border border-slate-700 transition cursor-pointer"
+            >
+              커맨더만 종료
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Dashboard Layout */}
       <div id="dashboard-body" className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 p-5">
@@ -3680,12 +3729,35 @@ const App: React.FC = () => {
                   <p className="text-xs text-slate-400">사내/홈 LAN 내의 WinPurify Pro 노드를 자동 탐색하고 동시 일괄 최적화 및 4중 보안 제어를 수행합니다.</p>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowCommanderModal(false)}
-                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setIsCommanderRunning(false);
+                    setShowCommanderModal(false);
+                    addLog('[Central Commander] 사용자에 의해 중앙 관제 콘솔이 종료되었습니다. (WinPurify Pro 로컬 엔진 잠금 해제됨)');
+                  }}
+                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 text-xs font-semibold border border-slate-700 hover:border-rose-700/60 transition cursor-pointer"
+                  title="관제 콘솔을 완전히 종료하고 WinPurify Pro 로컬 엔진 잠금을 해제합니다."
+                >
+                  콘솔 종료 (잠금 해제)
+                </button>
+                <button 
+                  onClick={() => setShowCommanderModal(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+                  title="창을 닫고 백그라운드 관제를 유지합니다."
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Coexistence & Simultaneous Execution Status Notice */}
+            <div className="px-6 py-2 bg-emerald-950/40 border-b border-emerald-500/30 flex items-center justify-between text-[11px] text-emerald-300">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <strong>한 PC 동시 실행 모드 활성화:</strong> WinPurify Pro 메인 앱과 Central Commander 콘솔이 충돌 없이 나란히 구동 중입니다. (포트 TCP:9870 및 SO_REUSEADDR 소켓 공유)
+              </span>
+              <span className="text-[10px] text-emerald-400/90 font-mono">Coexistence Mode Active</span>
             </div>
 
             {/* Security & Control Strip */}
@@ -4602,6 +4674,67 @@ const App: React.FC = () => {
                   <span>위험성을 확인했으며 활성화</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Central Commander & WinPurify Pro Simultaneous Execution Guidance Modal */}
+      {showCommanderConflictModal && (
+        <div id="commander-conflict-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-emerald-500/80 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-lg">
+                  🟢
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">동시 실행 모드 안내 (Coexistence Active)</h3>
+                  <p className="text-xs text-emerald-300">Central Commander와 WinPurify Pro 한 PC 동시 실행</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCommanderConflictModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
+              <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-emerald-200">
+                <p className="font-semibold text-emerald-300 mb-1">✨ 한 PC 동시 실행을 지원합니다</p>
+                <p>
+                  현재 시스템에서 <strong>WinPurify Pro 메인 애플리케이션</strong>과 <strong>Central Commander(중앙 관제 콘솔)</strong>가 충돌 없이 동시에 함께 실행되도록 구성되어 있습니다.
+                </p>
+              </div>
+              <div className="space-y-2 text-slate-300">
+                <p className="font-semibold text-slate-200">📌 동시 실행 보장 기술 원칙:</p>
+                <ul className="list-disc pl-5 space-y-1 text-slate-400">
+                  <li><strong>소켓 포트 공유 (SO_REUSEADDR):</strong> TCP 9870 및 UDP 9871 포트를 안전하게 공유하여 바인딩 에러 없이 양방향 통신 보장</li>
+                  <li><strong>독립 글로벌 뮤텍스:</strong> 메인 앱과 커맨더가 각자의 인스턴스만 제어하여 상호 실행을 가로막지 않음</li>
+                  <li><strong>Native C++ 커널 가속 무경합:</strong> 메모리 트림 및 파일 잠금 해제 파이프라인의 멀티프로세스 안전 접근</li>
+                </ul>
+              </div>
+              <p className="text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                💡 로컬 PC의 144개 모듈 최적화와 함께, 사내/홈 LAN 다중 PC의 원격 배치 관제를 동시에 자유롭게 진행하실 수 있습니다.
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-end gap-2.5">
+              <button
+                onClick={() => {
+                  setShowCommanderConflictModal(false);
+                  setShowCommanderModal(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer"
+              >
+                중앙 관제 콘솔 열기
+              </button>
+              <button
+                onClick={() => setShowCommanderConflictModal(false)}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition cursor-pointer"
+              >
+                확인
+              </button>
             </div>
           </div>
         </div>

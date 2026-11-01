@@ -2,13 +2,35 @@
 
 > **프로젝트**: WinPurify Pro (Remix WinPurify3-windowform-net)  
 > **총괄 개발자**: AhBiYout (WinPurify Pro)  
-> **현재 공식 버전**: `v4.60.0`  
+> **현재 공식 버전**: `v4.62.0`  
 > **공식 저장소**: [https://github.com/AhBiYout-all/WinPurifyPro](https://github.com/AhBiYout-all/WinPurifyPro)  
 > **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
 
 ---
 
 ## 📅 작업 내역 요약 (Recent Milestones)
+
+### [2026-11-01] v4.62.0 Central Commander & WinPurify Pro 한 PC 동시 실행(Coexistence) 전면 지원
+1. **사용자 요청 사항 완벽 반영**: "커맨더와 WinPurifyPro가 한 pc에서 동시에 실행 되게 하고 싶다."
+2. **동시 실행 아키텍처 구축**:
+   - 상호 차단 로직 전면 해제: Central Commander와 WinPurify Pro 메인 앱이 한 머신에서 나란히 동시 실행 가능.
+   - 독립 뮤텍스 분리: `AppMutexName`, `CommanderMutexName` 각자 자기 자신의 중복만 방지.
+   - 소켓 포트 충돌 방지: UDP Discovery에 `SO_REUSEADDR` 적용, TCP 에이전트 포트 이미 가동 시 공유 채널 자동 전환.
+   - `LaunchCommanderProcess`: 메인 앱 종료 없이 Central Commander 프로세스를 동시 기동.
+   - 웹 UI: 동시 실행 상태 뱃지 `[중앙 관제 (동시 실행 중)]`, 상단 동시 실행 안내 배너 및 검사/최적화 병행 지원.
+3. **버전 자동 동기화 및 패치노트 기록**:
+   - `v4.62.0` 패치노트 작성 및 `node sync-version.js`로 전체 파일 동기화 완료.
+
+### [2026-11-01] v4.61.0 Central Commander 구동 시 WinPurify Pro 상호 배타적 단일 인스턴스 보호 시스템 도입
+1. **사용자 요청 사항 완벽 반영**: "커멘더가 실행되고 있을때 WinPurify Pro는 실행 안됨"
+2. **상호 배타적 단일 인스턴스 보호 시스템 구축 (`SingleInstanceService.cs`)**:
+   - Central Commander(중앙 관제 콘솔)가 실행 중인 상태에서 WinPurify Pro 기동 시, 포트(TCP 9870/UDP 9871), 서비스 및 C++ 커널 가속 엔진 충돌 방지 안내 팝업을 표시하고 안전하게 종료(`Shutdown`).
+   - 이미 켜져 있는 Central Commander 윈도우를 자동 감지하여 포그라운드 최상위로 활성화(`SetForegroundWindow`).
+   - 글로벌 뮤텍스 분리: `Global\WinPurifyPro_App_Mutex_Global_6904B914` 및 `Global\WinPurifyPro_Commander_Mutex_Global_6904B914`.
+   - `Inno Setup` 설치 프로그램(`installer.iss`)의 `AppMutex`에 두 뮤텍스를 동시 등록하여 설치/업데이트 중 프로세스 실행 상태 감지 보강.
+   - 웹 UI(`index.tsx`)에 상호 배타성 알림 배너, 헤더 펄스 뱃지 및 충돌 감지 대화상자 탑재.
+3. **버전 자동 동기화 및 패치노트 기록**:
+   - `docs/PATCH_NOTES.md` 및 `DOC/PATCH_NOTES.md`에 v4.61.0 작성 및 `node sync-version.js`를 통해 15개 파일 일괄 동기화 완료.
 
 ### [2026-10-04] v4.43.0 GitHub Releases 중복 바이너리 배포 전면 정리 (Zero Duplicates)
 1. **사용자 요청 사항 완벽 반영**: "중복해서 빌드 올리는 것들 정리"

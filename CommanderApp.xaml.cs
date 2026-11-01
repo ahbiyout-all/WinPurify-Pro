@@ -41,8 +41,24 @@ namespace WinPurifyPro
             };
         }
 
+        private static System.Threading.Mutex? _commanderMutex;
+
         protected override void OnStartup(StartupEventArgs e)
         {
+            // Central Commander 전용 글로벌 뮤텍스 획득 (커맨더 자체 중복 실행 방지, WinPurify Pro와 동시 실행 완벽 지원)
+            try
+            {
+                _commanderMutex = new System.Threading.Mutex(true, WinPurifyPro.Services.SingleInstanceService.CommanderMutexName, out bool createdNew);
+                if (!createdNew)
+                {
+                    // 커맨더가 이미 실행 중이면 기존 커맨더 창을 활성화하고 종료
+                    WinPurifyPro.Services.SingleInstanceService.ActivateCommanderWindow();
+                    Shutdown(0);
+                    return;
+                }
+            }
+            catch { }
+
             base.OnStartup(e);
 
             // Central Commander 방화벽 예외 규칙 자동 등록 (버전 명시형 및 범용 규칙)
@@ -69,6 +85,18 @@ namespace WinPurifyPro
                     MessageBoxImage.Error);
                 Shutdown(-1);
             }
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            try
+            {
+                _commanderMutex?.ReleaseMutex();
+                _commanderMutex?.Dispose();
+            }
+            catch { }
+
+            base.OnExit(e);
         }
     }
 }

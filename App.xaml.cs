@@ -68,6 +68,20 @@ namespace WinPurifyPro
             // 2. 중앙 관제 콘솔 전용 구동 모드 (--commander, -commander, /commander, --fleet 인수) 처리
             if (AppEnvironment.IsCommanderMode)
             {
+                // Central Commander 전용 글로벌 뮤텍스 획득 (커맨더 자체 중복 실행 방지)
+                try
+                {
+                    _appMutex = new Mutex(true, SingleInstanceService.CommanderMutexName, out bool createdCommander);
+                    if (!createdCommander)
+                    {
+                        // 커맨더가 이미 실행 중이면 기존 커맨더 창을 활성화하고 종료
+                        SingleInstanceService.ActivateCommanderWindow();
+                        Shutdown(0);
+                        return;
+                    }
+                }
+                catch { }
+
                 base.OnStartup(e);
                 try
                 {
@@ -88,15 +102,17 @@ namespace WinPurifyPro
                 return;
             }
 
-            // 3. 일반 데스크탑 GUI 애플리케이션 시작
-            const string mutexName = @"Global\WinPurifyPro_App_Mutex_Global_6904B914";
+            // 3. 일반 데스크탑 GUI 애플리케이션 시작 (커맨더와 동시 실행 완벽 지원)
+            // WinPurify Pro 단일 인스턴스 글로벌 뮤텍스 획득 (메인 앱 자체 중복 실행 방지)
             try
             {
-                _appMutex = new Mutex(true, mutexName, out bool createdNew);
+                _appMutex = new Mutex(true, SingleInstanceService.AppMutexName, out bool createdNew);
                 if (!createdNew)
                 {
-                    // 이미 실행 중인 경우 다른 인스턴스가 존재함
-                    // Inno Setup의 AppMutex가 이를 감지하여 안전하게 설치/업데이트/언인스톨 처리 가능
+                    // 메인 앱이 이미 실행 중인 경우 기존 메인 창을 화면 전면으로 활성화하고 종료
+                    SingleInstanceService.ActivateAppWindow();
+                    Shutdown(0);
+                    return;
                 }
             }
             catch
@@ -104,7 +120,13 @@ namespace WinPurifyPro
                 // 권한 등으로 인해 Global 뮤텍스 생성 실패 시 로컬 뮤텍스 폴백
                 try
                 {
-                    _appMutex = new Mutex(true, "WinPurifyPro_App_Mutex_Global_6904B914");
+                    _appMutex = new Mutex(true, "WinPurifyPro_App_Mutex_Local_6904B914", out bool localCreated);
+                    if (!localCreated)
+                    {
+                        SingleInstanceService.ActivateAppWindow();
+                        Shutdown(0);
+                        return;
+                    }
                 }
                 catch { }
             }

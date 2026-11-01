@@ -2,7 +2,7 @@
 
 WinPurify Pro 프로젝트의 주요 아키텍처, 기능 가이드 및 개발 문서 모음입니다.
 
-> **현재 공식 버전**: `v4.60.0`  
+> **현재 공식 버전**: `v4.62.0`  
 > **공식 GitHub 저장소**: [https://github.com/AhBiYout-all/WinPurifyPro](https://github.com/AhBiYout-all/WinPurifyPro)  
 > **공식 개발자 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
 
