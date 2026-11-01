@@ -2,8 +2,8 @@
 
 > **프로젝트**: WinPurify Pro (Remix WinPurify3-windowform-net)  
 > **총괄 개발자**: AhBiYout (WinPurify Pro)  
-> **현재 공식 버전**: `v4.43.0`  
-> **공식 저장소**: [https://github.com/ahbiyout-all/WinPurify-Pro](https://github.com/ahbiyout-all/WinPurify-Pro)  
+> **현재 공식 버전**: `v4.60.0`  
+> **공식 저장소**: [https://github.com/AhBiYout-all/WinPurifyPro](https://github.com/AhBiYout-all/WinPurifyPro)  
 > **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
 
 ---
