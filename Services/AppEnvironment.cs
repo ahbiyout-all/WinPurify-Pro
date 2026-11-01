@@ -21,9 +21,15 @@ namespace WinPurifyPro.Services
             get
             {
                 var ver = typeof(AppEnvironment).Assembly.GetName().Version;
-                return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "4.62.1";
+                return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "4.63.0";
             }
         }
+
+        /// <summary>
+        /// 현재 프로세스 고유 인스턴스 식별자 (Process ID + 고유 해시)
+        /// 다중 프로세스 동시 실행 시 각 인스턴스를 독립적으로 고유하게 식별합니다.
+        /// </summary>
+        public static string ProcessInstanceId { get; } = $"WPP-{System.Diagnostics.Process.GetCurrentProcess().Id}-{Guid.NewGuid().ToString("N").Substring(0, 8).ToUpperInvariant()}";
 
         private static bool? _isInstalledCache;
         private static bool? _isServiceModeCache;

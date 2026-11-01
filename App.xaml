@@ -1,7 +1,8 @@
 <Application x:Class="WinPurifyPro.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:WinPurifyPro">
+             xmlns:local="clr-namespace:WinPurifyPro"
+             xmlns:conv="clr-namespace:WinPurifyPro.Converters">
     <Application.Resources>
         <!-- Modern Global Colors -->
         <SolidColorBrush x:Key="BgDark" Color="#0B0F19" />
@@ -16,5 +17,21 @@
         <SolidColorBrush x:Key="AccentAmber" Color="#FBBF24" />
         <SolidColorBrush x:Key="BgCardItem" Color="#0F172A" />
         <SolidColorBrush x:Key="BorderCardItem" Color="#1E293B" />
+
+        <!-- Global Effects -->
+        <DropShadowEffect x:Key="WindowDropShadow" BlurRadius="24" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.5" />
+
+        <!-- Global Value Converters for Application-wide Resolution -->
+        <conv:InverseBooleanConverter x:Key="InverseBoolConverter" />
+        <conv:InverseBooleanConverter x:Key="InverseBool" />
+        <conv:InverseBooleanConverter x:Key="InvBool" />
+        <conv:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+        <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <conv:StatusToVisibilityConverter x:Key="StatusToVis" />
+        <conv:EqualityToBooleanConverter x:Key="EqToBool" />
+        <conv:RiskToBrushConverter x:Key="RiskToBrush" />
+        <conv:RiskToBackgroundConverter x:Key="RiskToBg" />
+        <conv:BoolToStatusColorConverter x:Key="BoolToStatusColorConverter" />
     </Application.Resources>
 </Application>

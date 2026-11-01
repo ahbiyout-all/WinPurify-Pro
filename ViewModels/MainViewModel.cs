@@ -19,9 +19,10 @@ namespace WinPurifyPro.ViewModels
     public class MainViewModel : IMainViewModel, INotifyPropertyChanged
     {
         public string AppVersion => AppEnvironment.AppVersion;
+        public string ProcessInstanceId => AppEnvironment.ProcessInstanceId;
 
         public string WindowTitle => $"WinPurify Pro v{AppVersion} - Next-Gen Native Optimization Suite";
-        public string AppHeaderSubtitle => $"v{AppVersion} Next-Gen Hybrid Core";
+        public string AppHeaderSubtitle => $"v{AppVersion} Next-Gen Hybrid Core ({ProcessInstanceId})";
 
         public ObservableCollection<OptimizationTask> AllTasks { get; set; } = new();
         public ObservableCollection<OptimizationTask> FilteredTasks { get; set; } = new();
@@ -1362,6 +1363,7 @@ namespace WinPurifyPro.ViewModels
             }
             ApplyFilter();
             AddLog($"[엔진 초기화] v{AppEnvironment.AppVersion} 정밀 엔진 가동 - {AllTasks.Count}개 모듈 및 Central Commander Option A 특수 기능 허브 연동 완료.");
+            AddLog($"[인스턴스 식별] 고유 프로세스 ID: {ProcessInstanceId} (다중 인스턴스 및 Central Commander 동시 실행 전면 허용)");
         }
 
         public void ApplyFilter()

@@ -6,11 +6,30 @@ namespace WinPurifyPro
 {
     public partial class CommanderMainWindow : Window
     {
+        private uint _wmCommanderRestoreMsg = 0;
+
         public CommanderMainWindow()
         {
             try
             {
                 InitializeComponent();
+
+                SourceInitialized += (s, e) =>
+                {
+                    try
+                    {
+                        var helper = new System.Windows.Interop.WindowInteropHelper(this);
+                        var source = System.Windows.Interop.HwndSource.FromHwnd(helper.Handle);
+                        _wmCommanderRestoreMsg = WinPurifyPro.Services.SingleInstanceService.RegisterWindowMessage(WinPurifyPro.Services.SingleInstanceService.CommanderRestoreMessageName);
+                        source?.AddHook(WndProc);
+                    }
+                    catch { }
+                };
+
+                Loaded += (s, e) =>
+                {
+                    EnsureVisibleAndForeground();
+                };
             }
             catch (System.Exception ex)
             {
@@ -22,6 +41,37 @@ namespace WinPurifyPro
                 MessageBox.Show(msg, "WinPurify Commander UI 로드 오류", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
+        }
+
+        public void EnsureVisibleAndForeground()
+        {
+            try
+            {
+                Visibility = Visibility.Visible;
+                if (WindowState == WindowState.Minimized)
+                {
+                    WindowState = WindowState.Normal;
+                }
+                Show();
+                Activate();
+                Focus();
+                Topmost = true;
+                Topmost = false;
+            }
+            catch { }
+        }
+
+        private System.IntPtr WndProc(System.IntPtr hwnd, int msg, System.IntPtr wParam, System.IntPtr lParam, ref bool handled)
+        {
+            if (_wmCommanderRestoreMsg != 0 && msg == _wmCommanderRestoreMsg)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    EnsureVisibleAndForeground();
+                });
+                handled = true;
+            }
+            return System.IntPtr.Zero;
         }
 
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

@@ -7,7 +7,8 @@ namespace WinPurifyPro
 {
     public partial class App : Application
     {
-        private static Mutex? _appMutex;
+        // 프로세스 인스턴스 고유 식별자 (AppEnvironment.ProcessInstanceId)
+        public string InstanceId => AppEnvironment.ProcessInstanceId;
 
         public App()
         {
@@ -113,35 +114,29 @@ namespace WinPurifyPro
             }
 
             // 2. 중앙 관제 콘솔 전용 구동 모드 (--commander, -commander, /commander, --fleet 인수) 처리
+            // (글로벌 Mutex 제거: 독립 프로세스 고유 식별자 기반 동시 실행 전면 지원)
             if (AppEnvironment.IsCommanderMode)
             {
-                // Central Commander 전용 글로벌 뮤텍스 획득 (커맨더 자체 중복 실행 방지)
-                try
-                {
-                    _appMutex = new Mutex(true, SingleInstanceService.CommanderMutexName, out bool createdCommander);
-                    if (!createdCommander)
-                    {
-                        // 커맨더가 이미 실행 중이면 기존 커맨더 창을 활성화 시도
-                        bool activated = SingleInstanceService.ActivateCommanderWindow();
-                        if (activated)
-                        {
-                            Shutdown(0);
-                            return;
-                        }
-                        // 기존 창이 없거나 활성화 실패한 경우 계속 진행하여 새 창 표시
-                    }
-                }
-                catch (AbandonedMutexException)
-                {
-                    // 이전 프로세스 비정상 종료 시 소유권 획득 후 계속 진행
-                }
-                catch { }
-
                 base.OnStartup(e);
+
+                // C++ 네이티브 엔진(PurifyEngineCore.dll) 및 커널 백그라운드 프로세스 비동기 예열
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    try
+                    {
+                        NativeEngineService.IsNativeCoreAvailable();
+                    }
+                    catch { }
+                });
+
+                // Central Commander 방화벽 예외 규칙 자동 등록
+                FirewallService.EnsureCommanderFirewallRulesAsync();
+
                 try
                 {
                     var commanderWindow = new CommanderMainWindow();
                     MainWindow = commanderWindow;
+                    commanderWindow.Visibility = Visibility.Visible;
                     if (commanderWindow.WindowState == WindowState.Minimized)
                     {
                         commanderWindow.WindowState = WindowState.Normal;
@@ -149,6 +144,22 @@ namespace WinPurifyPro
                     commanderWindow.Show();
                     commanderWindow.Activate();
                     commanderWindow.Focus();
+                    commanderWindow.Topmost = true;
+                    commanderWindow.Topmost = false;
+
+                    // 백그라운드 엔진 로딩 완료 후 커맨더 창 화면 표시 상태(Visible) 재확인 워치독
+                    commanderWindow.Dispatcher.InvokeAsync(async () =>
+                    {
+                        await System.Threading.Tasks.Task.Delay(250);
+                        if (!commanderWindow.IsVisible || commanderWindow.Visibility != Visibility.Visible || commanderWindow.WindowState == WindowState.Minimized)
+                        {
+                            commanderWindow.Visibility = Visibility.Visible;
+                            commanderWindow.WindowState = WindowState.Normal;
+                            commanderWindow.Show();
+                            commanderWindow.Activate();
+                            commanderWindow.Focus();
+                        }
+                    }, System.Windows.Threading.DispatcherPriority.Loaded);
                 }
                 catch (Exception ex)
                 {
@@ -162,49 +173,19 @@ namespace WinPurifyPro
                 return;
             }
 
-            // 3. 일반 데스크탑 GUI 애플리케이션 시작 (커맨더와 동시 실행 완벽 지원)
-            // WinPurify Pro 단일 인스턴스 글로벌 뮤텍스 획득 (메인 앱 자체 중복 실행 방지)
-            try
+            // 3. 일반 데스크탑 GUI 애플리케이션 시작
+            // (글로벌 Mutex 제거: 독립 프로세스 고유 식별자 기반 다중 인스턴스 및 커맨더 동시 실행 전면 허용)
+            base.OnStartup(e);
+
+            // C++ 네이티브 엔진(PurifyEngineCore.dll) 및 커널 백그라운드 프로세스 비동기 예열 (UI 스레드 지연 0초)
+            System.Threading.Tasks.Task.Run(() =>
             {
-                _appMutex = new Mutex(true, SingleInstanceService.AppMutexName, out bool createdNew);
-                if (!createdNew)
-                {
-                    // 메인 앱이 이미 실행 중인 경우 기존 메인 창을 화면 전면으로 활성화
-                    bool activated = SingleInstanceService.ActivateAppWindow();
-                    if (activated)
-                    {
-                        // 기존 GUI 창이 성공적으로 활성화된 경우에만 현재 중복 인스턴스 종료
-                        Shutdown(0);
-                        return;
-                    }
-                    // 백그라운드 서비스나 고스트 프로세스로 인해 기존 창 활성화가 실패한 경우,
-                    // 현재 GUI 창을 정상 생성하여 화면에 표시하도록 계속 진행!
-                }
-            }
-            catch (AbandonedMutexException)
-            {
-                // 이전 프로세스 비정상 종료 시 소유권 획득 후 계속 진행
-            }
-            catch
-            {
-                // 권한 등으로 인해 Global 뮤텍스 생성 실패 시 로컬 뮤텍스 폴백
                 try
                 {
-                    _appMutex = new Mutex(true, "WinPurifyPro_App_Mutex_Local_6904B914", out bool localCreated);
-                    if (!localCreated)
-                    {
-                        bool activated = SingleInstanceService.ActivateAppWindow();
-                        if (activated)
-                        {
-                            Shutdown(0);
-                            return;
-                        }
-                    }
+                    NativeEngineService.IsNativeCoreAvailable();
                 }
                 catch { }
-            }
-
-            base.OnStartup(e);
+            });
 
             // Windows 방화벽 예외 규칙 자동 등록 (버전 명시형 및 범용 규칙)
             FirewallService.EnsureAppFirewallRulesAsync();
@@ -212,11 +193,12 @@ namespace WinPurifyPro
             // 원격 에이전트 윈도우 서비스(WinPurifyAgentService) 등록 상태 자가 점검 및 복구
             WindowsServiceHost.EnsureServiceRegisteredAsync();
 
-            // 메인 윈도우 생성 및 화면 전면 표시 보장
+            // 메인 윈도우 생성 및 화면 전면 표시(Visible) 절대 보장
             try
             {
                 var mainWindow = new MainWindow();
                 MainWindow = mainWindow;
+                mainWindow.Visibility = Visibility.Visible;
                 if (mainWindow.WindowState == WindowState.Minimized)
                 {
                     mainWindow.WindowState = WindowState.Normal;
@@ -226,6 +208,20 @@ namespace WinPurifyPro
                 mainWindow.Focus();
                 mainWindow.Topmost = true;
                 mainWindow.Topmost = false;
+
+                // 백그라운드 엔진 로딩 완료 후 메인 창 화면 표시 상태(Visible) 재확인 워치독
+                mainWindow.Dispatcher.InvokeAsync(async () =>
+                {
+                    await System.Threading.Tasks.Task.Delay(250);
+                    if (!mainWindow.IsVisible || mainWindow.Visibility != Visibility.Visible || mainWindow.WindowState == WindowState.Minimized)
+                    {
+                        mainWindow.Visibility = Visibility.Visible;
+                        mainWindow.WindowState = WindowState.Normal;
+                        mainWindow.Show();
+                        mainWindow.Activate();
+                        mainWindow.Focus();
+                    }
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
             }
             catch (Exception ex)
             {
@@ -241,13 +237,6 @@ namespace WinPurifyPro
 
         protected override void OnExit(ExitEventArgs e)
         {
-            try
-            {
-                _appMutex?.ReleaseMutex();
-                _appMutex?.Dispose();
-            }
-            catch { }
-
             base.OnExit(e);
         }
     }

@@ -41,33 +41,22 @@ namespace WinPurifyPro
             };
         }
 
-        private static System.Threading.Mutex? _commanderMutex;
+        // Central Commander 인스턴스 고유 식별자
+        public string InstanceId => WinPurifyPro.Services.AppEnvironment.ProcessInstanceId;
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            // Central Commander 전용 글로벌 뮤텍스 획득 (커맨더 자체 중복 실행 방지, WinPurify Pro와 동시 실행 완벽 지원)
-            try
-            {
-                _commanderMutex = new System.Threading.Mutex(true, WinPurifyPro.Services.SingleInstanceService.CommanderMutexName, out bool createdNew);
-                if (!createdNew)
-                {
-                    // 커맨더가 이미 실행 중이면 기존 커맨더 창 활성화 시도
-                    bool activated = WinPurifyPro.Services.SingleInstanceService.ActivateCommanderWindow();
-                    if (activated)
-                    {
-                        Shutdown(0);
-                        return;
-                    }
-                    // 활성화 실패 시(고스트 프로세스 등) 새 창 표시를 위해 계속 진행
-                }
-            }
-            catch (System.Threading.AbandonedMutexException)
-            {
-                // 이전 프로세스 비정상 종료 시 소유권 획득
-            }
-            catch { }
-
             base.OnStartup(e);
+
+            // Native Engine background warmup
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    WinPurifyPro.Services.NativeEngineService.IsNativeCoreAvailable();
+                }
+                catch { }
+            });
 
             // Central Commander 방화벽 예외 규칙 자동 등록 (버전 명시형 및 범용 규칙)
             WinPurifyPro.Services.FirewallService.EnsureCommanderFirewallRulesAsync();
@@ -76,6 +65,7 @@ namespace WinPurifyPro
             {
                 var mainWindow = new CommanderMainWindow();
                 MainWindow = mainWindow;
+                mainWindow.Visibility = Visibility.Visible;
                 if (mainWindow.WindowState == WindowState.Minimized)
                 {
                     mainWindow.WindowState = WindowState.Normal;
@@ -85,6 +75,20 @@ namespace WinPurifyPro
                 mainWindow.Focus();
                 mainWindow.Topmost = true;
                 mainWindow.Topmost = false;
+
+                // 백그라운드 엔진 로딩 완료 후 커맨더 창 화면 표시 상태(Visible) 재확인 워치독
+                mainWindow.Dispatcher.InvokeAsync(async () =>
+                {
+                    await System.Threading.Tasks.Task.Delay(250);
+                    if (!mainWindow.IsVisible || mainWindow.Visibility != Visibility.Visible || mainWindow.WindowState == WindowState.Minimized)
+                    {
+                        mainWindow.Visibility = Visibility.Visible;
+                        mainWindow.WindowState = WindowState.Normal;
+                        mainWindow.Show();
+                        mainWindow.Activate();
+                        mainWindow.Focus();
+                    }
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
             }
             catch (Exception ex)
             {
@@ -104,13 +108,6 @@ namespace WinPurifyPro
 
         protected override void OnExit(ExitEventArgs e)
         {
-            try
-            {
-                _commanderMutex?.ReleaseMutex();
-                _commanderMutex?.Dispose();
-            }
-            catch { }
-
             base.OnExit(e);
         }
     }

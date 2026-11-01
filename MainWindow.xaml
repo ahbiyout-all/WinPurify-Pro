@@ -19,10 +19,14 @@
     </Window.DataContext>
 
     <Window.Resources>
+        <DropShadowEffect x:Key="WindowDropShadow" BlurRadius="24" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.5" />
         <conv:RiskToBrushConverter x:Key="RiskToBrush" />
         <conv:RiskToBackgroundConverter x:Key="RiskToBg" />
         <conv:StatusToVisibilityConverter x:Key="StatusToVis" />
         <conv:InverseBooleanConverter x:Key="InvBool" />
+        <conv:InverseBooleanConverter x:Key="InverseBool" />
+        <conv:InverseBooleanConverter x:Key="InverseBoolConverter" />
+        <conv:InverseBooleanConverter x:Key="InverseBooleanConverter" />
         <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
         <conv:EqualityToBooleanConverter x:Key="EqToBool" />
         <conv:CategoryToActiveBackgroundConverter x:Key="CatActiveBg" />

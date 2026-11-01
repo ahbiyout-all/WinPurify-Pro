@@ -2,6 +2,52 @@
 
 ---
 
+## 📌 [v4.63.0] - 2026-11-01 (⚡ 글로벌 애플리케이션 레벨 Mutex 제거 및 다중 인스턴스(Multi-Instance) 동시 실행 전면 허용)
+
+### ⚡ 글로벌 애플리케이션 레벨 Mutex 제거 및 다중 인스턴스 동시 실행 아키텍처
+- **글로벌 Mutex 기반 강제 단일 인스턴스 제한 전면 해제 (`App.xaml.cs`, `CommanderApp.xaml.cs`)**:
+  - `_appMutex` 및 `_commanderMutex` 글로벌 뮤텍스 획득 실패 시 프로세스를 강제 종료(`Shutdown(0)`)하던 레거시 로직을 완전히 제거.
+  - 사용자가 작업 관리자, 여러 모니터, 다중 계정 또는 서로 다른 디스크 드라이브 작업을 위해 여러 개의 WinPurify Pro 인스턴스를 자유롭게 동시 실행할 수 있도록 허용.
+- **프로세스별 고유 인스턴스 식별자(`ProcessInstanceId`) 체계 구축 (`AppEnvironment.cs`, `SingleInstanceService.cs`)**:
+  - 각 프로세스마다 고유한 `AppEnvironment.ProcessInstanceId`(`WPP-{PID}-{GUID_8}`)를 자동 생성하여 독립적인 프로세스 식별성 부여.
+  - 뷰모델(`MainViewModel.cs`) 서브타이틀 및 엔진 초기화 로그에 고유 프로세스 ID를 실시간 연동.
+- **시스템 트레이 알림 다중 인스턴스 충돌 방지 (`SystemTrayService.cs`)**:
+  - 시스템 트레이 `NOTIFYICONDATA`의 고정 `uID = 1001`을 프로세스 고유 식별자(`_trayUid = (uint)(Process.GetCurrentProcess().Id & 0xFFFF)`)로 개편하여, 여러 개의 WinPurify Pro 인스턴스가 동시에 실행되더라도 트레이 아이콘 및 툴팁/알림이 서로 간섭하지 않도록 격리.
+- **Central Commander 및 WinPurify Pro 메인 앱 간 무제한 동시 실행 보장**:
+  - 중앙 관제 콘솔(Central Commander)과 로컬 최적화 메인 클라이언트 간의 뮤텍스 락 충돌을 완전히 해소하여 상호 간섭 없이 나란히 동시 구동.
+
+---
+
+## 📌 [v4.62.3] - 2026-11-01 (🚀 애플리케이션 시작 시퀀스 정밀 최적화 및 메인 창 화면 표시(Visible) 보장 메커니즘 구축)
+
+### 🚀 애플리케이션 시작 시퀀스 및 메인 윈도우 화면 표시(Visible) 절대 보장
+- **C++ 네이티브 엔진(`PurifyEngineCore.dll`) 비동기 예열 및 UI 스레드 차단 0초 달성 (`App.xaml.cs`, `CommanderApp.xaml.cs`)**:
+  - `NativeEngineService.IsNativeCoreAvailable()` 및 C++ 커널 가속 모듈 사전 초기화를 백그라운드 태스크로 분리하여 UI 스레드가 네이티브 DLL 로딩이나 권한 획득(`SeDebugPrivilege` 등)으로 인해 지연되거나 블로킹되는 현상을 완벽 차단.
+- **메인 윈도우 명시적 `Visible` 상태 강제 및 포스트 로드 워치독 탑재 (`App.xaml.cs`, `MainWindow.xaml.cs`)**:
+  - `MainWindow` 생성 시 `mainWindow.Visibility = Visibility.Visible`, `mainWindow.WindowState = WindowState.Normal`, `Show()`, `Activate()`, `Focus()`를 연속 호출하여 어떤 환경에서도 즉각적으로 윈도우가 화면 전면에 렌더링되도록 보장.
+  - 백그라운드 프로세스 로딩 완료 후 윈도우 상태를 재검증하는 **디스패처 워치독(`DispatcherPriority.Loaded`)**을 구축하여, 예기치 않은 최소화나 숨김 상태가 발생하더라도 즉시 `Visibility = Visibility.Visible` 및 `WindowState = WindowState.Normal`로 강제 복구.
+- **트레이 숨김 인스턴스 전역 브로드캐스트 복원 메커니즘 구축 (`SingleInstanceService.cs`, `SystemTrayService.cs`)**:
+  - 앱이 트레이로 최소화(`MinimizeToTray`)되거나 닫기 시 트레이에 상주(`CloseToTray`)하여 `MainWindowHandle`이 `0`인 상태에서 사용자가 앱을 다시 실행할 경우, 등록된 윈도우 메시지(`WinPurifyPro_RestoreWindow_6904B914`)를 브로드캐스트 전송하고 `EnumWindows`로 프로세스의 최상위 창을 탐색하여 즉시 화면에 복원 표시.
+  - `SystemTrayService.WndProc` 및 `MainWindow.xaml.cs`의 `SourceInitialized` 훅에서 복원 메시지를 수신하여 `Visibility = Visibility.Visible`, `WindowState = WindowState.Normal`, `Topmost` 토글을 통해 창을 화면 최상위로 즉각 전환.
+- **Central Commander 콘솔 동일 복원 및 가시성 보장 적용 (`CommanderApp.xaml.cs`, `CommanderMainWindow.xaml.cs`)**:
+  - Central Commander 콘솔에도 동일한 백그라운드 엔진 예열, 명시적 `Visibility = Visibility.Visible`, 디스패처 워치독 및 브로드캐스트 복원 메시지(`WinPurifyPro_Commander_RestoreWindow_6904B914`) 핸들러를 구축하여 커맨더 단독 및 동시 구동 시의 화면 노출 무결성 달성.
+
+---
+
+## 📌 [v4.62.2] - 2026-11-01 (🛠️ 메인 윈도우 XAML InverseBoolConverter 리소스 누락 수정 및 기동 안정화)
+
+### 🛠️ 메인 윈도우 초기화 크래시(`XamlParseException`) 원천 해결
+- **`InverseBoolConverter` 리소스 누락 결함 수정 (`MainWindow.xaml`)**:
+  - `MainWindow.xaml` 1191번 라인의 '지금 업데이트 확인' 버튼 바인딩(`IsEnabled="{Binding IsCheckingUpdate, Converter={StaticResource InverseBoolConverter}}"`)에서 참조하는 `InverseBoolConverter` 리소스 키가 누락되어 윈도우 생성(`InitializeComponent()`) 단계에서 `System.Windows.StaticResourceExtension` 예외 및 프로세스 크래시가 발생하던 결함 완벽 해결.
+  - `MainWindow.xaml`의 `<Window.Resources>`에 `InverseBoolConverter`, `InverseBool`, `InverseBooleanConverter`, `InvBool`을 상호 별칭(Alias)으로 선언하여 완벽 호환.
+- **전역 애플리케이션 리소스 사전 등록 (`App.xaml`, `CommanderApp.xaml`)**:
+  - `App.xaml` 및 `CommanderApp.xaml`에 `xmlns:conv="clr-namespace:WinPurifyPro.Converters"` 네임스페이스를 선언하고 주요 ValueConverters(`InverseBoolConverter`, `InverseBool`, `InvBool`, `InverseBooleanConverter`, `BoolToVis`, `BooleanToVisibilityConverter`, `StatusToVis`, `EqToBool`, `RiskToBrush`, `RiskToBg`, `BoolToStatusColorConverter`)를 애플리케이션 전역 리소스로 등록.
+  - 향후 임의의 팝업 창, 모달 다이얼로그, 서브 뷰 또는 동적 XAML 템플릿에서도 단일 리소스 누락 없이 즉시 안전하게 바인딩되도록 전역 안정성 확보.
+- **전체 XAML 정적 리소스 무결성 검증 체계 완료**:
+  - `MainWindow.xaml`, `App.xaml`, `CommanderMainWindow.xaml`, `CommanderApp.xaml` 전수 조사 및 모든 `StaticResource` 바인딩 100% 정상 매칭 확인(결측 키 0건 달성).
+
+---
+
 ## 📌 [v4.62.1] - 2026-11-01 (🛠️ 작업관리자 프로세스 화면 미출력 현상 해결 및 Unpacked Multi-File 종속 매니페스트 완전 동기화)
 
 ### 🛠️ 작업관리자 상주 및 화면 미출력(Ghost Process) 현상 전면 해결

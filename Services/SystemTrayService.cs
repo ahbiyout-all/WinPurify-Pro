@@ -131,6 +131,7 @@ namespace WinPurifyPro.Services
         public bool MilestoneNotificationsEnabled { get; set; } = true;
         public bool LiveTooltipProgressEnabled { get; set; } = true;
 
+        private readonly uint _trayUid = (uint)(Process.GetCurrentProcess().Id & 0xFFFF);
         private int _lastNotifiedMilestone = -1;
 
         private SystemTrayService() { }
@@ -196,10 +197,14 @@ namespace WinPurifyPro.Services
             }
         }
 
+        private int _wmRestoreMessage = 0;
+
         private void SetupHookAndTray()
         {
             try
             {
+                _wmRestoreMessage = (int)SingleInstanceService.RegisterWindowMessage(SingleInstanceService.RestoreMessageName);
+
                 _hwndSource = HwndSource.FromHwnd(_windowHandle);
                 _hwndSource?.AddHook(WndProc);
 
@@ -259,7 +264,7 @@ namespace WinPurifyPro.Services
                 {
                     cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
                     hWnd = _windowHandle,
-                    uID = 1001,
+                    uID = _trayUid,
                     uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
                     uCallbackMessage = WM_TRAYICON_CALLBACK,
                     hIcon = _hIcon,
@@ -273,7 +278,7 @@ namespace WinPurifyPro.Services
                 {
                     cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
                     hWnd = _windowHandle,
-                    uID = 1001,
+                    uID = _trayUid,
                     uTimeoutOrVersion = NOTIFYICON_VERSION_4
                 };
                 Shell_NotifyIcon(NIM_SETVERSION, ref nidVersion);
@@ -292,7 +297,7 @@ namespace WinPurifyPro.Services
                 {
                     cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
                     hWnd = _windowHandle,
-                    uID = 1001,
+                    uID = _trayUid,
                     uFlags = NIF_TIP,
                     szTip = safeTip
                 };
@@ -354,7 +359,7 @@ namespace WinPurifyPro.Services
                 {
                     cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
                     hWnd = _windowHandle,
-                    uID = 1001,
+                    uID = _trayUid,
                     uFlags = NIF_INFO,
                     szInfoTitle = safeTitle,
                     szInfo = safeMsg,
@@ -371,6 +376,7 @@ namespace WinPurifyPro.Services
 
             _mainWindow.Dispatcher.Invoke(() =>
             {
+                _mainWindow.Visibility = Visibility.Visible;
                 if (!_mainWindow.IsVisible)
                 {
                     _mainWindow.Show();
@@ -383,6 +389,8 @@ namespace WinPurifyPro.Services
 
                 _mainWindow.Activate();
                 _mainWindow.Focus();
+                _mainWindow.Topmost = true;
+                _mainWindow.Topmost = false;
                 SetForegroundWindow(new WindowInteropHelper(_mainWindow).Handle);
             });
         }
@@ -407,6 +415,13 @@ namespace WinPurifyPro.Services
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
+            if (_wmRestoreMessage != 0 && msg == _wmRestoreMessage)
+            {
+                RestoreMainWindow();
+                handled = true;
+                return IntPtr.Zero;
+            }
+
             if (msg == WM_TRAYICON_CALLBACK)
             {
                 int eventId = lParam.ToInt32() & 0xFFFF;
@@ -545,7 +560,7 @@ namespace WinPurifyPro.Services
                     {
                         cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
                         hWnd = _windowHandle,
-                        uID = 1001
+                        uID = _trayUid
                     };
                     Shell_NotifyIcon(NIM_DELETE, ref nid);
                     _isCreated = false;
