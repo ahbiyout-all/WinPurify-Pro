@@ -1,13 +1,13 @@
 # 📢 Google Blogger [작성 모드 (서식 있는 텍스트)] 공식 포스팅 양식
 
 > **용도**: 구글 블로거(Blogger.com) 포스팅 시 **[작성 모드]**에서 그대로 복사하여 붙여넣을 수 있는 서식 있는 마크다운/텍스트 문서입니다.
-> **최신 버전**: v4.62.0  
+> **최신 버전**: v4.62.1  
 > **생성 일자**: 2026-11-01  
 
 ---
 
 # [1] 제목 (Title)
-WinPurify Pro v4.62.0 - Central Commander & WinPurify Pro 한 PC 동시 실행(Coexistence) 전면 지원 & C++ 네이티브 가속 Windows 11/10 최적화 솔루션
+WinPurify Pro v4.62.1 - 작업관리자 상주/화면 미출력 현상 완벽 해결 & Central Commander 한 PC 동시 실행 및 C++ 네이티브 가속 Windows 11/10 최적화 솔루션
 
 ---
 
@@ -17,17 +17,24 @@ WinPurify Pro v4.62.0 - Central Commander & WinPurify Pro 한 PC 동시 실행(C
 
 .NET 런타임 가비지 컬렉션(GC) 지연과 PowerShell 실행 오버헤드를 극복하기 위해 **순수 창작 C++ 네이티브 가속 코어(`PurifyEngineCore.dll`)**를 탑재하여, 기존 C# 관리 코드 대비 최대 15배 빠른 커널 레벨 디렉토리/레지스트리 탐색 속도를 제공합니다.
 
-특히 최신 **v4.62.0**에서는 **한 PC에서 Central Commander(중앙 관제 콘솔)와 WinPurify Pro 메인 앱을 동시에 나란히 실행**할 수 있도록 소켓 및 뮤텍스 아키텍처를 전면 개편하여, 관리자가 자신의 로컬 PC를 정밀 정화하면서 사내/홈 LAN 상의 다중 PC 원격 관제를 끊김 없이 동시에 수행할 수 있습니다.
+특히 최신 **v4.62.1**에서는 작업관리자 프로세스 화면 미출력(Ghost Process) 현상 및 멀티파일 언팩 설치 시 누락되었던 런타임 매니페스트를 전면 보완하고, **한 PC에서 Central Commander(중앙 관제 콘솔)와 WinPurify Pro 메인 앱을 동시에 나란히 실행**할 수 있도록 소켓 및 뮤텍스 아키텍처를 전면 고도화하였습니다.
 
 ---
 
 # [3] 업데이트 (Latest Features & Highlights)
 
-### ✨ v4.62.0 주요 신규 기능 및 개선 하이라이트
+### ✨ v4.62.1 주요 신규 기능 및 개선 하이라이트
+* **🛠️ 작업관리자 상주 및 화면 미출력(Ghost Process) 현상 전면 해결**:
+  * 유효 GUI 창 핸들 기반 프로세스 감지 개선: 타이틀이 비어있는 백그라운드 서비스(`WinPurifyAgentService`)나 창 없는 헤드리스 프로세스가 메인 GUI 앱 실행을 가로막던 결함 완벽 분리.
+  * 단일 인스턴스 뮤텍스 충돌 시 지능형 복구 및 강제 표시: 이전 인스턴스 비정상 종료 시 기존 창이 없으면 무조건 강제 종료하지 않고 **신규 메인 창을 정상 생성하여 화면에 반드시 표시**하도록 개선.
+  * 창 표시 및 포커스 보장: `WindowState.Normal`, `Show()`, `Activate()`, `Focus()` 순차 호출로 화면 전면 노출 100% 보장.
+* **📦 Unpacked Multi-File 배포 종속성 및 버전 파일 동기화**:
+  * `WinPurifyCommander.runtimeconfig.json` 및 `WinPurifyCommander.deps.json` 누락 문제를 해결하여 설치 폴더에서 커맨더 직접 실행 지원.
+  * `WinPurifyPro_v4.62.1.exe` 및 `WinPurifyCommander_v4.62.1.exe` 버전 명시형 바이너리에 매칭 `.runtimeconfig.json` 및 `.deps.json`을 세트로 복제 배치.
 * **⚡ Central Commander & WinPurify Pro 한 PC 동시 실행(Coexistence) 전면 지원**:
   * Central Commander와 WinPurify Pro 메인 앱이 동일 시스템 내에서 충돌 없이 동시에 함께 실행될 수 있도록 아키텍처 전면 개편.
-  * 상호 실행 차단 해제: 독립 글로벌 뮤텍스(`Global\WinPurifyPro_App_Mutex_Global_6904B914`, `Global\WinPurifyPro_Commander_Mutex_Global_6904B914`)를 통해 자기 자신의 중복 실행만 방지하고 두 프로그램은 나란히 동시 구동.
-  * 소켓 포트 충돌 원천 차단: UDP Discovery 리스너에 `SO_REUSEADDR`을 적용하고, TCP 9870 포트가 이미 활성화된 경우 자동 공유 채널 모드로 전환하여 바인딩 에러 없이 양방향 통신 지원.
+  * 상호 실행 차단 해제: 독립 글로벌 뮤텍스를 통해 자기 자신의 중복 실행만 방지하고 두 프로그램은 나란히 동시 구동.
+  * 소켓 포트 충돌 원천 차단: UDP Discovery 리스너에 `SO_REUSEADDR`을 적용하고, TCP 9870 포트가 이미 활성화된 경우 자동 공유 채널 모드로 전환.
   * 메인 앱 내 `LaunchCommanderProcess`: 메인 앱을 종료하지 않고 백그라운드로 커맨더를 동시 기동.
   * 웹 대시보드 UI에 `[중앙 관제 (동시 실행 중)]` 실시간 펄스 뱃지 및 동시 실행 상태 배너 연동.
 * **📈 Recharts 시각화 텔레메트리 대시보드 (`showTelemetryModal`)**:
@@ -69,9 +76,9 @@ WinPurify Pro v4.62.0 - Central Commander & WinPurify Pro 한 PC 동시 실행(C
 
 # [6] 버전 정보 (Version Information)
 
-* **공식 애플리케이션 버전**: `v4.60.0`
-* **어셈블리 버전**: `4.60.0.0`
-* **C++ 네이티브 가속 엔진**: `PurifyEngineCore.dll` (v4.60.0)
+* **공식 애플리케이션 버전**: `v4.62.1`
+* **어셈블리 버전**: `4.62.1.0`
+* **C++ 네이티브 가속 엔진**: `PurifyEngineCore.dll` (v4.62.1)
 * **어셈블리 아키텍처**: 64-bit (x64 Unpacked Multi-File)
 * **릴리스 일자**: 2026년 11월 1일
 

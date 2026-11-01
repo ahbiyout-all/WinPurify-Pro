@@ -6,12 +6,12 @@ cd /d "%~dp0"
 :: ---------------------------------------------------------------------
 :: 0. Detect Application Version from docs/PATCH_NOTES.md or sync-version.js
 :: ---------------------------------------------------------------------
-set "APP_VERSION=4.62.0"
+set "APP_VERSION=4.62.1"
 if exist "sync-version.js" (
     where node.exe >nul 2>&1
     if not errorlevel 1 (
         for /f "delims=" %%v in ('node sync-version.js') do (
-            if not "%%v"=="" set "APP_VERSION=4.62.0"
+            if not "%%v"=="" set "APP_VERSION=4.62.1"
         )
     )
 )
@@ -20,7 +20,7 @@ if not defined APP_VERSION (
     if exist "docs\PATCH_NOTES.md" (
         for /f "tokens=2 delims=[]" %%a in ('findstr /r /c:"\[v[0-9]" docs\PATCH_NOTES.md') do (
             set "RAW_VER=%%a"
-            set "APP_VERSION=4.62.0"
+            set "APP_VERSION=4.62.1"
             goto :FOUND_VER
         )
     )
@@ -421,14 +421,22 @@ if errorlevel 1 goto :ERROR_BUILD_FAILED
 
 if exist "publish\TempCommander\WinPurifyCommander.exe" copy /y "publish\TempCommander\WinPurifyCommander.exe" "!PUBLISH_DIR!\App\WinPurifyCommander.exe" >nul 2>&1
 if exist "publish\TempCommander\WinPurifyCommander.dll" copy /y "publish\TempCommander\WinPurifyCommander.dll" "!PUBLISH_DIR!\App\WinPurifyCommander.dll" >nul 2>&1
+if exist "publish\TempCommander\WinPurifyCommander.runtimeconfig.json" copy /y "publish\TempCommander\WinPurifyCommander.runtimeconfig.json" "!PUBLISH_DIR!\App\WinPurifyCommander.runtimeconfig.json" >nul 2>&1
+if exist "publish\TempCommander\WinPurifyCommander.deps.json" copy /y "publish\TempCommander\WinPurifyCommander.deps.json" "!PUBLISH_DIR!\App\WinPurifyCommander.deps.json" >nul 2>&1
 rd /s /q "publish\TempCommander" >nul 2>&1
 
-:: Copy versioned binaries
+:: Copy versioned binaries with full runtime config and dependency manifests
 if exist "!PUBLISH_DIR!\App\WinPurifyPro.exe" (
     copy /y "!PUBLISH_DIR!\App\WinPurifyPro.exe" "!PUBLISH_DIR!\App\WinPurifyPro_v!APP_VERSION!.exe" >nul 2>&1
+    if exist "!PUBLISH_DIR!\App\WinPurifyPro.dll" copy /y "!PUBLISH_DIR!\App\WinPurifyPro.dll" "!PUBLISH_DIR!\App\WinPurifyPro_v!APP_VERSION!.dll" >nul 2>&1
+    if exist "!PUBLISH_DIR!\App\WinPurifyPro.runtimeconfig.json" copy /y "!PUBLISH_DIR!\App\WinPurifyPro.runtimeconfig.json" "!PUBLISH_DIR!\App\WinPurifyPro_v!APP_VERSION!.runtimeconfig.json" >nul 2>&1
+    if exist "!PUBLISH_DIR!\App\WinPurifyPro.deps.json" copy /y "!PUBLISH_DIR!\App\WinPurifyPro.deps.json" "!PUBLISH_DIR!\App\WinPurifyPro_v!APP_VERSION!.deps.json" >nul 2>&1
 )
 if exist "!PUBLISH_DIR!\App\WinPurifyCommander.exe" (
     copy /y "!PUBLISH_DIR!\App\WinPurifyCommander.exe" "!PUBLISH_DIR!\App\WinPurifyCommander_v!APP_VERSION!.exe" >nul 2>&1
+    if exist "!PUBLISH_DIR!\App\WinPurifyCommander.dll" copy /y "!PUBLISH_DIR!\App\WinPurifyCommander.dll" "!PUBLISH_DIR!\App\WinPurifyCommander_v!APP_VERSION!.dll" >nul 2>&1
+    if exist "!PUBLISH_DIR!\App\WinPurifyCommander.runtimeconfig.json" copy /y "!PUBLISH_DIR!\App\WinPurifyCommander.runtimeconfig.json" "!PUBLISH_DIR!\App\WinPurifyCommander_v!APP_VERSION!.runtimeconfig.json" >nul 2>&1
+    if exist "!PUBLISH_DIR!\App\WinPurifyCommander.deps.json" copy /y "!PUBLISH_DIR!\App\WinPurifyCommander.deps.json" "!PUBLISH_DIR!\App\WinPurifyCommander_v!APP_VERSION!.deps.json" >nul 2>&1
 )
 
 if exist "PurifyEngineCore.dll" copy /y "PurifyEngineCore.dll" "!PUBLISH_DIR!\App\PurifyEngineCore.dll" >nul 2>&1

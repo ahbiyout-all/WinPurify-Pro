@@ -1,8 +1,8 @@
 # 🚀 WinPurify Pro - GitHub 공식 운영 규칙, 배포 파이프라인 및 자동 업데이트 명세서
 # (GitHub Rules, CI/CD Actions, Inno Setup Installer & Auto-Updater Specification)
 
-> **문서 버전**: v4.53.0  
-> **최종 갱신일**: 2026-10-09  
+> **문서 버전**: v4.62.1  
+> **최종 갱신일**: 2026-11-01  
 > **공식 개발자**: AhBiYout  
 > **GitHub 조직/사용자명**: `AhBiYout-all`  
 > **공식 저장소**: `https://github.com/AhBiYout-all/WinPurifyPro`  

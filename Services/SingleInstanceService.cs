@@ -66,17 +66,24 @@ namespace WinPurifyPro.Services
                         string pName = proc.ProcessName;
                         if (string.Equals(pName, "WinPurifyCommander", StringComparison.OrdinalIgnoreCase))
                         {
-                            return true;
+                            // 실제 창 핸들이 있는 유효 GUI 프로세스인지 확인
+                            if (proc.MainWindowHandle != IntPtr.Zero)
+                            {
+                                return true;
+                            }
                         }
 
                         if (string.Equals(pName, "WinPurifyPro", StringComparison.OrdinalIgnoreCase))
                         {
-                            string title = proc.MainWindowTitle;
-                            if (!string.IsNullOrEmpty(title) &&
-                                (title.Contains("Central Commander", StringComparison.OrdinalIgnoreCase) ||
-                                 title.Contains("Commander Console", StringComparison.OrdinalIgnoreCase)))
+                            if (proc.MainWindowHandle != IntPtr.Zero)
                             {
-                                return true;
+                                string title = proc.MainWindowTitle;
+                                if (!string.IsNullOrEmpty(title) &&
+                                    (title.Contains("Central Commander", StringComparison.OrdinalIgnoreCase) ||
+                                     title.Contains("Commander Console", StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    return true;
+                                }
                             }
                         }
                     }
@@ -94,6 +101,7 @@ namespace WinPurifyPro.Services
 
         /// <summary>
         /// WinPurify Pro 메인 앱이 현재 시스템에서 실행 중인지 여부를 감지합니다.
+        /// (백그라운드 윈도우 서비스나 헤드리스 프로세스는 제외하고 유효한 GUI 창 프로세스만 감지)
         /// </summary>
         public static bool IsAppRunning()
         {
@@ -108,7 +116,7 @@ namespace WinPurifyPro.Services
             }
             catch { }
 
-            // 2. 프로세스 목록 확인
+            // 2. 프로세스 목록 확인 (실제 GUI 창 핸들을 가진 메인 클라이언트 프로세스만 선별)
             try
             {
                 int currentPid = Process.GetCurrentProcess().Id;
@@ -119,12 +127,16 @@ namespace WinPurifyPro.Services
                     {
                         if (proc.Id == currentPid) continue;
 
-                        string title = proc.MainWindowTitle;
-                        // 커맨더 창이 아닌 일반 메인 윈도우인지 확인
-                        if (string.IsNullOrEmpty(title) ||
-                            !title.Contains("Commander", StringComparison.OrdinalIgnoreCase))
+                        // 백그라운드 서비스(Session 0)나 창 없는 프로세스는 GUI 앱 실행을 차단하지 않음
+                        if (proc.MainWindowHandle != IntPtr.Zero)
                         {
-                            return true;
+                            string title = proc.MainWindowTitle;
+                            // 커맨더 창이 아닌 일반 메인 윈도우인지 확인
+                            if (string.IsNullOrEmpty(title) ||
+                                !title.Contains("Commander", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
                         }
                     }
                     catch { }

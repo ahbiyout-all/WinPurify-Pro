@@ -14,14 +14,7 @@ namespace WinPurifyPro.Services
     /// </summary>
     public static class FirewallService
     {
-        public static string AppVersion
-        {
-            get
-            {
-                var ver = Assembly.GetExecutingAssembly().GetName().Version;
-                return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "4.23.3";
-            }
-        }
+        public static string AppVersion => AppEnvironment.AppVersion;
 
         /// <summary>
         /// 현재 실행 중인 메인 애플리케이션에 대해 버전 정보가 포함된 방화벽 규칙을 백그라운드에서 자동 등록합니다.

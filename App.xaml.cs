@@ -9,6 +9,53 @@ namespace WinPurifyPro
     {
         private static Mutex? _appMutex;
 
+        public App()
+        {
+            // 최상위 도메인 치명적 예외 핸들러 등록 및 파일 로깅
+            AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+            {
+                var ex = args.ExceptionObject as Exception;
+                string msg = $"[WinPurify Pro 시작 오류]\n\n{ex?.Message}\n\n상세 정보:\n{ex?.StackTrace}";
+                if (ex?.InnerException != null)
+                {
+                    msg += $"\n\n[내부 예외]\n{ex.InnerException.Message}\n{ex.InnerException.StackTrace}";
+                }
+                try
+                {
+                    LoggerService.Instance.LogException("AppDomain.UnhandledException", ex ?? new Exception("Unknown"));
+                }
+                catch { }
+
+                MessageBox.Show(
+                    msg,
+                    "WinPurify Pro 치명적 시작 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            };
+
+            // UI 스레드 미처리 예외 핸들러 등록
+            DispatcherUnhandledException += (s, args) =>
+            {
+                string msg = $"[WinPurify Pro 런타임 예외]\n\n{args.Exception.Message}\n\n상세 정보:\n{args.Exception.StackTrace}";
+                if (args.Exception.InnerException != null)
+                {
+                    msg += $"\n\n[내부 예외]\n{args.Exception.InnerException.Message}\n{args.Exception.InnerException.StackTrace}";
+                }
+                try
+                {
+                    LoggerService.Instance.LogException("DispatcherUnhandledException", args.Exception);
+                }
+                catch { }
+
+                MessageBox.Show(
+                    msg,
+                    "WinPurify Pro 런타임 예외",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                args.Handled = true;
+            };
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             // 1. Windows Service 구동 모드 (--service 인수) 처리
@@ -74,11 +121,19 @@ namespace WinPurifyPro
                     _appMutex = new Mutex(true, SingleInstanceService.CommanderMutexName, out bool createdCommander);
                     if (!createdCommander)
                     {
-                        // 커맨더가 이미 실행 중이면 기존 커맨더 창을 활성화하고 종료
-                        SingleInstanceService.ActivateCommanderWindow();
-                        Shutdown(0);
-                        return;
+                        // 커맨더가 이미 실행 중이면 기존 커맨더 창을 활성화 시도
+                        bool activated = SingleInstanceService.ActivateCommanderWindow();
+                        if (activated)
+                        {
+                            Shutdown(0);
+                            return;
+                        }
+                        // 기존 창이 없거나 활성화 실패한 경우 계속 진행하여 새 창 표시
                     }
+                }
+                catch (AbandonedMutexException)
+                {
+                    // 이전 프로세스 비정상 종료 시 소유권 획득 후 계속 진행
                 }
                 catch { }
 
@@ -87,8 +142,13 @@ namespace WinPurifyPro
                 {
                     var commanderWindow = new CommanderMainWindow();
                     MainWindow = commanderWindow;
+                    if (commanderWindow.WindowState == WindowState.Minimized)
+                    {
+                        commanderWindow.WindowState = WindowState.Normal;
+                    }
                     commanderWindow.Show();
                     commanderWindow.Activate();
+                    commanderWindow.Focus();
                 }
                 catch (Exception ex)
                 {
@@ -109,11 +169,21 @@ namespace WinPurifyPro
                 _appMutex = new Mutex(true, SingleInstanceService.AppMutexName, out bool createdNew);
                 if (!createdNew)
                 {
-                    // 메인 앱이 이미 실행 중인 경우 기존 메인 창을 화면 전면으로 활성화하고 종료
-                    SingleInstanceService.ActivateAppWindow();
-                    Shutdown(0);
-                    return;
+                    // 메인 앱이 이미 실행 중인 경우 기존 메인 창을 화면 전면으로 활성화
+                    bool activated = SingleInstanceService.ActivateAppWindow();
+                    if (activated)
+                    {
+                        // 기존 GUI 창이 성공적으로 활성화된 경우에만 현재 중복 인스턴스 종료
+                        Shutdown(0);
+                        return;
+                    }
+                    // 백그라운드 서비스나 고스트 프로세스로 인해 기존 창 활성화가 실패한 경우,
+                    // 현재 GUI 창을 정상 생성하여 화면에 표시하도록 계속 진행!
                 }
+            }
+            catch (AbandonedMutexException)
+            {
+                // 이전 프로세스 비정상 종료 시 소유권 획득 후 계속 진행
             }
             catch
             {
@@ -123,9 +193,12 @@ namespace WinPurifyPro
                     _appMutex = new Mutex(true, "WinPurifyPro_App_Mutex_Local_6904B914", out bool localCreated);
                     if (!localCreated)
                     {
-                        SingleInstanceService.ActivateAppWindow();
-                        Shutdown(0);
-                        return;
+                        bool activated = SingleInstanceService.ActivateAppWindow();
+                        if (activated)
+                        {
+                            Shutdown(0);
+                            return;
+                        }
                     }
                 }
                 catch { }
@@ -139,10 +212,31 @@ namespace WinPurifyPro
             // 원격 에이전트 윈도우 서비스(WinPurifyAgentService) 등록 상태 자가 점검 및 복구
             WindowsServiceHost.EnsureServiceRegisteredAsync();
 
-            // 메인 윈도우 표시
-            var mainWindow = new MainWindow();
-            MainWindow = mainWindow;
-            mainWindow.Show();
+            // 메인 윈도우 생성 및 화면 전면 표시 보장
+            try
+            {
+                var mainWindow = new MainWindow();
+                MainWindow = mainWindow;
+                if (mainWindow.WindowState == WindowState.Minimized)
+                {
+                    mainWindow.WindowState = WindowState.Normal;
+                }
+                mainWindow.Show();
+                mainWindow.Activate();
+                mainWindow.Focus();
+                mainWindow.Topmost = true;
+                mainWindow.Topmost = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"[WinPurify Pro 메인 창 초기화 오류]\n\n{ex.Message}\n\n상세 정보:\n{ex.StackTrace}" +
+                    (ex.InnerException != null ? $"\n\n[내부 예외]\n{ex.InnerException.Message}" : ""),
+                    "WinPurify Pro 시작 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Shutdown(-1);
+            }
         }
 
         protected override void OnExit(ExitEventArgs e)

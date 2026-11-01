@@ -2,6 +2,29 @@
 
 ---
 
+## 📌 [v4.62.1] - 2026-11-01 (🛠️ 작업관리자 프로세스 화면 미출력 현상 해결 및 Unpacked Multi-File 종속 매니페스트 완전 동기화)
+
+### 🛠️ 작업관리자 상주 및 화면 미출력(Ghost Process) 현상 전면 해결
+- **유효 GUI 창 핸들 기반 프로세스 감지 개선 (`SingleInstanceService.cs`)**:
+  - 기존에는 `Process.GetProcessesByName("WinPurifyPro")` 검사 시 타이틀이 비어있는(`string.IsNullOrEmpty(title)`) 프로세스까지 실행 중인 GUI 앱으로 오인식하던 결함 수정.
+  - Windows Service(`WinPurifyAgentService`, Session 0 백그라운드 수신 에이전트)나 창 없는 헤드리스 프로세스가 실행 중이더라도, 실제 화면 핸들(`MainWindowHandle != IntPtr.Zero`)을 가진 GUI 창이 아닌 경우 사용자 메인 GUI 앱의 실행을 가로막지 않도록 완벽 분리.
+- **단일 인스턴스 뮤텍스 충돌 시 지능형 복구 및 강제 표시 (`App.xaml.cs`, `CommanderApp.xaml.cs`)**:
+  - 이전 인스턴스가 비정상 종료(Crash)되었거나 백그라운드 프로세스로 인해 `createdNew == false`가 발생했을 때, 기존 창 활성화(`ActivateAppWindow`)가 실패하면(창이 존재하지 않으면) 무조건 `Shutdown`하지 않고 **신규 메인 창을 정상 생성하여 화면에 반드시 표시**하도록 로직 개선.
+  - `AbandonedMutexException` 예외 상황을 정상 트랩하여 이전 좀비 뮤텍스를 승계받아 정상 가동되도록 보장.
+- **메인 윈도우 생성 및 화면 전면(Foreground) 노출 보장 (`App.xaml.cs`)**:
+  - `mainWindow.WindowState = WindowState.Normal` 및 `mainWindow.Show()`, `Activate()`, `Focus()` 순차 호출로 창이 백그라운드나 최소화 상태로 숨겨지는 현상 원천 차단.
+  - 메인 윈도우 초기화 전역 `try-catch` 및 최상위 `AppDomain.CurrentDomain.UnhandledException`, `DispatcherUnhandledException` 핸들러를 등록하여 XAML 및 의존성 오류 시 침묵하지 않고 상세 오류 메시지 박스 및 로그 파일 생성.
+
+### 📦 Unpacked Multi-File 배포 종속성 및 버전 파일 동기화 (`build.bat`, `build.ps1`)
+- **Central Commander 런타임 설정 매니페스트 누락 결함 수정**:
+  - `publish\App` 폴더 패키징 시 `WinPurifyCommander.runtimeconfig.json` 및 `WinPurifyCommander.deps.json`이 누락되어 설치 폴더에서 커맨더 실행 시 .NET 런타임 로딩에 실패하던 문제 완벽 해결.
+- **버전 명시형 실행 바이너리(`.runtimeconfig.json` & `.deps.json` & `.dll`) 풀세트 복제**:
+  - `WinPurifyPro_v4.62.1.exe` 및 `WinPurifyCommander_v4.62.1.exe` 생성 시, .NET AppHost 규격에 맞게 `WinPurifyPro_v4.62.1.runtimeconfig.json`, `WinPurifyPro_v4.62.1.deps.json`, `WinPurifyPro_v4.62.1.dll`을 함께 세트로 복제 배치하여 탐색기에서 버전이 명시된 실행 파일을 직접 더블 클릭해도 100% 정상 작동하도록 조치.
+- **방화벽 서비스 버전 연동 최신화 (`FirewallService.cs`)**:
+  - 하드코딩된 레거시 버전 폴백을 제거하고 `AppEnvironment.AppVersion`과 실시간 동기화되도록 수정.
+
+---
+
 ## 📌 [v4.62.0] - 2026-11-01 (⚡ Central Commander & WinPurify Pro 한 PC 동시 실행(Coexistence) 전면 지원)
 
 ### ⚡ 한 PC 동시 실행 및 프로세스 공존 아키텍처 구축 (Simultaneous Coexistence Architecture)

@@ -51,11 +51,19 @@ namespace WinPurifyPro
                 _commanderMutex = new System.Threading.Mutex(true, WinPurifyPro.Services.SingleInstanceService.CommanderMutexName, out bool createdNew);
                 if (!createdNew)
                 {
-                    // 커맨더가 이미 실행 중이면 기존 커맨더 창을 활성화하고 종료
-                    WinPurifyPro.Services.SingleInstanceService.ActivateCommanderWindow();
-                    Shutdown(0);
-                    return;
+                    // 커맨더가 이미 실행 중이면 기존 커맨더 창 활성화 시도
+                    bool activated = WinPurifyPro.Services.SingleInstanceService.ActivateCommanderWindow();
+                    if (activated)
+                    {
+                        Shutdown(0);
+                        return;
+                    }
+                    // 활성화 실패 시(고스트 프로세스 등) 새 창 표시를 위해 계속 진행
                 }
+            }
+            catch (System.Threading.AbandonedMutexException)
+            {
+                // 이전 프로세스 비정상 종료 시 소유권 획득
             }
             catch { }
 
@@ -68,8 +76,15 @@ namespace WinPurifyPro
             {
                 var mainWindow = new CommanderMainWindow();
                 MainWindow = mainWindow;
+                if (mainWindow.WindowState == WindowState.Minimized)
+                {
+                    mainWindow.WindowState = WindowState.Normal;
+                }
                 mainWindow.Show();
                 mainWindow.Activate();
+                mainWindow.Focus();
+                mainWindow.Topmost = true;
+                mainWindow.Topmost = false;
             }
             catch (Exception ex)
             {
