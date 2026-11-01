@@ -1,0 +1,6 @@
+{
+  "summary": "Plan to implement new native C++ performance optimizations including NtQueryDirectoryFile scanning engine and custom memory pool allocator.",
+  "updatedAt": "2026-10-13T03:22:49.965098689Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

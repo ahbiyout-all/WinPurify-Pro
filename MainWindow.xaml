@@ -271,10 +271,6 @@
                                 <Hyperlink NavigateUri="https://ahbiyoutvibe.blogspot.com/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#A78BFA" TextDecorations="None">
                                     <Run Text="🌐 구글 블로그" />
                                 </Hyperlink>
-                                <Run Text="  |  " Foreground="#475569" />
-                                <Hyperlink NavigateUri="http://www.cisnet.co.kr/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#38BDF8" TextDecorations="None">
-                                    <Run Text="🏢 CISNET" />
-                                </Hyperlink>
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -290,8 +286,8 @@
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <TextBlock Text="CATEGORIES" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="6,0,0,6" />
-                        <Button Style="{StaticResource CategoryNavButton}" Content="⚡ 전체 모듈 (133개)" Command="{Binding FilterCategoryCommand}"
-                                ToolTip="시스템 133개 최적화, 제로트레이스 및 심층 정화 모듈 전체를 한눈에 확인하고 제어합니다."
+                        <Button Style="{StaticResource CategoryNavButton}" Content="⚡ 전체 모듈 (144개 / 143 표준)" Command="{Binding FilterCategoryCommand}"
+                                ToolTip="시스템 144개(143개 표준 최적화 + 12개 특수 기능) 제로트레이스 및 심층 정화 모듈 전체를 한눈에 확인하고 제어합니다."
                                 Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter=All}"
                                 Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter=All}"
                                 BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter=All}" />
@@ -343,7 +339,7 @@
                     <StackPanel>
                         <TextBlock Text="HARDWARE ACCELERATOR &amp; TOOLS" FontSize="10" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,0,6" />
                         <Button Style="{StaticResource SidebarQuickButton}" Content="🧠 RAM 즉시 압축 (Trim)" Command="{Binding CompressRamCommand}" Background="#0284C7"
-                                ToolTip="물리 메모리의 불필요한 프로세스 Working Set을 네이티브 Win32 API로 즉시 비워 여유 RAM을 확보합니다." />
+                                ToolTip="물리 메모리의 불필요한 프로세스 Working Set 및 NT 커널 대기 메모리(Standby List)를 PurifyEngineCore.dll 순수 네이티브 시스템 콜로 0.05초 만에 즉시 비워 여유 RAM을 확보합니다." />
                         <Button Style="{StaticResource SidebarQuickButton}" Content="🔐 계정 로그아웃 &amp; 자격 증명 정화" Command="{Binding OpenCredentialPurgeModalCommand}" Background="#E11D48"
                                 ToolTip="Microsoft, Adobe, AutoCAD, Edge, Chrome, Windows 자격증명 등 로그인된 사용자 세션을 원클릭으로 강제 로그아웃/소거합니다." />
                         <Button Style="{StaticResource SidebarQuickButton}" Content="🎮 게이밍 부스트 모드" Command="{Binding GameBoostCommand}" Background="#16A34A"
@@ -1116,10 +1112,10 @@
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="🚀 GitHub Releases 실시간 자동 업데이트" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" />
                                 <Border Background="#0284C7" CornerRadius="4" Padding="6,2" Margin="8,0,0,0">
-                                    <TextBlock Text="WinPurify-Pro" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" />
+                                    <TextBlock Text="WinPurifyPro" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" />
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="공식 GitHub 리포지토리(ahbiyout-all/WinPurify-Pro)를 실시간 감지하여 원클릭 패치 및 설치를 수행합니다." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0" TextWrapping="Wrap" />
+                            <TextBlock Text="공식 GitHub 저장소(AhBiYout-all/WinPurifyPro)를 실시간 감지하여 원클릭 패치 및 설치를 수행합니다." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0" TextWrapping="Wrap" />
                         </StackPanel>
                         <Button Grid.Column="1" Content="✕" Width="28" Height="28" Background="#1E293B" Foreground="#94A3B8" BorderThickness="0" FontWeight="Bold" Cursor="Hand" Command="{Binding CloseUpdateModalCommand}">
                             <Button.Resources>
@@ -1741,7 +1737,7 @@
                                 </Border>
                                 <StackPanel>
                                     <TextBlock Text="WinPurify Pro 소프트웨어 사용권 계약서 (EULA)" FontSize="15" FontWeight="Bold" Foreground="#F8FAFC" />
-                                    <TextBlock Text="Cisnet Soft 공식 라이선스 계약 규정 • 한국어 / English 2종 언어 지원" FontSize="11" Foreground="#94A3B8" Margin="0,2,0,0" />
+                                    <TextBlock Text="공식 라이선스 계약 규정 • 한국어 / English 2종 언어 지원" FontSize="11" Foreground="#94A3B8" Margin="0,2,0,0" />
                                 </StackPanel>
                             </StackPanel>
                             <Button Grid.Column="1" Content="✕" Command="{Binding CloseLicenseModalCommand}"
@@ -1793,7 +1789,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Copyright © 2026 Cisnet Soft (개발자: AhBiYout). All rights reserved." FontSize="11" Foreground="#94A3B8" />
+                                <TextBlock Text="Copyright © 2026 AhBiYout. All rights reserved." FontSize="11" Foreground="#94A3B8" />
                                 <TextBlock Text="설치 시 선택한 언어(한국어/영어)에 맞춰 설치 마법사에서 라이선스 계약서가 자동 출력됩니다." FontSize="10" Foreground="#38BDF8" Margin="0,2,0,0" />
                             </StackPanel>
                             <Button Grid.Column="1" Content="확인 완료 (닫기)" Command="{Binding CloseLicenseModalCommand}"

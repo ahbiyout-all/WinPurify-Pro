@@ -4,9 +4,11 @@ cd /d "%~dp0"
 
 echo =====================================================================
 echo  WinPurify Pro - GitHub Automated Sync ^& Push Launcher
-echo  Account:    ahbiyout-all
-echo  Repository: WinPurify-Pro
-echo  Target URL: https://github.com/ahbiyout-all/WinPurify-Pro
+echo  Developer:   AhBiYout
+echo  Account:     AhBiYout-all
+echo  Repository:  WinPurifyPro
+echo  Target URL:  https://github.com/AhBiYout-all/WinPurifyPro
+echo  Official Blog: https://ahbiyoutvibe.blogspot.com/
 echo =====================================================================
 echo.
 

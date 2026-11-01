@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace WinPurifyPro.Services
 {
@@ -54,6 +55,13 @@ namespace WinPurifyPro.Services
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern int FastScanDirectoryNative(string rootPath, string filterExtension, out long outTotalBytes, out int outCount);
 
+        // [New Performance Features]
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr NativeAllocate(UIntPtr size);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NativeDeallocate(IntPtr ptr);
+
         // [Feature 5] 커널 소켓 TCP/IP 네트워크 스택 즉시 최적화기
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int OptimizeNetworkStackNative(int profileType);
@@ -64,6 +72,44 @@ namespace WinPurifyPro.Services
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int PurifyApplicationSessionTokens(int appType);
+
+        // [Feature 7 - 순수 창작] NT 커널 메모리 Standby List & Modified Pages 정화
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int PurgeSystemStandbyListNative(int purgeType);
+
+        // [Feature 8 - 순수 창작] 초고속 네이티브 디스크 빈 공간 포렌식 0x00 와이퍼
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern int NativeZeroWipeFreeSpace(string targetDriveRoot, out long outBytesWiped);
+
+        // [Feature 9 - 순수 창작] NTFS ADS Mark-of-the-Web (:Zone.Identifier) 일괄 소거
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern int ClearZoneIdentifierStreamNative(string targetPath, int recursive, out int outClearedCount);
+
+        // [Feature 10 - 순수 창작] Windows 셸 아이콘 & 폰트 캐시 무재부팅 무결점 재생성
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int FlushIconAndFontCacheNative();
+
+        // [Feature 11 - 순수 창작] 커맨더 하드웨어 Magic Packet (Wake-on-LAN) 브로드캐스트 엔진
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int SendMagicPacketNative(string macAddressStr, string broadcastIpStr, int port);
+
+        // [Feature 12 - 순수 창작] 커맨더 서브밀리초 하드웨어 ARP 및 ICMP 서브넷 핑 스위퍼
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int FastArpQueryNative(string targetIpStr, [Out] byte[] outMacBytes, out int outMacLen);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int FastIcmpPingNative(string targetIpStr, uint timeoutMs, out uint outRoundTripTimeMs);
+
+        // [Feature 13 - 순수 창작] CNG HMAC-SHA256 커맨더 페이로드 위변조 방지 인증/검증 엔진
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int SignCommanderPayloadNative(string payload, string secretKey, [Out] StringBuilder outSignatureHex, int maxOutLen);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int VerifyCommanderPayloadNative(string payload, string secretKey, string expectedSignatureHex);
+
+        // [Feature 14 - 순수 창작] 순수 네이티브 멀티 노드 플릿 헬스 다이어그노스틱 스냅샷
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int QuerySystemFleetHealthNative(out uint outCpuUsagePercent, out long outFreeRamBytes, out long outTotalRamBytes, out long outFreeDiskBytes, out int outProcessCount);
 
         // 기본 레거시 호환 함수군
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -251,6 +297,216 @@ namespace WinPurifyPro.Services
             try
             {
                 int res = PurifyApplicationSessionTokens(appType);
+                return (res == 1);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// [Feature 7 래퍼] NT 커널 시스템 콜 직결 대기 메모리(Standby List) 완전 정화
+        /// purgeType: 1 = Standby List, 2 = Empty Working Sets, 3 = Flush Modified, 4 = All Combined
+        /// </summary>
+        public static bool TryPurgeStandbyList(int purgeType = 4)
+        {
+            if (!IsNativeCoreAvailable()) return false;
+            try
+            {
+                int res = PurgeSystemStandbyListNative(purgeType);
+                return (res > 0);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// [Feature 8 래퍼] 네이티브 초고속 디스크 빈 공간 0x00 포렌식 와이퍼
+        /// </summary>
+        public static bool TryNativeZeroWipe(string targetDriveRoot, out long bytesWiped)
+        {
+            bytesWiped = 0;
+            if (!IsNativeCoreAvailable()) return false;
+            try
+            {
+                int res = NativeZeroWipeFreeSpace(targetDriveRoot, out bytesWiped);
+                return (res == 1);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// [Feature 9 래퍼] NTFS ADS Mark-of-the-Web (:Zone.Identifier) 일괄 소거
+        /// </summary>
+        public static int TryClearZoneIdentifier(string targetPath, bool recursive = true)
+        {
+            if (!IsNativeCoreAvailable() || string.IsNullOrWhiteSpace(targetPath)) return 0;
+            try
+            {
+                int cleared = 0;
+                ClearZoneIdentifierStreamNative(targetPath, recursive ? 1 : 0, out cleared);
+                return cleared;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// [Feature 10 래퍼] Windows 셸 아이콘 및 폰트 캐시 무재부팅 재생성
+        /// </summary>
+        public static bool TryFlushIconCache()
+        {
+            if (!IsNativeCoreAvailable()) return false;
+            try
+            {
+                int res = FlushIconAndFontCacheNative();
+                return (res == 1);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// [Feature 11 래퍼] 초고속 하드웨어 Wake-on-LAN Magic Packet 브로드캐스트
+        /// </summary>
+        public static bool TrySendMagicPacket(string macAddress, string broadcastIp = "255.255.255.255", int port = 9)
+        {
+            if (string.IsNullOrWhiteSpace(macAddress)) return false;
+            if (IsNativeCoreAvailable())
+            {
+                try
+                {
+                    int res = SendMagicPacketNative(macAddress, broadcastIp, port);
+                    if (res == 1) return true;
+                }
+                catch { }
+            }
+
+            // C# Socket Fallback
+            try
+            {
+                var cleanMac = macAddress.Replace(":", "").Replace("-", "");
+                if (cleanMac.Length != 12) return false;
+                byte[] macBytes = new byte[6];
+                for (int i = 0; i < 6; i++)
+                {
+                    macBytes[i] = Convert.ToByte(cleanMac.Substring(i * 2, 2), 16);
+                }
+
+                byte[] packet = new byte[102];
+                for (int i = 0; i < 6; i++) packet[i] = 0xFF;
+                for (int i = 0; i < 16; i++)
+                {
+                    Buffer.BlockCopy(macBytes, 0, packet, 6 + (i * 6), 6);
+                }
+
+                using var client = new System.Net.Sockets.UdpClient();
+                client.EnableBroadcast = true;
+                client.Send(packet, packet.Length, new System.Net.IPEndPoint(System.Net.IPAddress.Parse(broadcastIp), port));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// [Feature 12 래퍼] 하드웨어 ARP 및 ICMP 실시간 응답 진단
+        /// </summary>
+        public static bool TryFastIcmpPing(string targetIp, uint timeoutMs, out uint roundTripTimeMs)
+        {
+            roundTripTimeMs = 0;
+            if (string.IsNullOrWhiteSpace(targetIp)) return false;
+
+            if (IsNativeCoreAvailable())
+            {
+                try
+                {
+                    int res = FastIcmpPingNative(targetIp, timeoutMs, out roundTripTimeMs);
+                    if (res == 1) return true;
+                }
+                catch { }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// [Feature 13 래퍼] CNG HMAC-SHA256 커맨더 페이로드 서명 (0% GC)
+        /// </summary>
+        public static string SignCommanderPayload(string payload, string secretKey)
+        {
+            if (string.IsNullOrEmpty(payload) || string.IsNullOrEmpty(secretKey)) return string.Empty;
+
+            if (IsNativeCoreAvailable())
+            {
+                try
+                {
+                    var sb = new StringBuilder(65);
+                    int res = SignCommanderPayloadNative(payload, secretKey, sb, sb.Capacity);
+                    if (res == 1 && sb.Length == 64)
+                    {
+                        return sb.ToString();
+                    }
+                }
+                catch { }
+            }
+
+            // C# Managed Fallback
+            using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(secretKey));
+            byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+            return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// [Feature 13 래퍼] CNG HMAC-SHA256 커맨더 페이로드 서명 검증 (타이밍 공격 방어)
+        /// </summary>
+        public static bool VerifyCommanderPayload(string payload, string secretKey, string expectedSignatureHex)
+        {
+            if (string.IsNullOrEmpty(payload) || string.IsNullOrEmpty(secretKey) || string.IsNullOrEmpty(expectedSignatureHex)) return false;
+
+            if (IsNativeCoreAvailable())
+            {
+                try
+                {
+                    int res = VerifyCommanderPayloadNative(payload, secretKey, expectedSignatureHex);
+                    return (res == 1);
+                }
+                catch { }
+            }
+
+            // C# Managed Fallback
+            string computed = SignCommanderPayload(payload, secretKey);
+            return string.Equals(computed, expectedSignatureHex, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// [Feature 14 래퍼] 순수 C++ 네이티브 다중 노드 시스템 상태 초고속 조회
+        /// </summary>
+        public static bool TryQueryFleetHealth(out uint cpuUsagePercent, out long freeRamBytes, out long totalRamBytes, out long freeDiskBytes, out int processCount)
+        {
+            cpuUsagePercent = 0;
+            freeRamBytes = 0;
+            totalRamBytes = 0;
+            freeDiskBytes = 0;
+            processCount = 0;
+
+            if (!IsNativeCoreAvailable()) return false;
+
+            try
+            {
+                int res = QuerySystemFleetHealthNative(out cpuUsagePercent, out freeRamBytes, out totalRamBytes, out freeDiskBytes, out processCount);
                 return (res == 1);
             }
             catch

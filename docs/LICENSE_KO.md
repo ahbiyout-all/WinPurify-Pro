@@ -1,15 +1,15 @@
 # 📜 WinPurify Pro 최종 사용자 사용권 계약서 (EULA)
 
 > **언어 구분**: 한국어 (Korean Standard Edition)  
-> **발행 및 개발**: Cisnet Soft (개발 총괄: AhBiYout)  
+> **언어 구분**: 한국어 (Korean Standard Edition)  
+> **발행 및 개발**: WinPurify Pro (개발 총괄: AhBiYout)  
 > **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
-> **공식 사이트**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/)
 
 ---
 
 ## 📌 전문 (Preamble)
 
-본 최종 사용자 사용권 계약서(이하 "본 계약")는 Cisnet Soft(이하 "회사")가 개발 및 공급하는 **"WinPurify Pro"**(이하 "소프트웨어", C++ 네이티브 가속 엔진 `PurifyEngineCore.dll`, 원격 에이전트 서비스 `WinPurifyAgentService`, 센트럴 커맨더 `Central Commander` 및 부속 어셈블리와 문서 포함)의 설치 및 사용에 관한 사용자와 회사 간의 법적 계약입니다.
+본 최종 사용자 사용권 계약서(이하 "본 계약")는 WinPurify Pro(개발 총괄: AhBiYout, 이하 "회사")가 개발 및 공급하는 **"WinPurify Pro"**(이하 "소프트웨어", C++ 네이티브 가속 엔진 `PurifyEngineCore.dll`, 원격 에이전트 서비스 `WinPurifyAgentService`, 센트럴 커맨더 `Central Commander` 및 부속 어셈블리와 문서 포함)의 설치 및 사용에 관한 사용자와 회사 간의 법적 계약입니다.
 
 사용자가 본 소프트웨어를 설치, 복사 또는 사용하는 것은 본 계약 조건의 전부에 동의함을 의미합니다. 본 계약 조건에 동의하지 않는 경우, 설치를 중단하고 소프트웨어 파일 일체를 즉시 삭제하여 주십시오.
 
@@ -33,7 +33,7 @@
 
 ## 제3조 (지적재산권 및 저작권)
 
-1. 본 소프트웨어와 관련된 프로그램 코드, UI 디자인, 아이콘(`WinPurify.ico`), 로고 이미지, C++ 네이티브 바이너리(`PurifyEngineCore.dll`), 문서 및 기술 사양에 대한 일체의 소유권과 저작권은 **Cisnet Soft**에 있습니다.
+1. 본 소프트웨어와 관련된 프로그램 코드, UI 디자인, 아이콘(`WinPurify.ico`), 로고 이미지, C++ 네이티브 바이너리(`PurifyEngineCore.dll`), 문서 및 기술 사양에 대한 일체의 소유권과 저작권은 **WinPurify Pro (AhBiYout)**에 있습니다.
 2. 본 소프트웨어는 대한민국 저작권법, 컴퓨터프로그램보호법 및 국제 저작권 협약의 보호를 받습니다.
 3. 사용자는 회사의 사전 서면 승인 없이 본 소프트웨어를 역컴파일, 리버스 엔지니어링, 디스어셈블하거나 원본 코드를 임의 변조하여 무단 상업적 재배포를 수행할 수 없습니다.
 

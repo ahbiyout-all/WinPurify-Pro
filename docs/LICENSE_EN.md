@@ -1,9 +1,8 @@
 # 📜 WinPurify Pro End User License Agreement (EULA)
 
 > **Language**: English Standard Edition  
-> **Licensor & Developer**: Cisnet Soft (Lead Developer: AhBiYout)  
-> **Official Blog**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
-> **Official Website**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/)
+> **Licensor & Developer**: WinPurify Pro (Lead Developer: AhBiYout)  
+> **Official Blog**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 
 ---
 
@@ -11,7 +10,7 @@
 
 IMPORTANT: PLEASE READ THIS SOFTWARE LICENSE AGREEMENT CAREFULLY BEFORE DOWNLOADING, INSTALLING, OR USING WINPURIFY PRO.
 
-This End User License Agreement ("EULA") is a legal agreement between you (either an individual or a single legal entity, hereinafter "User") and Cisnet Soft ("Licensor", developer of WinPurify Pro) regarding the use of **"WinPurify Pro"** (including the 133-module optimization suite, native C++ acceleration core `PurifyEngineCore.dll`, Central Commander multi-PC fleet management console, `WinPurifyAgentService` background Windows service, and associated documentation).
+This End User License Agreement ("EULA") is a legal agreement between you (either an individual or a single legal entity, hereinafter "User") and WinPurify Pro ("Licensor", developer of WinPurify Pro) regarding the use of **"WinPurify Pro"** (including the 133-module optimization suite, native C++ acceleration core `PurifyEngineCore.dll`, Central Commander multi-PC fleet management console, `WinPurifyAgentService` background Windows service, and associated documentation).
 
 BY INSTALLING, COPYING, OR USING THIS SOFTWARE, YOU AGREE TO BE BOUND BY ALL THE TERMS OF THIS EULA. IF YOU DO NOT AGREE TO THESE TERMS, DO NOT INSTALL OR USE THE SOFTWARE, AND PROMPTLY REMOVE ALL COPIES FROM YOUR SYSTEM.
 
@@ -35,12 +34,12 @@ BY INSTALLING, COPYING, OR USING THIS SOFTWARE, YOU AGREE TO BE BOUND BY ALL THE
 
 ## 3. INTELLECTUAL PROPERTY RIGHTS & RESTRICTIONS
 
-3.1 All title, ownership rights, trademarks, and intellectual property rights in and to the Software (including binary code, C++ native core `PurifyEngineCore.dll`, WPF UI designs, graphics, and documentation) are owned exclusively by **Cisnet Soft**.  
+3.1 All title, ownership rights, trademarks, and intellectual property rights in and to the Software (including binary code, C++ native core `PurifyEngineCore.dll`, WPF UI designs, graphics, and documentation) are owned exclusively by **WinPurify Pro**.  
 3.2 The Software is protected by copyright laws and international copyright treaties.  
 3.3 You shall not:  
     (a) Reverse engineer, decompile, disassemble, or derive source code from the compiled binaries, except to the extent permitted by applicable law;  
     (b) Modify, alter, adapt, or create derivative works of the Software;  
-    (c) Distribute, lease, rent, sell, or sublicense the Software without explicit written authorization from Cisnet Soft.
+    (c) Distribute, lease, rent, sell, or sublicense the Software without explicit written authorization from Licensor.
 
 ---
 
@@ -55,7 +54,7 @@ BY INSTALLING, COPYING, OR USING THIS SOFTWARE, YOU AGREE TO BE BOUND BY ALL THE
 
 5.1 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITH ALL FAULTS AND WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING WITHOUT LIMITATION WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.  
 5.2 Users are strongly advised to utilize the built-in Live Safepoint rollback facility and maintain comprehensive system backups before executing aggressive optimization, registry cleaning, or remote power control operations.  
-5.3 IN NO EVENT SHALL CISNET SOFT BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES (INCLUDING LOSS OF PROFITS, DATA CORRUPTION, BUSINESS INTERRUPTION, OR SYSTEM DOWNTIME) ARISING OUT OF OR IN CONNECTION WITH THE USE OR INABILITY TO USE THE SOFTWARE.
+5.3 IN NO EVENT SHALL WINPURIFY PRO BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES (INCLUDING LOSS OF PROFITS, DATA CORRUPTION, BUSINESS INTERRUPTION, OR SYSTEM DOWNTIME) ARISING OUT OF OR IN CONNECTION WITH THE USE OR INABILITY TO USE THE SOFTWARE.
 
 ---
 

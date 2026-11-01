@@ -10,7 +10,7 @@ namespace WinPurifyPro
             var list = new List<OptimizationTask>();
 
             // ==========================================
-            // 1. 개인정보 보호 (Privacy - 20 Modules)
+            // 1. 개인정보 보호 (Privacy - 27 Modules)
             // ==========================================
             list.Add(new OptimizationTask
             {
@@ -210,11 +210,11 @@ namespace WinPurifyPro
             {
                 Id = "pri-explorer-breadcrumb",
                 Name = "탐색기 이동 경로 캐시",
-                Description = "탐색기 상단 브레드크럼 네비게이션 캐시 정리",
+                Description = "탐색기 상단 브레드크럼 네비게이션 및 검색창 입력 쿼리(WordWheelQuery) 캐시 정리",
                 Category = TaskCategory.Privacy,
                 Risk = RiskLevel.Safe,
-                FastCliCommand = @"reg delete ""HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths"" /f",
-                PowerShellCommand = @"Remove-ItemProperty -Path ""HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths"" -Name ""*""",
+                FastCliCommand = @"reg delete ""HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TravelGroup"" /f & reg delete ""HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\WordWheelQuery"" /f",
+                PowerShellCommand = @"Remove-ItemProperty -Path ""HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\TravelGroup"" -Name ""*"" -ErrorAction SilentlyContinue; Remove-ItemProperty -Path ""HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\WordWheelQuery"" -Name ""*"" -ErrorAction SilentlyContinue",
                 IsSelected = true
             });
 
@@ -341,7 +341,7 @@ namespace WinPurifyPro
             });
 
             // ==========================================
-            // 2. 브라우저 최적화 (Browser - 15 Modules)
+            // 2. 브라우저 최적화 (Browser - 21 Modules)
             // ==========================================
             list.Add(new OptimizationTask
             {
@@ -1453,7 +1453,7 @@ namespace WinPurifyPro
             });
 
             // ==========================================
-            // 7. 저장공간 (Storage - 25 Modules)
+            // 7. 저장공간 (Storage - 29 Modules)
             // ==========================================
             list.Add(new OptimizationTask
             {
@@ -1666,11 +1666,11 @@ namespace WinPurifyPro
             {
                 Id = "stg-setupapi-breadcrumb",
                 Name = "장치 드라이버 로딩 로그",
-                Description = "Windows inf 폴더 내의 잔여 드라이버 셋업 로그 정리",
+                Description = "Windows inf 폴더 내의 잔여 드라이버 셋업 및 오프라인 배포 로그(setupapi.setup.log / offline.log) 정리",
                 Category = TaskCategory.Storage,
                 Risk = RiskLevel.Safe,
-                FastCliCommand = @"del /f /q ""C:\Windows\inf\setupapi.dev.log""",
-                PowerShellCommand = @"Remove-Item ""C:\Windows\inf\setupapi.dev.log"" -Force",
+                FastCliCommand = @"del /f /q ""C:\Windows\inf\setupapi.setup.log"" ""C:\Windows\inf\setupapi.offline.log""",
+                PowerShellCommand = @"Remove-Item ""C:\Windows\inf\setupapi.setup.log"", ""C:\Windows\inf\setupapi.offline.log"" -Force -ErrorAction SilentlyContinue",
                 IsSelected = true
             });
 

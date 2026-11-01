@@ -1,5 +1,5 @@
 /**
- * Cisnet WinPurify Pro - Automatic Version Synchronizer & Patch Note Reader
+ * WinPurify Pro - Automatic Version Synchronizer & Patch Note Reader
  * Reads the latest version tag from docs/PATCH_NOTES.md or DOC/PATCH_NOTES.md
  * Updates metadata.json, package.json, and WinPurifyPro.csproj
  */

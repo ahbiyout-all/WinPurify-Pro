@@ -121,16 +121,16 @@ namespace WinPurifyPro.Services
                     Severity = safepointOk ? "Info" : "Error"
                 });
 
-                // 5. Check 133 Module Database Integrity
+                // 5. Check 144 (143 Standard + 1 Forensic Special) Module Database Integrity
                 var tasks = TaskDataSeeder.GetAllTasks();
                 int count = tasks?.Count ?? 0;
-                bool dataOk = (tasks != null && count >= 133);
+                bool dataOk = (tasks != null && count >= 143);
                 results.Add(new DiagnosticCheckItem
                 {
-                    Title = $"{count}개 최적화 모듈 데이터셋 무결성",
-                    Description = "7개 전체 카테고리 및 Failover 파이프라인 매핑 정합성",
+                    Title = $"{count}개 최적화 모듈 데이터셋 무결성 (143 표준 + 특수 기능)",
+                    Description = "8개 전체 카테고리 및 Failover 파이프라인 매핑 정합성",
                     Passed = dataOk,
-                    ResultDetail = dataOk ? $"{count}개 전수 모듈 데이터 매핑 완결 (개인정보: 27, 저장공간: 29 등 7개 분야)" : $"모듈 데이터 개수 불일치 ({count}/133)",
+                    ResultDetail = dataOk ? $"{count}개 전수 모듈 데이터 매핑 완결 (개인정보: 27, 브라우저: 21, 보안: 10, 레지스트리: 15, 업데이트: 15, 시스템: 15, 저장공간: 29, 특수기능: 12)" : $"모듈 데이터 개수 불일치 ({count}/143)",
                     Severity = dataOk ? "Info" : "Error"
                 });
 

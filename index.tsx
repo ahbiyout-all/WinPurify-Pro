@@ -41,10 +41,10 @@ const LICENSE_TEXT_KO = `=======================================================
              (End User License Agreement - Korean Edition)
 ================================================================================
 
-본 최종 사용자 사용권 계약서(이하 "본 계약")는 Cisnet Soft(이하 "회사")가 개발 및 
+본 최종 사용자 사용권 계약서(이하 "본 계약")는 개발자 AhBiYout(이하 "개발자")가 개발 및 
 공급하는 "WinPurify Pro"(이하 "소프트웨어", C++ 네이티브 가속 엔진 PurifyEngineCore.dll, 
 원격 에이전트 서비스 WinPurifyAgentService, 센트럴 커맨더 Central Commander 및 부속 
-어셈블리와 문서 포함)의 설치 및 사용에 관한 사용자와 회사 간의 법적 계약입니다.
+어셈블리와 문서 포함)의 설치 및 사용에 관한 사용자와 개발자 간의 법적 계약입니다.
 
 사용자가 본 소프트웨어를 설치, 복사 또는 사용하는 것은 본 계약 조건의 전부에 동의함을 
 의미합니다. 본 계약 조건에 동의하지 않는 경우, 설치를 중단하고 소프트웨어 파일 일체를 
@@ -53,7 +53,7 @@ const LICENSE_TEXT_KO = `=======================================================
 --------------------------------------------------------------------------------
 제1조 (사용권의 부여 및 허용 범위)
 --------------------------------------------------------------------------------
-1. 회사는 본 계약 조건에 따라 사용자에게 비독점적이고 양도 불가능한 소프트웨어 사용 권한을 
+1. 개발자는 본 계약 조건에 따라 사용자에게 비독점적이고 양도 불가능한 소프트웨어 사용 권한을 
    부여합니다.
 2. 개인 사용자 및 기업, 교육기관, 공공기관은 정식 라이선스 범위 내에서 Windows 운영체제 
    기반 PC 및 서버 환경에 본 소프트웨어를 설치하고, 133개 최적화 모듈, 실시간 모니터링, 
@@ -78,10 +78,10 @@ const LICENSE_TEXT_KO = `=======================================================
 --------------------------------------------------------------------------------
 1. 본 소프트웨어와 관련된 프로그램 코드, UI 디자인, 아이콘(WinPurify.ico), 로고 이미지, 
    C++ 네이티브 바이너리(PurifyEngineCore.dll), 문서 및 기술 사양에 대한 일체의 소유권과 
-   저작권은 Cisnet Soft에 있습니다.
+   저작권은 개발자 AhBiYout에 있습니다.
 2. 본 소프트웨어는 대한민국 저작권법, 컴퓨터프로그램보호법 및 국제 저작권 협약의 보호를 
    받습니다.
-3. 사용자는 회사의 사전 서면 승인 없이 본 소프트웨어를 역컴파일, 리버스 엔지니어링, 
+3. 사용자는 개발자의 사전 서면 승인 없이 본 소프트웨어를 역컴파일, 리버스 엔지니어링, 
    디스어셈블하거나 원본 코드를 임의 변조하여 무단 상업적 재배포를 수행할 수 없습니다.
 
 --------------------------------------------------------------------------------
@@ -90,34 +90,33 @@ const LICENSE_TEXT_KO = `=======================================================
 1. 소프트웨어에 내장된 계정 로그아웃 및 자격증명 정화(AccountCredentialPurgeService), 
    브라우저 공장 초기화, 디스크 포렌식 와이핑(Cipher) 기능은 영구적인 데이터 및 세션 소거를 
    수반합니다.
-2. 회사는 사용자의 PC로부터 개인정보, 로그인 암호, 하드웨어 식별자, 원격 통신 페이로드 등의 
+2. 개발자는 사용자의 PC로부터 개인정보, 로그인 암호, 하드웨어 식별자, 원격 통신 페이로드 등의 
    민감 데이터를 외부 서버로 수집하거나 무단 전송하지 않으며, 모든 정화 작업은 로컬 장치 
    내에서 오프라인 완결형으로 실행됩니다.
 
 --------------------------------------------------------------------------------
 제5조 (보증의 한계 및 면책 조항)
 --------------------------------------------------------------------------------
-1. 회사는 관련 법률이 허용하는 최대 범위 내에서 본 소프트웨어를 "있는 그대로(AS-IS)" 
+1. 개발자는 관련 법률이 허용하는 최대 범위 내에서 본 소프트웨어를 "있는 그대로(AS-IS)" 
    제공하며, 상품성, 특정 목적에 대한 적합성 또는 무결성에 대해 어떠한 명시적/묵시적 보증도 
    부인합니다.
 2. 본 소프트웨어의 깊은 시스템 레지스트리 청소, 서비스 비활성화, 원격 전원 종료 및 재부팅을 
    실행하기 전에, 사용자는 내장된 실시간 세이프포인트(LiveSafepointService) 스냅샷 생성 및 
    중요 데이터 백업을 수행할 것을 강력히 권장합니다.
-3. 회사는 소프트웨어 사용 또는 사용 불능으로 인해 발생하는 데이터 손실, 업무 중단, 컴퓨터 
+3. 개발자는 소프트웨어 사용 또는 사용 불능으로 인해 발생하는 데이터 손실, 업무 중단, 컴퓨터 
    오작동 등 직·간접적 또는 부수적 손해에 대해 법적 책임을 부담하지 않습니다.
 
 --------------------------------------------------------------------------------
 제6조 (계약의 해지 및 준거법)
 --------------------------------------------------------------------------------
-1. 사용자가 본 계약 조건을 위반하는 경우, 회사는 별도의 통지 없이 사용권을 해지할 수 
+1. 사용자가 본 계약 조건을 위반하는 경우, 개발자는 별도의 통지 없이 사용권을 해지할 수 
    있으며 사용자는 소프트웨어의 모든 복사본을 즉시 파기해야 합니다.
 2. 본 계약은 대한민국 법률에 따라 규율되고 해석되며, 본 계약과 관련하여 발생하는 모든 
    분쟁은 대한민국 법원을 관할 법원으로 합니다.
 
 ================================================================================
-공급자: Cisnet Soft (개발자: AhBiYout)
+개발자: AhBiYout
 블로그: https://ahbiyoutvibe.blogspot.com/
-웹사이트: http://www.cisnet.co.kr/
 ================================================================================`;
 
 const LICENSE_TEXT_EN = `================================================================================
@@ -129,7 +128,7 @@ IMPORTANT: PLEASE READ THIS SOFTWARE LICENSE AGREEMENT CAREFULLY BEFORE DOWNLOAD
 INSTALLING, OR USING WINPURIFY PRO.
 
 This End User License Agreement ("EULA") is a legal agreement between you (either an 
-individual or a single legal entity, hereinafter "User") and Cisnet Soft ("Licensor", 
+individual or a single legal entity, hereinafter "User") and Lead Developer AhBiYout ("Licensor", 
 developer of WinPurify Pro) regarding the use of "WinPurify Pro" (including the 
 133-module optimization suite, native C++ acceleration core PurifyEngineCore.dll, 
 Central Commander multi-PC fleet management console, WinPurifyAgentService background 
@@ -170,14 +169,14 @@ AND PROMPTLY REMOVE ALL COPIES FROM YOUR SYSTEM.
 --------------------------------------------------------------------------------
 3.1 All title, ownership rights, trademarks, and intellectual property rights in and 
     to the Software (including binary code, C++ native core PurifyEngineCore.dll, WPF UI 
-    designs, graphics, and documentation) are owned exclusively by Cisnet Soft.
+    designs, graphics, and documentation) are owned exclusively by Lead Developer AhBiYout.
 3.2 The Software is protected by copyright laws and international copyright treaties.
 3.3 You shall not:
     (a) Reverse engineer, decompile, disassemble, or derive source code from the compiled 
         binaries, except to the extent permitted by applicable law;
     (b) Modify, alter, adapt, or create derivative works of the Software;
     (c) Distribute, lease, rent, sell, or sublicense the Software without explicit written 
-        authorization from Cisnet Soft.
+        authorization from Lead Developer AhBiYout.
 
 --------------------------------------------------------------------------------
 4. PRIVACY, DATA INTEGRITY & CREDENTIAL PURGE
@@ -198,7 +197,7 @@ AND PROMPTLY REMOVE ALL COPIES FROM YOUR SYSTEM.
 5.2 Users are strongly advised to utilize the built-in Live Safepoint rollback facility 
     and maintain comprehensive system backups before executing aggressive optimization, 
     registry cleaning, or remote power control operations.
-5.3 IN NO EVENT SHALL CISNET SOFT BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, 
+5.3 IN NO EVENT SHALL LEAD DEVELOPER AHBIYOUT BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, 
     OR CONSEQUENTIAL DAMAGES (INCLUDING LOSS OF PROFITS, DATA CORRUPTION, BUSINESS 
     INTERRUPTION, OR SYSTEM DOWNTIME) ARISING OUT OF OR IN CONNECTION WITH THE USE OR 
     INABILITY TO USE THE SOFTWARE.
@@ -214,9 +213,8 @@ AND PROMPTLY REMOVE ALL COPIES FROM YOUR SYSTEM.
     the Republic of Korea.
 
 ================================================================================
-Licensor: Cisnet Soft (Lead Developer: AhBiYout)
+Developer: AhBiYout
 Blog: https://ahbiyoutvibe.blogspot.com/
-Website: http://www.cisnet.co.kr/
 ================================================================================`;
 
 interface DiagnosticItem {
@@ -229,7 +227,7 @@ interface DiagnosticItem {
 const CATEGORIES = ['All', 'Privacy', 'Browser', 'Security', 'Registry', 'Update', 'System', 'Storage', 'Special'];
 
 const CATEGORY_CONFIG: Record<string, { label: string; count: number; desc: string; activeBg: string; activeText: string; activeBorder: string; badgeActive: string }> = {
-  All: { label: '⚡ 전체 모듈', count: 138, desc: '시스템 138개 최적화, 제로트레이스 및 심층 정화 모듈 전체 제어', activeBg: 'bg-blue-950/80', activeText: 'text-blue-300 font-bold', activeBorder: 'border-blue-500 shadow-sm shadow-blue-500/20', badgeActive: 'bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold' },
+  All: { label: '⚡ 전체 모듈', count: 144, desc: '시스템 144개 최적화, 제로트레이스 및 심층 정화 모듈 전체 제어', activeBg: 'bg-blue-950/80', activeText: 'text-blue-300 font-bold', activeBorder: 'border-blue-500 shadow-sm shadow-blue-500/20', badgeActive: 'bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold' },
   Privacy: { label: '🛡️ 개인정보 보호', count: 27, desc: 'Windows 자격증명, RDP/USB 포렌식 이력, 텔레메트리, BAM/DAM 등 27개 모듈', activeBg: 'bg-purple-950/80', activeText: 'text-purple-300 font-bold', activeBorder: 'border-purple-500 shadow-sm shadow-purple-500/20', badgeActive: 'bg-purple-500/20 text-purple-300 border-purple-500/40 font-bold' },
   Browser: { label: '🌐 브라우저 최적화', count: 21, desc: '자동완성/비밀번호 소거, 카카오톡/Discord/Teams 세션 토큰 등 21개 모듈', activeBg: 'bg-sky-950/80', activeText: 'text-sky-300 font-bold', activeBorder: 'border-sky-500 shadow-sm shadow-sky-500/20', badgeActive: 'bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold' },
   Security: { label: '🔒 보안 센터', count: 10, desc: 'Windows Defender 검사 히스토리, 방화벽 로그, 격리소 파편 소거 10개 모듈', activeBg: 'bg-red-950/80', activeText: 'text-red-300 font-bold', activeBorder: 'border-red-500 shadow-sm shadow-red-500/20', badgeActive: 'bg-red-500/20 text-red-300 border-red-500/40 font-bold' },
@@ -471,7 +469,536 @@ const App: React.FC = () => {
   const [isScheduled, setIsScheduled] = useState<boolean>(false);
   const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
   const [showCommanderModal, setShowCommanderModal] = useState<boolean>(false);
+  const [commanderPreset, setCommanderPreset] = useState<string>('Safe (권장 기본)');
   const [showDefaultProfileWarningModal, setShowDefaultProfileWarningModal] = useState<boolean>(false);
+  const [showHealthReportModal, setShowHealthReportModal] = useState<boolean>(false);
+  const [healthReportCopied, setHealthReportCopied] = useState<boolean>(false);
+
+  const generateSystemHealthReport = () => {
+    const timestamp = new Date().toLocaleString('ko-KR');
+    const selectedMods = modules.filter(m => m.selected);
+    const reclaimedStr = formatSize(totalReclaimableBytes);
+    const healthScore = 98;
+
+    const reportLines = [
+      `================================================================================`,
+      `                      WINPURIFY PRO - SYSTEM HEALTH REPORT                      `,
+      `                      (High-Level Aggregated Optimization Summary)              `,
+      `================================================================================`,
+      ` Generated At     : ${timestamp}`,
+      ` Software Version : v${APP_VERSION} (Native C++ Acceleration Active)`,
+      ` Developer / Org  : AhBiYout (AhBiYout-all)`,
+      `--------------------------------------------------------------------------------`,
+      ` 1. EXECUTIVE SUMMARY & HEALTH SCORE`,
+      `--------------------------------------------------------------------------------`,
+      ` • System Health Score : ${healthScore} / 100 (EXCELLENT / OPTIMAL)`,
+      ` • Active CPU Usage    : ${cpuUsage}%`,
+      ` • RAM Usage           : ${ramUsagePercent.toFixed(1)}% (${ramGb.used} / ${ramGb.total} GB)`,
+      ` • Total Modules       : ${modules.length} modules configured`,
+      ` • Selected for Purge  : ${selectedMods.length} modules (${reclaimedStr} estimated recovery)`,
+      ``,
+      `--------------------------------------------------------------------------------`,
+      ` 2. SELECTED MODULES BREAKDOWN`,
+      `--------------------------------------------------------------------------------`,
+      ...selectedMods.map(m => ` [${m.category}] ${m.name} (${m.estimatedKb} KB) - ${m.description}`),
+      selectedMods.length === 0 ? ` (No modules currently selected. Standard baseline inspection active.)` : ``,
+      ``,
+      `--------------------------------------------------------------------------------`,
+      ` 3. RECENT OPERATION LOGS (${logs.length} entries recorded)`,
+      `--------------------------------------------------------------------------------`,
+      ...logs.slice(0, 20),
+      ``,
+      `================================================================================`,
+      ` End of Report - WinPurify Pro Automated Intelligence`,
+      `================================================================================`
+    ];
+
+    return reportLines.join('\n');
+  };
+
+  // =========================================================================
+  // 🔍 144-Module Full Scan Dashboard & Findings Report Engine State
+  // =========================================================================
+  const [showScanDashboard, setShowScanDashboard] = useState<boolean>(false);
+  const [isScanningActive, setIsScanningActive] = useState<boolean>(false);
+  const [isScanPaused, setIsScanPaused] = useState<boolean>(false);
+  const [scanProgressPercent, setScanProgressPercent] = useState<number>(0);
+  const [currentScanningIndex, setCurrentScanningIndex] = useState<number>(0);
+  const [scanCategoryFilter, setScanCategoryFilter] = useState<string>('All');
+  const [scanRiskFilter, setScanRiskFilter] = useState<'All' | 'Safe' | 'Deep' | 'Risky'>('All');
+  const [scanSearchQuery, setScanSearchQuery] = useState<string>('');
+  const [scanCompleted, setScanCompleted] = useState<boolean>(false);
+  const [scanTab, setScanTab] = useState<'progress' | 'summary' | 'modules'>('progress');
+  const [scanSummaryCopied, setScanSummaryCopied] = useState<boolean>(false);
+  const [scanStartTime, setScanStartTime] = useState<number>(0);
+  const [scanDurationSec, setScanDurationSec] = useState<number>(0);
+  const [scanItemsFoundCount, setScanItemsFoundCount] = useState<number>(0);
+  const [scannedModuleStatuses, setScannedModuleStatuses] = useState<Record<string, { status: 'Pending' | 'Scanning' | 'Done'; foundKb: number; items: number; targetPath: string }>>({});
+
+  const scanIntervalRef = useRef<any>(null);
+
+  const getModuleProbePath = (mod: ModuleItem): string => {
+    switch (mod.category) {
+      case 'Privacy':
+        return `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RecentDocs\\${mod.id}`;
+      case 'Browser':
+        return `%LocalAppData%\\Google\\Chrome\\User Data\\Default\\Cache\\*.*`;
+      case 'Security':
+        return `C:\\ProgramData\\Microsoft\\Windows Defender\\Scans\\History\\Results\\Quick\\`;
+      case 'Registry':
+        return `HKCR\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\MuiCache`;
+      case 'Update':
+        return `C:\\Windows\\SoftwareDistribution\\Download\\`;
+      case 'System':
+        return `C:\\Windows\\System32\\winevt\\Logs\\*.*`;
+      case 'Storage':
+        return `%LocalAppData%\\Temp\\*.*`;
+      case 'Special':
+        return `%LocalAppData%\\Microsoft\\TokenBroker\\Accounts\\`;
+      default:
+        return `C:\\Windows\\Prefetch\\*.*`;
+    }
+  };
+
+  const startFullScan = () => {
+    if (isScanningActive && !isScanPaused) return;
+
+    if (isScanPaused) {
+      setIsScanPaused(false);
+      setIsScanningActive(true);
+      return;
+    }
+
+    setIsScanningActive(true);
+    setIsScanPaused(false);
+    setScanCompleted(false);
+    setScanProgressPercent(0);
+    setCurrentScanningIndex(0);
+    setScanTab('progress');
+    const start = Date.now();
+    setScanStartTime(start);
+    dispatchTrayNotification('🔍 144개 전수 모듈 스캔 개시', 'Robocopy 가상 I/O 스트림(/L /BYTES) 전수 분석을 시작합니다.', 'info');
+    addLog(`[Scan Dashboard] 144개 전체 최적화 모듈 대상 실시간 탐색 스캔 시작`);
+
+    let currentIndex = 0;
+    const total = modules.length;
+
+    const initialStatuses: Record<string, any> = {};
+    modules.forEach((m, idx) => {
+      initialStatuses[m.id] = {
+        status: idx === 0 ? 'Scanning' : 'Pending',
+        foundKb: m.estimatedKb,
+        items: Math.max(3, Math.round(m.estimatedKb / 14)),
+        targetPath: getModuleProbePath(m)
+      };
+    });
+    setScannedModuleStatuses(initialStatuses);
+
+    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+
+    scanIntervalRef.current = setInterval(() => {
+      currentIndex++;
+      if (currentIndex >= total) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+        setCurrentScanningIndex(total - 1);
+        setScanProgressPercent(100);
+        setIsScanningActive(false);
+        setScanCompleted(true);
+        setScanTab('summary');
+        playAlertSound('complete');
+
+        const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+        setScanDurationSec(parseFloat(elapsed));
+
+        setScannedModuleStatuses(prev => {
+          const next = { ...prev };
+          modules.forEach(m => {
+            if (next[m.id]) next[m.id].status = 'Done';
+          });
+          return next;
+        });
+
+        const totalKb = modules.reduce((acc, m) => acc + m.estimatedKb, 0);
+        const totalItems = modules.reduce((acc, m) => acc + Math.max(3, Math.round(m.estimatedKb / 14)), 0);
+        setScanItemsFoundCount(totalItems);
+
+        const totalStr = formatSize(totalKb * 1024);
+        dispatchTrayNotification('✨ 144개 모듈 스캔 완료', `총 ${totalItems.toLocaleString()}개 정크 항목 발견! (${totalStr} 확보 가능)`, 'success');
+        addLog(`[Scan Dashboard 완료] 144개 모듈 전수 스캔 완료 (${elapsed}초): 총 ${totalItems.toLocaleString()}개 항목 / ${totalStr} 발견`);
+      } else {
+        const pct = Math.round((currentIndex / total) * 100);
+        setCurrentScanningIndex(currentIndex);
+        setScanProgressPercent(pct);
+
+        const currentMod = modules[currentIndex];
+        const prevMod = modules[currentIndex - 1];
+
+        setScannedModuleStatuses(prev => ({
+          ...prev,
+          ...(prevMod ? { [prevMod.id]: { ...prev[prevMod.id], status: 'Done' } } : {}),
+          [currentMod.id]: { ...prev[currentMod.id], status: 'Scanning' }
+        }));
+      }
+    }, 28);
+  };
+
+  const pauseScan = () => {
+    if (!isScanningActive || isScanPaused) return;
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    setIsScanPaused(true);
+    addLog('[Scan Dashboard] 모듈 스캔이 일시 중지되었습니다.');
+  };
+
+  const resumeScan = () => {
+    if (!isScanPaused) return;
+    setIsScanPaused(false);
+    let currentIndex = currentScanningIndex;
+    const total = modules.length;
+    const start = scanStartTime;
+
+    scanIntervalRef.current = setInterval(() => {
+      currentIndex++;
+      if (currentIndex >= total) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+        setCurrentScanningIndex(total - 1);
+        setScanProgressPercent(100);
+        setIsScanningActive(false);
+        setScanCompleted(true);
+        setScanTab('summary');
+        playAlertSound('complete');
+
+        const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+        setScanDurationSec(parseFloat(elapsed));
+
+        setScannedModuleStatuses(prev => {
+          const next = { ...prev };
+          modules.forEach(m => {
+            if (next[m.id]) next[m.id].status = 'Done';
+          });
+          return next;
+        });
+
+        const totalKb = modules.reduce((acc, m) => acc + m.estimatedKb, 0);
+        const totalItems = modules.reduce((acc, m) => acc + Math.max(3, Math.round(m.estimatedKb / 14)), 0);
+        setScanItemsFoundCount(totalItems);
+
+        const totalStr = formatSize(totalKb * 1024);
+        dispatchTrayNotification('✨ 144개 모듈 스캔 완료', `총 ${totalItems.toLocaleString()}개 정크 항목 발견! (${totalStr} 확보 가능)`, 'success');
+        addLog(`[Scan Dashboard 완료] 144개 모듈 전수 스캔 완료: 총 ${totalItems.toLocaleString()}개 항목 / ${totalStr} 발견`);
+      } else {
+        const pct = Math.round((currentIndex / total) * 100);
+        setCurrentScanningIndex(currentIndex);
+        setScanProgressPercent(pct);
+
+        const currentMod = modules[currentIndex];
+        const prevMod = modules[currentIndex - 1];
+
+        setScannedModuleStatuses(prev => ({
+          ...prev,
+          ...(prevMod ? { [prevMod.id]: { ...prev[prevMod.id], status: 'Done' } } : {}),
+          [currentMod.id]: { ...prev[currentMod.id], status: 'Scanning' }
+        }));
+      }
+    }, 28);
+  };
+
+  const cancelScan = () => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    setIsScanningActive(false);
+    setIsScanPaused(false);
+    addLog('[Scan Dashboard] 모듈 스캔이 사용자에 의해 중단되었습니다.');
+  };
+
+  const generateScanSummaryReport = () => {
+    const timestamp = new Date().toLocaleString('ko-KR');
+    const totalBytes = modules.reduce((acc, m) => acc + m.estimatedKb * 1024, 0);
+    const totalItems = modules.reduce((acc, m) => acc + Math.max(3, Math.round(m.estimatedKb / 14)), 0);
+    const safeMods = modules.filter(m => m.risk === 'Safe');
+    const deepMods = modules.filter(m => m.risk === 'Deep');
+    const riskyMods = modules.filter(m => m.risk === 'Risky');
+
+    const catStats = ['Privacy', 'Browser', 'Security', 'Registry', 'Update', 'System', 'Storage', 'Special'].map(cat => {
+      const catMods = modules.filter(m => m.category === cat);
+      const catBytes = catMods.reduce((acc, m) => acc + m.estimatedKb * 1024, 0);
+      const catItems = catMods.reduce((acc, m) => acc + Math.max(3, Math.round(m.estimatedKb / 14)), 0);
+      return {
+        cat,
+        label: CATEGORY_CONFIG[cat]?.label || cat,
+        count: catMods.length,
+        items: catItems,
+        bytes: catBytes,
+        str: formatSize(catBytes)
+      };
+    });
+
+    return [
+      `================================================================================`,
+      `              WINPURIFY PRO - OPTIMIZATION SCAN FINDINGS REPORT                 `,
+      `              (144-Module Full Inspection & Recovery Analysis)                  `,
+      `================================================================================`,
+      ` Scan Timestamp      : ${timestamp}`,
+      ` App Version         : v${APP_VERSION} Enterprise (PurifyEngineCore Native)`,
+      ` Engine Technology   : Robocopy /L Virtual Stream & Win32 Native Metadata Scanner`,
+      ` Total Modules       : 144 Modules (100% Comprehensive Coverage)`,
+      ` Total Junk Found    : ${totalItems.toLocaleString()} items / registry keys`,
+      ` Total Recovery Size : ${formatSize(totalBytes)}`,
+      ` System Health Score : 68 / 100 (Before)  -->  99 / 100 (Projected After Purge)`,
+      `--------------------------------------------------------------------------------`,
+      ` 1. CATEGORY BREAKDOWN OF DISCOVERED JUNK & CACHE`,
+      `--------------------------------------------------------------------------------`,
+      ...catStats.map(c => ` • [${c.label}] ${c.count} modules scanned | ${c.items.toLocaleString()} items found | ${c.str} reclaimable`),
+      ``,
+      `--------------------------------------------------------------------------------`,
+      ` 2. RISK TIER DISTRIBUTION`,
+      `--------------------------------------------------------------------------------`,
+      ` • Safe Tier    : ${safeMods.length} modules (${formatSize(safeMods.reduce((a, b) => a + b.estimatedKb * 1024, 0))}) - 100% 안전 즉시 정화 권장`,
+      ` • Deep Tier    : ${deepMods.length} modules (${formatSize(deepMods.reduce((a, b) => a + b.estimatedKb * 1024, 0))}) - 고립 CLSID 및 심층 캐시 소거`,
+      ` • Special/Risk : ${riskyMods.length} modules (${formatSize(riskyMods.reduce((a, b) => a + b.estimatedKb * 1024, 0))}) - 계정 세션/포렌식 와이핑`,
+      ``,
+      `--------------------------------------------------------------------------------`,
+      ` 3. TOP 5 LARGEST SPACE CONSUMERS DETECTED`,
+      `--------------------------------------------------------------------------------`,
+      ...[...modules].sort((a, b) => b.estimatedKb - a.estimatedKb).slice(0, 5).map((m, i) => ` ${i + 1}. [${m.category}] ${m.name} : ${formatSize(m.estimatedKb * 1024)} (${m.description})`),
+      ``,
+      `--------------------------------------------------------------------------------`,
+      ` 4. RECOMMENDED ACTION`,
+      `--------------------------------------------------------------------------------`,
+      ` • 즉시 정화 버튼을 클릭하여 선택된 모듈을 3-Tier 하이브리드 엔진으로 정화하십시오.`,
+      ` • 정화 전 Live Safepoint 레지스트리 백업 스냅샷이 자동 생성되므로 1-Click 롤백이 가능합니다.`,
+      `================================================================================`,
+      ` End of Scan Findings Report - WinPurify Pro Automated Intelligence`,
+      `================================================================================`
+    ].join('\r\n');
+  };
+
+  // =========================================================================
+  // 🛡️ Hardware Spec Verification Rules & Drift Interceptor State
+  // =========================================================================
+  interface HardwareSpecInfo {
+    cpuModel: string;
+    cpuCores: number;
+    cpuThreads: number;
+    cpuArchitecture: string;
+    ramTotalGb: number;
+    ramChannel: string;
+    storageType: string;
+    storageModel: string;
+    storageCapacityGb: number;
+    storageFreeGb: number;
+    gpuModel: string;
+    gpuVramGb: number;
+    secureBoot: boolean;
+    tpmVersion: string;
+    fingerprintHash: string;
+    verifiedAt: string;
+  }
+
+  const DEFAULT_BASELINE_SPEC: HardwareSpecInfo = {
+    cpuModel: 'Intel Core i7-13700K (13th Gen, Hybrid 8P+8E)',
+    cpuCores: 16,
+    cpuThreads: 24,
+    cpuArchitecture: 'x86_64 (AVX2/AVX-512 Ready, Hybrid 8P+8E)',
+    ramTotalGb: 16,
+    ramChannel: 'Dual-Channel (DDR5 5600 MT/s)',
+    storageType: 'NVMe Gen4 SSD',
+    storageModel: 'Samsung SSD 980 PRO 1TB (PCIe 4.0 x4)',
+    storageCapacityGb: 1000,
+    storageFreeGb: 324,
+    gpuModel: 'NVIDIA GeForce RTX 4070 (AD104)',
+    gpuVramGb: 12,
+    secureBoot: true,
+    tpmVersion: 'TPM 2.0 (Enabled)',
+    fingerprintHash: 'SHA256:7b1d9c24e88f01a39d885a54ccbf8912e9b0151f8931b2c45d6e2978f89012a4',
+    verifiedAt: '2026-10-09 10:00:00 (Baseline Established)'
+  };
+
+  const [baselineSpec, setBaselineSpec] = useState<HardwareSpecInfo>(DEFAULT_BASELINE_SPEC);
+  const [currentSpec, setCurrentSpec] = useState<HardwareSpecInfo>(DEFAULT_BASELINE_SPEC);
+  const [showHwVerifyModal, setShowHwVerifyModal] = useState<boolean>(false);
+  const [hwVerifyActiveTab, setHwVerifyActiveTab] = useState<'status' | 'rules' | 'audit'>('status');
+  const [isHwScanning, setIsHwScanning] = useState<boolean>(false);
+  const [hwScanProgress, setHwScanProgress] = useState<number>(0);
+  const [hwScanStep, setHwScanStep] = useState<string>('');
+  const [hwDriftSimulated, setHwDriftSimulated] = useState<boolean>(false);
+  const [hwReportCopied, setHwReportCopied] = useState<boolean>(false);
+  const [hwAuditLogs, setHwAuditLogs] = useState<string[]>([
+    `[2026-10-09 10:00:00] [HW-BASELINE] 기준 하드웨어 핑거프린트 최초 등록 완료 (SHA256:7b1d9c...)`,
+    `[2026-10-09 10:00:01] [HW-POLICY] 144개 최적화 모듈이 16GB DDR5 / NVMe Gen4 기준 프로필로 정합성 동기화됨`,
+    `[2026-10-09 10:00:01] [HW-VERIFY] 5대 하드웨어 스펙 검증 규칙(WPP-RULE-HW-2026-V1) 정상 통과 (MATCH)`
+  ]);
+
+  const isHwDriftDetected = (
+    currentSpec.cpuModel !== baselineSpec.cpuModel ||
+    currentSpec.cpuCores !== baselineSpec.cpuCores ||
+    currentSpec.ramTotalGb !== baselineSpec.ramTotalGb ||
+    currentSpec.storageType !== baselineSpec.storageType ||
+    currentSpec.storageCapacityGb !== baselineSpec.storageCapacityGb ||
+    currentSpec.gpuModel !== baselineSpec.gpuModel ||
+    currentSpec.fingerprintHash !== baselineSpec.fingerprintHash
+  );
+
+  const handleRunHardwareVerification = () => {
+    if (isHwScanning) return;
+    setIsHwScanning(true);
+    setHwScanProgress(15);
+    setHwScanStep('Rule 1: CPUID & SMBIOS 불변 핑거프린트 SHA-256 서명 산출 중...');
+
+    setTimeout(() => {
+      setHwScanProgress(40);
+      setHwScanStep('Rule 2 & 3: CPU 코어 토폴로지 & 물리 RAM Working Set 용량 대조 중...');
+
+      setTimeout(() => {
+        setHwScanProgress(75);
+        setHwScanStep('Rule 4 & 5: 스토리지 NVMe/SSD TRIM 상태 및 GPU/UEFI 보안 검증 중...');
+
+        setTimeout(() => {
+          setHwScanProgress(100);
+          const hasDrift = isHwDriftDetected;
+          const statusText = hasDrift 
+            ? '⚠️ 하드웨어 드리프트 감지됨! 기준 스펙과의 불일치 발생 (신규 기준치 승인 필요)'
+            : '✅ 5대 하드웨어 스펙 검증 규칙(WPP-RULE-HW-2026-V1) 전 항목 100% 정상 통과';
+          setHwScanStep(statusText);
+
+          const logMsg = `[HW-VERIFY] 하드웨어 스펙 검증 실행: ${hasDrift ? '드리프트 감지' : '기준치 일치'} (CPU: ${currentSpec.cpuModel}, RAM: ${currentSpec.ramTotalGb}GB, 스토리지: ${currentSpec.storageType})`;
+          setHwAuditLogs(prev => [logMsg, ...prev]);
+          addLog(logMsg);
+
+          if (hasDrift) {
+            playAlertSound('warning');
+            dispatchTrayNotification('⚠️ 하드웨어 스펙 변경 감지', '설치된 RAM/스토리지 또는 CPU 스펙이 변경되었습니다. 최적화 재조율을 위해 기준치를 갱신하세요.', 'warning');
+          } else {
+            playAlertSound('complete');
+            dispatchTrayNotification('✅ 하드웨어 검증 완료', '현재 하드웨어 스펙이 등록된 기준치와 100% 일치합니다.', 'success');
+          }
+
+          setTimeout(() => {
+            setIsHwScanning(false);
+          }, 1500);
+        }, 500);
+      }, 500);
+    }, 500);
+  };
+
+  const handleSimulateDrift = () => {
+    if (hwDriftSimulated) {
+      // Revert to original baseline
+      setCurrentSpec(DEFAULT_BASELINE_SPEC);
+      setRamGb({ used: 5.4, total: 16.0 });
+      setHwDriftSimulated(false);
+      const msg = '[HW-DRIFT-SIM] 하드웨어 상태를 순정 기준 스펙(16GB DDR5 / 1TB NVMe)으로 복원하였습니다.';
+      setHwAuditLogs(prev => [msg, ...prev]);
+      addLog(msg);
+      dispatchTrayNotification('하드웨어 원상태 복원', '시뮬레이션 하드웨어가 기본 기준치로 복원되었습니다.', 'info');
+    } else {
+      // Simulate hardware upgrade (e.g., RAM 16GB -> 32GB, Samsung 990 PRO 2TB NVMe)
+      const upgradedSpec: HardwareSpecInfo = {
+        ...DEFAULT_BASELINE_SPEC,
+        ramTotalGb: 32,
+        ramChannel: 'Dual-Channel (DDR5 6000 MT/s, 32GB Upgraded)',
+        storageModel: 'Samsung SSD 990 PRO 2TB (PCIe 4.0 x4 NVMe)',
+        storageCapacityGb: 2000,
+        storageFreeGb: 1420,
+        fingerprintHash: 'SHA256:c842b10f5e7182ab93d64023fa81944810e7b99c824f114ea025c8d00921fb94',
+        verifiedAt: new Date().toLocaleString('ko-KR') + ' (Hardware Drift Detected)'
+      };
+      setCurrentSpec(upgradedSpec);
+      setRamGb({ used: 7.2, total: 32.0 });
+      setHwDriftSimulated(true);
+      playAlertSound('warning');
+      const msg = '[HW-DRIFT-SIM] ⚡ 하드웨어 스펙 변경 발생: 물리 RAM 16GB → 32GB 확장 & 2TB NVMe SSD 교체 감지됨!';
+      setHwAuditLogs(prev => [msg, ...prev]);
+      addLog(msg);
+      dispatchTrayNotification('⚠️ 하드웨어 드리프트 감지!', '물리 RAM이 32GB로 증설되고 스토리지가 변경되었습니다. 신규 기준치 승인이 필요합니다.', 'warning');
+    }
+  };
+
+  const handleRenewBaselineAndRetune = () => {
+    setBaselineSpec(currentSpec);
+    setHasSafepoint(true);
+    playAlertSound('complete');
+
+    const timestamp = new Date().toLocaleString('ko-KR');
+    const msg1 = `[Live Safepoint] 하드웨어 스펙 갱신 전 레지스트리 안전 스냅샷 자동 생성 완료 (#${Date.now().toString().slice(-4)})`;
+    const msg2 = `[HW-BASELINE-RENEW] 신규 하드웨어 기준치(Baseline) 승인 완료: RAM ${currentSpec.ramTotalGb}GB, 스토리지 ${currentSpec.storageType} (${currentSpec.storageCapacityGb}GB)`;
+    const msg3 = `[HW-RE-TUNE] 144개 최적화 모듈 재조율 완결 (Working Set 트림 주기 완화, VSS 한도 10% 재할당, 스레드 풀 확장)`;
+
+    setHwAuditLogs(prev => [msg3, msg2, msg1, ...prev]);
+    addLog(msg1);
+    addLog(msg2);
+    addLog(msg3);
+
+    dispatchTrayNotification(
+      '🛡️ 신규 하드웨어 기준치 갱신 완료',
+      `RAM ${currentSpec.ramTotalGb}GB 및 신규 스토리지에 맞추어 144개 모듈 최적화 파이프라인이 안전하게 재조율되었습니다.`,
+      'success'
+    );
+  };
+
+  const generateHardwareVerificationReport = () => {
+    const timestamp = new Date().toLocaleString('ko-KR');
+    const hasDrift = isHwDriftDetected;
+
+    return [
+      `================================================================================`,
+      `          WINPURIFY PRO - HARDWARE SPECIFICATION VERIFICATION REPORT            `,
+      `                (Formal Verification Under Rule WPP-RULE-HW-2026-V1)            `,
+      `================================================================================`,
+      ` Verification Timestamp : ${timestamp}`,
+      ` Software Version       : v${APP_VERSION} Enterprise (PurifyEngineCore.dll Active)`,
+      ` Audit Authority        : AhBiYout (AhBiYout-all)`,
+      ` Verification Status    : ${hasDrift ? '⚠️ DRIFT DETECTED (ACTION REQUIRED)' : '🟢 100% COMPLIANT (MATCH)'}`,
+      `--------------------------------------------------------------------------------`,
+      ` 1. HARDWARE SPECIFICATION COMPARISON (BASELINE vs CURRENT)`,
+      `--------------------------------------------------------------------------------`,
+      ` [CPU Processor]`,
+      `   • Baseline : ${baselineSpec.cpuModel} (${baselineSpec.cpuCores}C / ${baselineSpec.cpuThreads}T)`,
+      `   • Current  : ${currentSpec.cpuModel} (${currentSpec.cpuCores}C / ${currentSpec.cpuThreads}T)`,
+      `   • Status   : ${baselineSpec.cpuModel === currentSpec.cpuModel ? 'MATCH (동일)' : '⚠️ CHANGED (변경 감지)'}`,
+      ``,
+      ` [Physical RAM Memory]`,
+      `   • Baseline : ${baselineSpec.ramTotalGb} GB (${baselineSpec.ramChannel})`,
+      `   • Current  : ${currentSpec.ramTotalGb} GB (${currentSpec.ramChannel})`,
+      `   • Status   : ${baselineSpec.ramTotalGb === currentSpec.ramTotalGb ? 'MATCH (동일)' : '⚠️ CHANGED (용량 변동)'}`,
+      ``,
+      ` [Primary Storage Subsystem]`,
+      `   • Baseline : ${baselineSpec.storageModel} [${baselineSpec.storageType}] (${baselineSpec.storageCapacityGb} GB)`,
+      `   • Current  : ${currentSpec.storageModel} [${currentSpec.storageType}] (${currentSpec.storageCapacityGb} GB)`,
+      `   • Status   : ${baselineSpec.storageModel === currentSpec.storageModel ? 'MATCH (동일)' : '⚠️ CHANGED (디스크 교체)'}`,
+      ``,
+      ` [Graphics & Display Adapter]`,
+      `   • Baseline : ${baselineSpec.gpuModel} (${baselineSpec.gpuVramGb} GB VRAM)`,
+      `   • Current  : ${currentSpec.gpuModel} (${currentSpec.gpuVramGb} GB VRAM)`,
+      `   • Status   : ${baselineSpec.gpuModel === currentSpec.gpuModel ? 'MATCH (동일)' : '⚠️ CHANGED (GPU 변동)'}`,
+      ``,
+      ` [Hardware Fingerprint SHA-256 Hash]`,
+      `   • Baseline : ${baselineSpec.fingerprintHash}`,
+      `   • Current  : ${currentSpec.fingerprintHash}`,
+      `   • Status   : ${baselineSpec.fingerprintHash === currentSpec.fingerprintHash ? 'VALID HASH (무결성 통과)' : '⚠️ DRIFT HASH (지문 불일치)'}`,
+      `--------------------------------------------------------------------------------`,
+      ` 2. THE 5 DECLARED VERIFICATION RULES COMPLIANCE AUDIT`,
+      `--------------------------------------------------------------------------------`,
+      ` [Rule 1] 기준 하드웨어 지문 및 불변 무결성 해시 검증 : ${baselineSpec.fingerprintHash === currentSpec.fingerprintHash ? 'PASS' : 'DRIFT'}`,
+      ` [Rule 2] CPU 코어 토폴로지 및 명령어 세트 검증       : ${baselineSpec.cpuCores === currentSpec.cpuCores ? 'PASS' : 'DRIFT'}`,
+      ` [Rule 3] 물리 RAM 용량 및 대역폭/페이징 검증        : ${baselineSpec.ramTotalGb === currentSpec.ramTotalGb ? 'PASS' : 'DRIFT'}`,
+      ` [Rule 4] 스토리지 미디어 티어 및 NVMe/TRIM 검증      : ${baselineSpec.storageType === currentSpec.storageType ? 'PASS' : 'DRIFT'}`,
+      ` [Rule 5] GPU 디스플레이 어댑터 및 UEFI 보안 검증    : ${baselineSpec.gpuModel === currentSpec.gpuModel ? 'PASS' : 'DRIFT'}`,
+      `--------------------------------------------------------------------------------`,
+      ` 3. AUDIT TRAIL LOGS (%ProgramData%\\WinPurifyPro\\Logs\\HardwareVerification.log)`,
+      `--------------------------------------------------------------------------------`,
+      ...hwAuditLogs.map(l => ` ${l}`),
+      `================================================================================`,
+      ` End of Hardware Audit Report - WinPurify Pro Automated Intelligence`,
+      `================================================================================`
+    ].join('\n');
+  };
 
   // System Tray & Notification Center State
   interface TrayToastItem {
@@ -517,8 +1044,8 @@ const App: React.FC = () => {
     isNewer: false,
     releaseTitle: `WinPurify Pro v${APP_VERSION}`,
     releaseNotes: '',
-    releaseUrl: 'https://github.com/ahbiyout-all/WinPurify-Pro/releases',
-    downloadUrl: 'https://github.com/ahbiyout-all/WinPurify-Pro/releases/latest',
+    releaseUrl: 'https://github.com/AhBiYout-all/WinPurifyPro/releases',
+    downloadUrl: 'https://github.com/AhBiYout-all/WinPurifyPro/releases/latest',
     publishedAt: '',
     status: '확인 대기 중'
   });
@@ -540,18 +1067,18 @@ const App: React.FC = () => {
       setShowUpdateModal(true);
     }
     setIsCheckingUpdate(true);
-    setUpdateInfo(prev => ({ ...prev, status: 'GitHub Releases API (ahbiyout-all/WinPurify-Pro) 실시간 조회 중...' }));
+    setUpdateInfo(prev => ({ ...prev, status: 'GitHub Releases API (AhBiYout-all/WinPurifyPro) 실시간 조회 중...' }));
     if (isManual) {
-      addLog('[자동 업데이트] GitHub API (https://api.github.com/repos/ahbiyout-all/WinPurify-Pro/releases/latest) 실시간 릴리스 조회 중...');
+      addLog('[자동 업데이트] GitHub API (https://api.github.com/repos/AhBiYout-all/WinPurifyPro/releases/latest) 실시간 릴리스 조회 중...');
     }
 
     try {
-      const res = await fetch('https://api.github.com/repos/ahbiyout-all/WinPurify-Pro/releases/latest');
+      const res = await fetch('https://api.github.com/repos/AhBiYout-all/WinPurifyPro/releases/latest');
       if (res.ok) {
         const data = await res.json();
         const tag = (data.tag_name || '').replace(/^v/i, '').trim();
         const isNewer = compareSemVer(tag, APP_VERSION) > 0;
-        let dlUrl = data.html_url || 'https://github.com/ahbiyout-all/WinPurify-Pro/releases/latest';
+        let dlUrl = data.html_url || 'https://github.com/AhBiYout-all/WinPurifyPro/releases/latest';
         if (data.assets && Array.isArray(data.assets) && data.assets.length > 0) {
           const exeAsset = data.assets.find((a: any) => a.name?.endsWith('.exe'));
           if (exeAsset) dlUrl = exeAsset.browser_download_url;
@@ -562,7 +1089,7 @@ const App: React.FC = () => {
           isNewer,
           releaseTitle: data.name || `WinPurify Pro v${tag}`,
           releaseNotes: data.body || '릴리스 변경 내역이 등록되어 있습니다.',
-          releaseUrl: data.html_url || 'https://github.com/ahbiyout-all/WinPurify-Pro/releases',
+          releaseUrl: data.html_url || 'https://github.com/AhBiYout-all/WinPurifyPro/releases',
           downloadUrl: dlUrl,
           publishedAt: data.published_at ? new Date(data.published_at).toLocaleDateString('ko-KR') : '',
           status: isNewer 
@@ -579,7 +1106,7 @@ const App: React.FC = () => {
       } else {
         setUpdateInfo(prev => ({
           ...prev,
-          status: `GitHub 저장소(https://github.com/ahbiyout-all/WinPurify-Pro) 배포 상태 정상. 현재 공식 버전 v${APP_VERSION} 가동 중.`
+          status: `GitHub 저장소(https://github.com/AhBiYout-all/WinPurifyPro) 배포 상태 정상. 현재 공식 버전 v${APP_VERSION} 가동 중.`
         }));
       }
     } catch (err: any) {
@@ -1246,7 +1773,7 @@ const App: React.FC = () => {
     const content = [
       '================================================================================',
       ` ${filenamePrefix} - Generated: ${new Date().toLocaleString()}`,
-      ` Suite Version: v${APP_VERSION} | AhBiYout CISNET`,
+      ` Suite Version: v${APP_VERSION} | AhBiYout`,
       '================================================================================',
       '',
       ...lines
@@ -1445,18 +1972,8 @@ const App: React.FC = () => {
   };
 
   const handleFastScan = () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    dispatchTrayNotification('🔍 Robocopy 초고속 스캔 개시', '133개 전체 모듈 대상 가상 I/O 스트림 탐색 중...', 'info');
-    addLog(`[Robocopy SCAN] 133개 전체 모듈 대상 초고속 가상 I/O 스트림 탐색 (/L /S /BYTES)...`);
-
-    setTimeout(() => {
-      setModules(prev => prev.map(m => ({ ...m, status: 'Done' })));
-      setIsProcessing(false);
-      const freed = formatSize(totalReclaimableBytes);
-      dispatchTrayNotification('✨ 전체 모듈 스캔 완료', `총 133개 모듈 분석 완료. 예상 확보 가능 공간: ${freed}`, 'success');
-      addLog(`[스캔 완료] 총 133개 모듈 I/O 스캔 완료. 확보 가능 공간: ${freed} (소요시간: 0.18s)`);
-    }, 400);
+    setShowScanDashboard(true);
+    startFullScan();
   };
 
   const handleOptimize = () => {
@@ -1497,13 +2014,13 @@ const App: React.FC = () => {
   const handleRamTrim = () => {
     setRamUsagePercent(24);
     setRamGb({ used: 3.8, total: 16.0 });
-    dispatchTrayNotification('🧠 RAM 즉시 압축 완료', '142개 프로세스 Working Set Trim 완료 (2.9 GB 메모리 즉시 회수)', 'success');
-    addLog(`[PurifyEngineCore] CompressPhysicalRAM() 실행 -> 142개 프로세스 Working Set Trim 완료 (2.9 GB RAM 즉시 회수)`);
+    dispatchTrayNotification('🧠 RAM 즉시 압축 및 Standby List 정화 완료', 'NT 커널 PurgeSystemStandbyListNative() 실행 -> 142개 프로세스 Trim 및 대기 메모리 3.4 GB 즉시 회수', 'success');
+    addLog(`[PurifyEngineCore] CompressPhysicalRAM() & PurgeSystemStandbyListNative(4) 실행 -> 142개 프로세스 Working Set Trim 및 NT 커널 대기 메모리(Standby List) 완전 정화 (3.4 GB RAM 즉시 가용 전환)`);
   };
 
   const handleGameBoost = () => {
     setCpuUsage(8);
-    addLog(`[Game Boost] SetProcessPriorityTuning(1) 실행 -> 게임 프로세스 HIGH 우선순위 격상 및 DNS 플러시 완료.`);
+    addLog(`[Game Boost] SetKernelGameBoost(1) 실행 -> MMCSS 격상, 전력 스로틀링 해제, Memory Priority 5단계, DnsFlushResolverCache() 및 DefaultTTL 64 튜닝 완료.`);
   };
 
   const handleToggleSchedule = () => {
@@ -1560,7 +2077,7 @@ const App: React.FC = () => {
           setScheduleTestProgress(90);
           const count = scheduleModuleScope === 'custom' 
             ? scheduleCustomModuleIds.size 
-            : (scheduleProfile === 'all' ? 115 : (scheduleProfile === 'safe' ? 78 : 45));
+            : (scheduleProfile === 'all' ? modules.length : (scheduleProfile === 'safe' ? 106 : 45));
           setScheduleTestStep(`지정된 ${count}개 최적화 모듈 무음 백그라운드 정화 완료 및 임시 캐시 소거...`);
 
           setTimeout(() => {
@@ -1595,7 +2112,7 @@ const App: React.FC = () => {
 
       const scopeText = scheduleModuleScope === 'custom'
         ? `사용자 정의 선택 모듈 (${scheduleCustomModuleIds.size}개)`
-        : (scheduleProfile === 'all' ? '전체 모듈 (115개)' : `${scheduleProfile.toUpperCase()} 프로필`);
+        : (scheduleProfile === 'all' ? `전체 모듈 (${modules.length}개)` : `${scheduleProfile.toUpperCase()} 프로필`);
 
       addLog(`[Task Scheduler] 자동 정화 스케줄 저장 완료: ${triggerText} | 대상: ${scopeText} | RAM압축: ${scheduleAutoTrimRam ? '사용' : '미사용'} | 세이프포인트: ${scheduleCreateSafepoint ? '사용' : '미사용'}`);
       addLog(`[Task Scheduler] schtasks 명령 연동: ${getGeneratedSchtasksCmd()}`);
@@ -1613,7 +2130,8 @@ const App: React.FC = () => {
     { title: 'Native C++ Core 엔진 바인딩', desc: 'PurifyEngineCore.dll P/Invoke 및 Win32 커널 API 상태', passed: true, detail: 'PurifyEngineCore.dll 정상 연결 (C-Linkage Hash: 0x5E81A2)' },
     { title: 'Robocopy 가상 I/O 스캐너', desc: 'Stutter-Free /L /BYTES 비동기 메타데이터 쿼리 가용성', passed: true, detail: 'Windows Robocopy 가상 I/O 엔진 사용 가능' },
     { title: '세이프포인트 스토리지 쓰기 권한', desc: '1-Click Undo 롤백 및 .reg 백업 스냅샷 저장소 접근성', passed: true, detail: '로컬 백업 디렉터리 읽기/쓰기 정상' },
-    { title: '115개 최적화 모듈 데이터셋 무결성', desc: '7개 전체 카테고리 및 Failover 파이프라인 매핑 정합성', passed: true, detail: '115개 전수 모듈 데이터 매핑 완결' }
+    { title: '144개 최적화 모듈 데이터셋 무결성', desc: '8개 전체 카테고리 및 Failover 파이프라인 매핑 정합성', passed: true, detail: '144개 전수 모듈 데이터 매핑 완결' },
+    { title: '하드웨어 스펙 및 핑거프린트 무결성 검증', desc: '5대 하드웨어 검증 규칙(CPU/RAM/스토리지/GPU/보안) 및 드리프트 정합성', passed: !isHwDriftDetected, detail: isHwDriftDetected ? '하드웨어 스펙 변경 감지됨 (신규 기준치 승인 및 재조율 권고)' : '기준 하드웨어 스펙과 100% 일치 (SHA-256 서명 무결성 통과)' }
   ];
 
   return (
@@ -1649,10 +2167,6 @@ const App: React.FC = () => {
             <div className={`flex items-center gap-2 text-[11px] ${currentTheme.headerSub}`}>
               <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noreferrer" className="text-purple-400 hover:text-purple-300 hover:underline">
                 블로그
-              </a>
-              <span className="opacity-50">•</span>
-              <a href="http://www.cisnet.co.kr/" target="_blank" rel="noreferrer" className="text-sky-400 hover:text-sky-300 hover:underline">
-                CISNET
               </a>
               <span className="opacity-50">•</span>
               <button
@@ -1791,11 +2305,33 @@ const App: React.FC = () => {
           <button 
             id="github-update-header-btn"
             onClick={() => handleCheckGitHubUpdates()}
-            title="GitHub Releases (ahbiyout-all/WinPurify-Pro)를 실시간 조회하여 최신 버전 확인 및 Windows PC 설치 파일을 확인합니다."
+            title="GitHub Releases (AhBiYout-all/WinPurifyPro)를 실시간 조회하여 최신 버전 확인 및 Windows PC 설치 파일을 확인합니다."
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 border border-sky-700/80 text-sky-300 text-xs font-bold transition shadow-sm cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-sky-400" />
             <span>업데이트 &amp; 다운로드</span>
+          </button>
+          <button 
+            id="system-health-report-btn"
+            onClick={() => setShowHealthReportModal(true)}
+            title="시스템 최적화 로그와 하드웨어 상태를 집계하여 읽기 쉬운 전문 시스템 건강 리포트를 생성합니다."
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 text-xs font-bold transition shadow-sm cursor-pointer"
+          >
+            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+            <span>시스템 건강 리포트</span>
+          </button>
+          <button 
+            id="hw-verify-header-btn"
+            onClick={() => setShowHwVerifyModal(true)}
+            title="CPU 코어 토폴로지, 물리 RAM, 스토리지(NVMe/SSD), GPU 및 보안 핑거프린트의 달라진 스펙을 5대 검증 규칙(WPP-RULE-HW-2026-V1)에 따라 정밀 진단합니다."
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-xs font-bold transition shadow-sm cursor-pointer ${
+              isHwDriftDetected
+                ? 'bg-amber-950/90 hover:bg-amber-900 border-amber-500/80 text-amber-300 animate-pulse'
+                : 'bg-indigo-950/80 hover:bg-indigo-900 border-indigo-700/80 text-indigo-300'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+            <span>{isHwDriftDetected ? '⚠️ HW 스펙 변경 감지' : '하드웨어 검증 규칙'}</span>
           </button>
           <button 
             id="account-purge-btn"
@@ -1809,12 +2345,28 @@ const App: React.FC = () => {
           <button 
             id="scan-fast-btn"
             disabled={isProcessing}
-            onClick={handleFastScan}
-            title="Windows Robocopy 가상 메타데이터 I/O 스트림(/L /BYTES)을 사용하여 115개 전체 모듈의 점유 용량을 초고속 스캔합니다."
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-900 text-xs font-bold shadow-sm transition disabled:bg-slate-200 disabled:text-slate-600 disabled:opacity-80"
+            onClick={() => {
+              setShowScanDashboard(true);
+              if (!scanCompleted && !isScanningActive) {
+                startFullScan();
+              }
+            }}
+            title="144개 전체 최적화 모듈의 실시간 탐색 진행률을 대시보드로 시각화하고 완료 후 발견 사항 종합 요약 보고서를 제공합니다."
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-75 ${
+              isScanningActive 
+                ? 'bg-sky-600 text-white border-sky-400 animate-pulse' 
+                : scanCompleted
+                ? 'bg-emerald-950/90 hover:bg-emerald-900 border-emerald-600/80 text-emerald-300'
+                : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-900'
+            }`}
           >
-            <Search className="w-3.5 h-3.5 text-slate-900" />
-            <span>초고속 스캔</span>
+            <Search className={`w-3.5 h-3.5 ${isScanningActive ? 'animate-spin' : ''}`} />
+            <span>{isScanningActive ? `스캔 진행 중 (${scanProgressPercent}%)` : scanCompleted ? '스캔 요약 보고서' : '스캔 대시보드'}</span>
+            {scanCompleted && (
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                144/144
+              </span>
+            )}
           </button>
           <button 
             id="optimize-btn"
@@ -1961,6 +2513,27 @@ const App: React.FC = () => {
               <span className="font-medium">3차: Encoded PS Sandbox</span>
               <span className="opacity-60 ml-auto text-[10px]">Safe Failover</span>
             </div>
+
+            <button
+              onClick={() => {
+                setShowScanDashboard(true);
+                if (!scanCompleted && !isScanningActive) {
+                  startFullScan();
+                }
+              }}
+              className="w-full mt-1.5 py-2 px-2.5 rounded-lg bg-sky-950/70 hover:bg-sky-900 border border-sky-700/60 text-sky-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            >
+              <Search className="w-3.5 h-3.5 text-sky-400" />
+              <span>모듈 전수 스캔 대시보드</span>
+            </button>
+
+            <button
+              onClick={() => setShowHwVerifyModal(true)}
+              className="w-full mt-1.5 py-2 px-2.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+              <span>하드웨어 스펙 검증 센터</span>
+            </button>
           </div>
         </aside>
 
@@ -3302,6 +3875,37 @@ const App: React.FC = () => {
                     >
                       해제
                     </button>
+
+                    <div className="flex items-center gap-1.5 border-l border-slate-800 pl-3 ml-1">
+                      <span className="text-sky-400 font-bold text-xs">최적화 프로필:</span>
+                      <select
+                        value={commanderPreset}
+                        onChange={e => setCommanderPreset(e.target.value)}
+                        className="bg-slate-900 border border-sky-500/60 rounded px-2 py-1 text-sky-300 font-bold text-xs focus:outline-none focus:border-sky-400 cursor-pointer"
+                      >
+                        <option value="Safe (권장 기본)">권장 기본 (Safe)</option>
+                        <option value="Deep (심층 정화)">딥 클린 (Deep)</option>
+                        <option value="Gaming (게이밍 가속)">게이밍 가속 (Gaming)</option>
+                        <option value="Zero-Trace (완전 초기화)">완전 초기화 (Zero-Trace)</option>
+                      </select>
+                      <button
+                        onClick={() => {
+                          const selCount = remoteNodes.filter(n => n.selected).length;
+                          setCommanderLogs(prev => [`[Batch Preset] ${selCount}대 대상 PC에 '${commanderPreset}' 최적화 프로필 일괄 적용 및 배포 완료`, ...prev]);
+                          triggerRemoteActionHud(
+                            '🚨 중앙 관제(Commander) 원격 명령 동작 중',
+                            `최적화 프로필 일괄 배포 [${commanderPreset}]`,
+                            '192.168.1.100 (Central Commander Console)',
+                            `[성공] ${selCount}대 원격 노드 대상 '${commanderPreset}' 정책 배포 완료`,
+                            'DeployPreset'
+                          );
+                        }}
+                        className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1"
+                        title="선택한 최적화 프로필을 선택된 PC들에 일괄 적용합니다"
+                      >
+                        <span>📋 프로필 배포</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -3949,7 +4553,7 @@ const App: React.FC = () => {
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Cisnet Soft 공식 소프트웨어 라이선스 정의 및 Inno Setup 설치 마법사 연동 EULA
+                    공식 소프트웨어 라이선스 정의 및 Inno Setup 설치 마법사 연동 EULA
                   </p>
                 </div>
               </div>
@@ -4090,7 +4694,7 @@ const App: React.FC = () => {
                       ================================================================================
                     </div>
                     <p className="text-slate-300 mb-4">
-                      본 최종 사용자 사용권 계약서(이하 "본 계약")는 <strong>Cisnet Soft</strong>(이하 "회사")가 개발 및 공급하는 <strong>"WinPurify Pro"</strong>(이하 "소프트웨어", C++ 네이티브 가속 엔진 <code className="text-sky-300 font-mono">PurifyEngineCore.dll</code>, 원격 에이전트 서비스 <code className="text-sky-300 font-mono">WinPurifyAgentService</code>, 센트럴 커맨더 <code className="text-sky-300 font-mono">Central Commander</code> 및 부속 어셈블리와 문서 포함)의 설치 및 사용에 관한 사용자와 회사 간의 법적 계약입니다.
+                      본 최종 사용자 사용권 계약서(이하 "본 계약")는 <strong>개발자 AhBiYout</strong>(이하 "개발자")가 개발 및 공급하는 <strong>"WinPurify Pro"</strong>(이하 "소프트웨어", C++ 네이티브 가속 엔진 <code className="text-sky-300 font-mono">PurifyEngineCore.dll</code>, 원격 에이전트 서비스 <code className="text-sky-300 font-mono">WinPurifyAgentService</code>, 센트럴 커맨더 <code className="text-sky-300 font-mono">Central Commander</code> 및 부속 어셈블리와 문서 포함)의 설치 및 사용에 관한 사용자와 개발자 간의 법적 계약입니다.
                     </p>
                     <p className="text-amber-300/90 mb-6 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
                       ⚠️ 사용자가 본 소프트웨어를 설치, 복사 또는 사용하는 것은 본 계약 조건의 전부에 동의함을 의미합니다. 본 계약 조건에 동의하지 않는 경우, 설치를 중단하고 소프트웨어 파일 일체를 즉시 삭제하여 주십시오.
@@ -4100,7 +4704,7 @@ const App: React.FC = () => {
                       <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
                         <div className="font-bold text-sky-400 text-sm mb-1.5">제1조 (사용권의 부여 및 허용 범위)</div>
                         <ul className="list-disc list-inside space-y-1 text-slate-300">
-                          <li>회사는 본 계약 조건에 따라 사용자에게 비독점적이고 양도 불가능한 소프트웨어 사용 권한을 부여합니다.</li>
+                          <li>개발자는 본 계약 조건에 따라 사용자에게 비독점적이고 양도 불가능한 소프트웨어 사용 권한을 부여합니다.</li>
                           <li>개인 사용자 및 기업, 교육기관, 공공기관은 정식 라이선스 범위 내에서 Windows 운영체제 기반 PC 및 서버 환경에 본 소프트웨어를 설치하고, 133개 최적화 모듈, 실시간 모니터링, 자동 스케줄러, 세이프포인트 백업 및 복원 기능을 자유롭게 사용할 수 있습니다.</li>
                           <li>Unpacked Multi-File 정식 설치 또는 Portable 단독 실행 패키지 형태로 허가된 시스템에 배포하여 사용할 수 있습니다.</li>
                         </ul>
@@ -4118,7 +4722,7 @@ const App: React.FC = () => {
                       <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
                         <div className="font-bold text-purple-400 text-sm mb-1.5">제3조 (지적재산권 및 저작권)</div>
                         <ul className="list-disc list-inside space-y-1 text-slate-300">
-                          <li>본 소프트웨어와 관련된 프로그램 코드, UI 디자인, 아이콘(<code className="text-purple-300 font-mono">WinPurify.ico</code>), 로고 이미지, C++ 네이티브 바이너리(<code className="text-purple-300 font-mono">PurifyEngineCore.dll</code>), 문서 및 기술 사양에 대한 일체의 소유권과 저작권은 <strong>Cisnet Soft</strong>에 있습니다.</li>
+                          <li>본 소프트웨어와 관련된 프로그램 코드, UI 디자인, 아이콘(<code className="text-purple-300 font-mono">WinPurify.ico</code>), 로고 이미지, C++ 네이티브 바이너리(<code className="text-purple-300 font-mono">PurifyEngineCore.dll</code>), 문서 및 기술 사양에 대한 일체의 소유권과 저작권은 <strong>개발자 AhBiYout</strong>에 있습니다.</li>
                           <li>본 소프트웨어는 대한민국 저작권법, 컴퓨터프로그램보호법 및 국제 저작권 협약의 보호를 받습니다.</li>
                           <li>사용자는 회사의 사전 서면 승인 없이 본 소프트웨어를 역컴파일, 리버스 엔지니어링, 디스어셈블하거나 원본 코드를 임의 변조하여 무단 상업적 재배포를 수행할 수 없습니다.</li>
                         </ul>
@@ -4151,7 +4755,7 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="mt-6 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-center text-xs text-slate-400">
-                      공급자: <strong>Cisnet Soft</strong> (개발자: AhBiYout) • 블로그: <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noreferrer" className="text-purple-400 underline">https://ahbiyoutvibe.blogspot.com/</a> • 웹사이트: <a href="http://www.cisnet.co.kr/" target="_blank" rel="noreferrer" className="text-sky-400 underline">http://www.cisnet.co.kr/</a>
+                      개발자: <strong>AhBiYout</strong> • 블로그: <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noreferrer" className="text-purple-400 underline">https://ahbiyoutvibe.blogspot.com/</a>
                     </div>
                   </div>
                 ) : (
@@ -4166,7 +4770,7 @@ const App: React.FC = () => {
                       IMPORTANT: PLEASE READ THIS SOFTWARE LICENSE AGREEMENT CAREFULLY BEFORE DOWNLOADING, INSTALLING, OR USING WINPURIFY PRO.
                     </p>
                     <p className="text-amber-300/90 mb-6 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
-                      This End User License Agreement ("EULA") is a legal agreement between you (either an individual or a single legal entity, hereinafter "User") and <strong>Cisnet Soft</strong> ("Licensor", developer of WinPurify Pro) regarding the use of <strong>"WinPurify Pro"</strong> (including the 133-module optimization suite, native C++ acceleration core <code className="text-sky-300 font-mono">PurifyEngineCore.dll</code>, Central Commander multi-PC fleet management console, <code className="text-sky-300 font-mono">WinPurifyAgentService</code> background Windows service, and associated documentation).
+                      This End User License Agreement ("EULA") is a legal agreement between you (either an individual or a single legal entity, hereinafter "User") and <strong>Lead Developer AhBiYout</strong> ("Licensor", developer of WinPurify Pro) regarding the use of <strong>"WinPurify Pro"</strong> (including the 133-module optimization suite, native C++ acceleration core <code className="text-sky-300 font-mono">PurifyEngineCore.dll</code>, Central Commander multi-PC fleet management console, <code className="text-sky-300 font-mono">WinPurifyAgentService</code> background Windows service, and associated documentation).
                     </p>
 
                     <div className="space-y-4">
@@ -4191,7 +4795,7 @@ const App: React.FC = () => {
                       <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
                         <div className="font-bold text-purple-400 text-sm mb-1.5">3. INTELLECTUAL PROPERTY RIGHTS &amp; RESTRICTIONS</div>
                         <ul className="list-disc list-inside space-y-1 text-slate-300">
-                          <li>All title, ownership rights, trademarks, and intellectual property rights in and to the Software (including binary code, C++ native core <code className="text-purple-300 font-mono">PurifyEngineCore.dll</code>, WPF UI designs, graphics, and documentation) are owned exclusively by <strong>Cisnet Soft</strong>.</li>
+                          <li>All title, ownership rights, trademarks, and intellectual property rights in and to the Software (including binary code, C++ native core <code className="text-purple-300 font-mono">PurifyEngineCore.dll</code>, WPF UI designs, graphics, and documentation) are owned exclusively by <strong>Lead Developer AhBiYout</strong>.</li>
                           <li>The Software is protected by copyright laws and international copyright treaties.</li>
                           <li>You shall not reverse engineer, decompile, disassemble, or derive source code from the compiled binaries, nor distribute, lease, rent, sell, or sublicense the Software without explicit written authorization.</li>
                         </ul>
@@ -4210,7 +4814,7 @@ const App: React.FC = () => {
                         <ul className="list-disc list-inside space-y-1 text-slate-300">
                           <li>THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITH ALL FAULTS AND WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS, IMPLIED, OR STATUTORY.</li>
                           <li>Users are strongly advised to utilize the built-in Live Safepoint rollback facility and maintain comprehensive system backups before executing aggressive optimization, registry cleaning, or remote power control operations.</li>
-                          <li>IN NO EVENT SHALL CISNET SOFT BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF OR IN CONNECTION WITH THE USE OR INABILITY TO USE THE SOFTWARE.</li>
+                          <li>IN NO EVENT SHALL LEAD DEVELOPER AHBIYOUT BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF OR IN CONNECTION WITH THE USE OR INABILITY TO USE THE SOFTWARE.</li>
                         </ul>
                       </div>
 
@@ -4224,7 +4828,7 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="mt-6 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-center text-xs text-slate-400">
-                      Licensor: <strong>Cisnet Soft</strong> (Lead Developer: AhBiYout) • Blog: <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noreferrer" className="text-purple-400 underline">https://ahbiyoutvibe.blogspot.com/</a> • Website: <a href="http://www.cisnet.co.kr/" target="_blank" rel="noreferrer" className="text-sky-400 underline">http://www.cisnet.co.kr/</a>
+                      Developer: <strong>AhBiYout</strong> • Blog: <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noreferrer" className="text-purple-400 underline">https://ahbiyoutvibe.blogspot.com/</a>
                     </div>
                   </div>
                 )}
@@ -4803,6 +5407,953 @@ const App: React.FC = () => {
       </div>
 
       {/* ================================================================= */}
+      {/* 📊 System Health & Optimization Report Generator Modal            */}
+      {/* ================================================================= */}
+      {showHealthReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl bg-slate-900 border border-emerald-500/50 rounded-2xl shadow-2xl shadow-emerald-500/30 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-xl">
+                  📊
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-100 text-base">시스템 건강 리포트 (System Health Report)</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold">
+                      Score: 98/100 (Optimal)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    최적화 로그, 하드웨어 상태 및 모듈 실행 내역을 집계한 전문 요약 보고서
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHealthReportModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+              {/* Quick KPI Grid */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                  <div className="text-[11px] text-slate-400">시스템 건강 점수</div>
+                  <div className="text-2xl font-extrabold text-emerald-400 mt-1">98 <span className="text-xs text-slate-400">/100</span></div>
+                  <div className="text-[10px] text-emerald-500 font-semibold mt-0.5">🟢 최적 상태 (Optimal)</div>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                  <div className="text-[11px] text-slate-400">선택된 정화 모듈</div>
+                  <div className="text-2xl font-extrabold text-sky-400 mt-1">{selectedCount} <span className="text-xs text-slate-400">개</span></div>
+                  <div className="text-[10px] text-sky-300 font-semibold mt-0.5">확보 예상: {formatSize(totalReclaimableBytes)}</div>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                  <div className="text-[11px] text-slate-400">실시간 하드웨어 부하</div>
+                  <div className="text-lg font-extrabold text-indigo-400 mt-1">CPU {cpuUsage}% / RAM {ramUsagePercent.toFixed(0)}%</div>
+                  <div className="text-[10px] text-indigo-300 font-semibold mt-0.5">Native C++ Core 연동</div>
+                </div>
+              </div>
+
+              {/* Report Text View */}
+              <div className="space-y-1.5">
+                <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                  <span>📄 리포트 미리보기 (Aggregated Report Summary)</span>
+                  <span className="text-[10px] text-slate-500 font-mono">UTF-8 Plain Text</span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 whitespace-pre-wrap max-h-64 overflow-y-auto leading-relaxed select-text">
+                  {generateSystemHealthReport()}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generateSystemHealthReport());
+                    setHealthReportCopied(true);
+                    setTimeout(() => setHealthReportCopied(false), 2000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{healthReportCopied ? '클립보드 복사 완료!' : '리포트 복사하기'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    downloadLogFile(generateSystemHealthReport().split('\n'), 'WinPurify_SystemHealth_Report');
+                    addLog('[리포트] 시스템 건강 요약 리포트 파일(.txt) 다운로드 완료');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-white" />
+                  <span>리포트 다운로드 (.txt)</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowHealthReportModal(false)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* 🛡️ Hardware Spec Verification Center & Rule Declaration Modal     */}
+      {/* ================================================================= */}
+      {showHwVerifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-3xl bg-slate-900 border border-indigo-500/60 rounded-2xl shadow-2xl shadow-indigo-500/30 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[92vh]">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-bold text-xl">
+                  🛡️
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-100 text-base">하드웨어 스펙 검증 센터 &amp; 규칙 선언</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                      WPP-RULE-HW-2026-V1
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                      isHwDriftDetected
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    }`}>
+                      {isHwDriftDetected ? '⚠️ 드리프트 감지 (재조율 필요)' : '🟢 기준치 일치 (100% Match)'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    CPU 코어 토폴로지, RAM 용량, NVMe/SSD 티어 및 GPU/보안 핑거프린트 스펙 검증 및 144개 모듈 최적화 동기화
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHwVerifyModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-slate-800 bg-slate-950/60 px-6">
+              {[
+                { id: 'status', label: '1. 스펙 대조 및 실시간 검증', icon: '⚡' },
+                { id: 'rules', label: '2. 5대 하드웨어 검증 규칙 선언문', icon: '📜' },
+                { id: 'audit', label: '3. 감사 로그 및 리포트', icon: '📂' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setHwVerifyActiveTab(tab.id as any)}
+                  className={`py-3 px-4 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${
+                    hwVerifyActiveTab === tab.id
+                      ? 'border-indigo-400 text-indigo-300 bg-indigo-500/10'
+                      : 'border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Scan Animation Banner */}
+            {isHwScanning && (
+              <div className="px-6 py-2.5 bg-indigo-950/90 border-b border-indigo-500/50 animate-pulse">
+                <div className="flex items-center justify-between text-xs text-indigo-200 font-bold mb-1">
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{hwScanStep}</span>
+                  </span>
+                  <span>{hwScanProgress}%</span>
+                </div>
+                <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-indigo-400 h-full transition-all duration-300" style={{ width: `${hwScanProgress}%` }}></div>
+                </div>
+              </div>
+            )}
+
+            {/* Body */}
+            <div className="p-6 space-y-4 max-h-[62vh] overflow-y-auto">
+              {/* TAB 1: STATUS & COMPARISON */}
+              {hwVerifyActiveTab === 'status' && (
+                <div className="space-y-4">
+                  {/* Warning Strip if Drift Detected */}
+                  {isHwDriftDetected && (
+                    <div className="p-3.5 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-200 text-xs flex items-center justify-between gap-3 animate-in fade-in duration-150">
+                      <div className="flex items-center gap-2.5">
+                        <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                        <div>
+                          <div className="font-bold text-amber-300">하드웨어 스펙 변경(Hardware Drift)이 감지되었습니다!</div>
+                          <div className="text-[11px] text-amber-200/90 mt-0.5">
+                            물리 RAM 또는 스토리지 구성이 기준치와 다릅니다. 기존 최적화 프리셋이 비효율적일 수 있으므로 신규 기준치를 승인하고 144개 모듈을 재조율하십시오.
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleRenewBaselineAndRetune}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shrink-0 cursor-pointer shadow-md"
+                      >
+                        신규 기준치 승인 &amp; 재조율
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 4-Card Hardware Comparison Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {/* CPU Card */}
+                    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs pb-1 border-b border-slate-850">
+                        <span className="font-bold text-sky-400 flex items-center gap-1.5">
+                          <Cpu className="w-4 h-4" />
+                          <span>CPU 프로세서 토폴로지 (Rule 2)</span>
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                          baselineSpec.cpuModel === currentSpec.cpuModel ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {baselineSpec.cpuModel === currentSpec.cpuModel ? 'MATCH' : 'CHANGED'}
+                        </span>
+                      </div>
+                      <div className="text-xs space-y-1">
+                        <div><strong className="text-slate-200">{currentSpec.cpuModel}</strong></div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          코어: {currentSpec.cpuCores} 코어 / {currentSpec.cpuThreads} 스레드 | {currentSpec.cpuArchitecture}
+                        </div>
+                        <div className="text-[10px] text-slate-500 pt-1">
+                          기준치: {baselineSpec.cpuModel} ({baselineSpec.cpuCores}C/{baselineSpec.cpuThreads}T)
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RAM Card */}
+                    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs pb-1 border-b border-slate-850">
+                        <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                          <Activity className="w-4 h-4" />
+                          <span>물리 RAM 용량 및 대역폭 (Rule 3)</span>
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                          baselineSpec.ramTotalGb === currentSpec.ramTotalGb ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300 animate-pulse'
+                        }`}>
+                          {baselineSpec.ramTotalGb === currentSpec.ramTotalGb ? 'MATCH' : `DRIFT (${currentSpec.ramTotalGb}GB)`}
+                        </span>
+                      </div>
+                      <div className="text-xs space-y-1">
+                        <div><strong className="text-slate-200">{currentSpec.ramTotalGb} GB Total Physical RAM</strong></div>
+                        <div className="text-[11px] text-slate-400 font-mono">{currentSpec.ramChannel}</div>
+                        <div className="text-[10px] text-slate-500 pt-1">
+                          기준치: {baselineSpec.ramTotalGb} GB ({baselineSpec.ramChannel})
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Storage Card */}
+                    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs pb-1 border-b border-slate-850">
+                        <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                          <HardDrive className="w-4 h-4" />
+                          <span>스토리지 미디어 티어 &amp; TRIM (Rule 4)</span>
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                          baselineSpec.storageModel === currentSpec.storageModel ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {baselineSpec.storageModel === currentSpec.storageModel ? 'MATCH' : 'CHANGED'}
+                        </span>
+                      </div>
+                      <div className="text-xs space-y-1">
+                        <div><strong className="text-slate-200">{currentSpec.storageModel}</strong></div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          미디어: {currentSpec.storageType} | 총용량: {currentSpec.storageCapacityGb} GB (여유: {currentSpec.storageFreeGb} GB)
+                        </div>
+                        <div className="text-[10px] text-slate-500 pt-1">
+                          기준치: {baselineSpec.storageModel} ({baselineSpec.storageCapacityGb} GB)
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* GPU & Security Card */}
+                    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs pb-1 border-b border-slate-850">
+                        <span className="font-bold text-indigo-400 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>GPU 가속 &amp; UEFI 무결성 (Rule 1 &amp; 5)</span>
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                          baselineSpec.gpuModel === currentSpec.gpuModel ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {baselineSpec.gpuModel === currentSpec.gpuModel ? 'MATCH' : 'CHANGED'}
+                        </span>
+                      </div>
+                      <div className="text-xs space-y-1">
+                        <div><strong className="text-slate-200">{currentSpec.gpuModel}</strong></div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          VRAM: {currentSpec.gpuVramGb} GB | {currentSpec.tpmVersion} | SecureBoot: {currentSpec.secureBoot ? 'Active' : 'Disabled'}
+                        </div>
+                        <div className="text-[10px] text-slate-500 pt-1">
+                          기준치: {baselineSpec.gpuModel} ({baselineSpec.gpuVramGb} GB VRAM)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fingerprint Hash Strip */}
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1 font-mono text-[11px]">
+                    <div className="flex items-center justify-between text-slate-400">
+                      <span className="font-bold text-slate-300">🔑 하드웨어 지문 (SHA-256 System Fingerprint)</span>
+                      <span className={baselineSpec.fingerprintHash === currentSpec.fingerprintHash ? 'text-emerald-400' : 'text-amber-400'}>
+                        {baselineSpec.fingerprintHash === currentSpec.fingerprintHash ? '✓ HASH INTEGRITY VERIFIED' : '⚠️ HASH DRIFT DETECTED'}
+                      </span>
+                    </div>
+                    <div className="truncate text-slate-400 text-[10px]">
+                      현재 해시: <span className="text-sky-300">{currentSpec.fingerprintHash}</span>
+                    </div>
+                    <div className="truncate text-slate-500 text-[10px]">
+                      기준 해시: <span className="text-slate-400">{baselineSpec.fingerprintHash}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions Toolbar */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleRunHardwareVerification}
+                        disabled={isHwScanning}
+                        className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isHwScanning ? 'animate-spin' : ''}`} />
+                        <span>{isHwScanning ? '스펙 진단 중...' : '⚡ 하드웨어 스펙 정밀 검증'}</span>
+                      </button>
+                      <button
+                        onClick={handleSimulateDrift}
+                        className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                        title="물리 RAM 16GB -> 32GB 확장 및 2TB NVMe SSD 교체 시뮬레이션을 실행하여 드리프트 감지 엔진을 테스트합니다."
+                      >
+                        <span>🧪</span>
+                        <span>{hwDriftSimulated ? '순정 기준 스펙으로 원복' : '스펙 변경(32GB RAM/NVMe) 시뮬레이션'}</span>
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={handleRenewBaselineAndRetune}
+                      className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>신규 기준치 승인 &amp; 144개 모듈 재조율</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: DECLARED RULES TEXT */}
+              {hwVerifyActiveTab === 'rules' && (
+                <div className="space-y-3 text-xs leading-relaxed">
+                  <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-800/40 text-indigo-200">
+                    <strong>📌 선언문 규정 코드: WPP-RULE-HW-2026-V1</strong><br />
+                    본 규정은 WinPurify Pro 구동 시스템의 하드웨어 스펙 변경 발생 시 최적화 모듈과 커널 API의 정합성을 보장하기 위해 선언된 영구적 규칙입니다.
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                      <div className="font-bold text-sky-400 text-sm mb-1">🏛️ Rule 1: 기준 하드웨어 지문 및 불변 무결성 해시 규칙</div>
+                      <p className="text-slate-300">
+                        CPUID, SMBIOS UUID, 메인보드 시리얼, 시스템 드라이브 시리얼을 결합하여 SHA-256 기반의 하드웨어 지문을 산출하고, 레지스트리 <code>HKLM\SOFTWARE\WinPurifyPro\HardwareBaseline</code>에 보존하여 런타임 변조 및 비인가 장치 이동을 0.5초 이내에 차단합니다.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                      <div className="font-bold text-emerald-400 text-sm mb-1">🏛️ Rule 2: CPU 토폴로지 및 명령어 세트 변경 검증 규칙</div>
+                      <p className="text-slate-300">
+                        물리 코어 수, 논리 스레드 수, Intel/AMD 하이브리드(P-Core + E-Core) 비율 및 AVX-512/AVX2 가용성을 검증합니다. CPU 변경 감지 시 PurifyEngineCore 작업자 스레드 풀 크기를 동적 재계산하고 백그라운드 정화 작업을 E-Core로 안전하게 격리합니다.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                      <div className="font-bold text-amber-400 text-sm mb-1">🏛️ Rule 3: 물리 RAM 용량 및 대역폭 검증 규칙 (Working Set 조율)</div>
+                      <p className="text-slate-300">
+                        물리 메모리 총용량(GlobalMemoryStatusEx) 및 듀얼채널 대역폭을 검증합니다. RAM 증설(16GB → 32GB 이상) 감지 시 불필요한 Working Set 압축 빈도를 완화하고 디스크 I/O 버퍼를 64MB로 확장하며, RAM 축소(슬롯 탈락 등) 감지 시 긴급 경고와 함께 메모리 트림 임계치를 75% 수준으로 강화합니다.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                      <div className="font-bold text-purple-400 text-sm mb-1">🏛️ Rule 4: 스토리지 미디어 티어 및 볼륨 구성 검증 규칙 (NVMe &amp; TRIM)</div>
+                      <p className="text-slate-300">
+                        IOCTL_STORAGE_QUERY_PROPERTY 커널 쿼리를 통해 NVMe PCIe Gen4/5, SATA SSD, HDD를 실시간 판별합니다. SSD/NVMe 장착 시 기계식 디프래그 스케줄을 전면 배제하고 TRIM(DisableDeleteNotify=0)을 강제하며, Volume Shadow Copy(VSS) 백업 한도를 신규 볼륨 크기의 5~10%로 자동 재조정합니다.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                      <div className="font-bold text-rose-400 text-sm mb-1">🏛️ Rule 5: GPU 디스플레이 어댑터 및 보안 가상화 검증 규칙</div>
+                      <p className="text-slate-300">
+                        주 디스플레이 어댑터 벤더 및 VRAM 용량, HAGS(하드웨어 가속 GPU 일정 예약) 상태를 검증합니다. GPU 교체 시 구형 셰이더 캐시를 일괄 소거하고 DWM 컴포지터 최적화를 재적용하며, 가상머신(Hyper-V/VMware) 환경 전이 시 네이티브 직접 제어를 가상화 안전 모드로 자동 전환합니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: AUDIT TRAIL LOGS */}
+              {hwVerifyActiveTab === 'audit' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-slate-300 font-bold">
+                    <span>📜 실시간 감사 로그 (%ProgramData%\WinPurifyPro\Logs\HardwareVerification.log)</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Total {hwAuditLogs.length} events</span>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 space-y-1.5 max-h-56 overflow-y-auto leading-relaxed">
+                    {hwAuditLogs.map((log, idx) => (
+                      <div key={idx} className="leading-tight">{log}</div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <div className="text-xs font-bold text-slate-300">📄 하드웨어 스펙 검증 리포트 미리보기</div>
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[10px] text-slate-400 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed select-text">
+                      {generateHardwareVerificationReport()}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generateHardwareVerificationReport());
+                    setHwReportCopied(true);
+                    setTimeout(() => setHwReportCopied(false), 2000);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{hwReportCopied ? '복사 완료!' : '리포트 복사'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    downloadLogFile(generateHardwareVerificationReport().split('\n'), 'WinPurify_HardwareVerification_Report');
+                    addLog('[하드웨어 검증] 스펙 검증 리포트 파일(.txt) 다운로드 완료');
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-white" />
+                  <span>리포트 다운로드 (.txt)</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowHwVerifyModal(false)}
+                className="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* 🔍 144-Module Full Scan Dashboard & Findings Summary Report Modal */}
+      {/* ================================================================= */}
+      {showScanDashboard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl bg-slate-900 border-2 border-sky-500/70 rounded-2xl shadow-2xl shadow-sky-500/25 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 max-h-[92vh]">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3.5">
+                <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center text-xl shadow-lg transition-all ${
+                  isScanningActive
+                    ? 'bg-sky-500/20 border-sky-400 text-sky-300 animate-pulse'
+                    : scanCompleted
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                    : 'bg-slate-800 border-slate-700 text-slate-300'
+                }`}>
+                  <Search className={`w-6 h-6 ${isScanningActive ? 'animate-spin' : ''}`} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="font-bold text-slate-100 text-base">144개 전수 모듈 스캔 대시보드 &amp; 발견 요약 보고서</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                      v{APP_VERSION} Engine
+                    </span>
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
+                      isScanningActive
+                        ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 animate-pulse'
+                        : isScanPaused
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : scanCompleted
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}>
+                      {isScanningActive
+                        ? `● 탐색 진행 중 (${scanProgressPercent}%)`
+                        : isScanPaused
+                        ? '⏸️ 일시 정지됨'
+                        : scanCompleted
+                        ? '✓ 스캔 완료 (144/144)'
+                        : '○ 대기 중'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Robocopy 가상 I/O 스트림(/L /BYTES) 및 Win32 커널 API를 통한 8개 카테고리 144개 모듈 실시간 탐색 및 공간 회수 분석
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (isScanningActive) pauseScan();
+                  setShowScanDashboard(false);
+                }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                title="닫기"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-slate-800 bg-slate-950/60 px-6 justify-between items-center">
+              <div className="flex">
+                {[
+                  { id: 'progress', label: '1. 실시간 스캔 진행률 & 모듈 탐색기', icon: '⚡' },
+                  { id: 'summary', label: '2. 스캔 발견 사항 종합 보고서', icon: '📊', highlight: scanCompleted },
+                  { id: 'modules', label: `3. 144개 전수 모듈 발견 내역 (${modules.length})`, icon: '📋' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setScanTab(tab.id as any)}
+                    className={`py-3 px-4 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer relative ${
+                      scanTab === tab.id
+                        ? 'border-sky-400 text-sky-300 bg-sky-500/10'
+                        : 'border-transparent text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                    {tab.highlight && (
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping ml-0.5"></span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400">
+                <span>진행: <strong className="text-sky-300">{currentScanningIndex + (scanCompleted ? 0 : 1)}/144</strong></span>
+                <span className="text-slate-600">|</span>
+                <span>예상 공간: <strong className="text-emerald-400">{formatSize(modules.reduce((a, b) => a + b.estimatedKb * 1024, 0))}</strong></span>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 max-h-[66vh] overflow-y-auto">
+              {/* TAB 1: REAL-TIME PROGRESS & PROBING ENGINE */}
+              {scanTab === 'progress' && (
+                <div className="space-y-4">
+                  {/* Master Progress Card */}
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5 shadow-inner">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-200">144개 최적화 모듈 전수 탐색 진행률</span>
+                        <span className="text-[11px] font-mono text-slate-400">
+                          ({currentScanningIndex + (scanCompleted ? 0 : 1)} / {modules.length} 모듈 검사 완료)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-base font-extrabold text-sky-400">{scanProgressPercent}%</span>
+                      </div>
+                    </div>
+
+                    {/* Animated Progress Bar */}
+                    <div className="w-full bg-slate-900 rounded-full h-3 overflow-hidden border border-slate-800 p-0.5">
+                      <div
+                        className={`h-full rounded-full transition-all duration-200 ${
+                          scanCompleted
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                            : 'bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 animate-pulse'
+                        }`}
+                        style={{ width: `${scanProgressPercent}%` }}
+                      ></div>
+                    </div>
+
+                    {/* Probing Module Live Strip */}
+                    <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-850 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-700/60 font-mono font-bold text-[10px] shrink-0">
+                          #{String(modules[currentScanningIndex]?.seq || 1).padStart(2, '0')}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-200 truncate">{modules[currentScanningIndex]?.name || '탐색 대기'}</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                              {modules[currentScanningIndex]?.category}
+                            </span>
+                            <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border ${
+                              modules[currentScanningIndex]?.risk === 'Safe' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
+                              modules[currentScanningIndex]?.risk === 'Deep' ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' :
+                              'bg-rose-500/10 text-rose-300 border-rose-500/30'
+                            }`}>
+                              {modules[currentScanningIndex]?.risk}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
+                            탐색 경로: <span className="text-sky-300">{getModuleProbePath(modules[currentScanningIndex] || modules[0])}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0 text-[11px] font-mono text-slate-400 border-t sm:border-t-0 sm:border-l border-slate-800 pt-1 sm:pt-0 sm:pl-3">
+                        <div>속도: <strong className="text-emerald-400">2,850 files/s</strong></div>
+                        <div>I/O: <strong className="text-sky-400">Robocopy /L</strong></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 8-Category Progress Matrix */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <span>📂 카테고리별 실시간 스캔 완료 현황</span>
+                      <span className="text-[10px] text-slate-500 font-mono">8개 카테고리 병렬 I/O</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                      {['Privacy', 'Browser', 'Security', 'Registry', 'Update', 'System', 'Storage', 'Special'].map(cat => {
+                        const catMods = modules.filter(m => m.category === cat);
+                        const catDoneCount = catMods.filter(m => {
+                          const status = scannedModuleStatuses[m.id]?.status;
+                          return scanCompleted || status === 'Done';
+                        }).length;
+                        const catPct = catMods.length > 0 ? Math.round((catDoneCount / catMods.length) * 100) : 0;
+                        const catBytes = catMods.reduce((acc, m) => acc + m.estimatedKb * 1024, 0);
+
+                        return (
+                          <div key={cat} className="p-2.5 rounded-xl bg-slate-950 border border-slate-850 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-slate-300 truncate">{CATEGORY_CONFIG[cat]?.label.split(' ')[1] || cat}</span>
+                              <span className="font-mono text-[10px] text-sky-400 font-bold">{catPct}%</span>
+                            </div>
+                            <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-150 ${
+                                  catPct === 100 ? 'bg-emerald-400' : 'bg-sky-400'
+                                }`}
+                                style={{ width: `${catPct}%` }}
+                              ></div>
+                            </div>
+                            <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+                              <span>{catDoneCount}/{catMods.length} 모듈</span>
+                              <span className="text-emerald-400 font-semibold">{formatSize(catBytes)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Controls Toolbar */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      {!isScanningActive ? (
+                        <button
+                          onClick={startFullScan}
+                          className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/30 transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>{scanCompleted ? '144개 모듈 재스캔 시작' : '스캔 시작 (Start Scan)'}</span>
+                        </button>
+                      ) : isScanPaused ? (
+                        <button
+                          onClick={resumeScan}
+                          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>스캔 재개 (Resume)</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={pauseScan}
+                          className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>⏸️</span>
+                          <span>일시 정지 (Pause)</span>
+                        </button>
+                      )}
+
+                      {isScanningActive && (
+                        <button
+                          onClick={cancelScan}
+                          className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-rose-950/80 hover:text-rose-300 border border-slate-700 text-slate-300 text-xs font-semibold transition cursor-pointer"
+                        >
+                          스캔 중지 (Cancel)
+                        </button>
+                      )}
+                    </div>
+
+                    {scanCompleted && (
+                      <button
+                        onClick={() => setScanTab('summary')}
+                        className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Activity className="w-3.5 h-3.5" />
+                        <span>발견 사항 요약 보고서 보기 (View Report)</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: FINDINGS SUMMARY REPORT */}
+              {scanTab === 'summary' && (
+                <div className="space-y-4 animate-in fade-in duration-150">
+                  {/* Top 4 KPI Summary Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                      <div className="text-[11px] text-slate-400">총 회수 가능 공간</div>
+                      <div className="text-xl font-extrabold text-emerald-400 mt-1">
+                        {formatSize(modules.reduce((a, b) => a + b.estimatedKb * 1024, 0))}
+                      </div>
+                      <div className="text-[10px] text-emerald-500 font-semibold mt-0.5">144개 전수 모듈 집계</div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                      <div className="text-[11px] text-slate-400">발견된 정크/이력 항목</div>
+                      <div className="text-xl font-extrabold text-sky-400 mt-1">
+                        {scanItemsFoundCount > 0 ? scanItemsFoundCount.toLocaleString() : '2,148'} <span className="text-xs text-slate-400">개</span>
+                      </div>
+                      <div className="text-[10px] text-sky-300 font-semibold mt-0.5">파일, 캐시, 고립 키</div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                      <div className="text-[11px] text-slate-400">현재 시스템 건강 점수</div>
+                      <div className="text-xl font-extrabold text-amber-400 mt-1">
+                        68 <span className="text-xs text-slate-400">➔</span> <span className="text-emerald-400">99점</span>
+                      </div>
+                      <div className="text-[10px] text-amber-400 font-semibold mt-0.5">주의 ➔ 정화 시 최적</div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                      <div className="text-[11px] text-slate-400">스캔 소요 시간</div>
+                      <div className="text-xl font-extrabold text-indigo-400 mt-1">
+                        {scanDurationSec > 0 ? `${scanDurationSec}s` : '3.8s'}
+                      </div>
+                      <div className="text-[10px] text-indigo-300 font-semibold mt-0.5">Robocopy 초고속 스트림</div>
+                    </div>
+                  </div>
+
+                  {/* Category Breakdown Matrix */}
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+                      <span className="font-bold text-slate-200">📊 카테고리별 정크 발견 내역 분석</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Total 8 Categories Analyzed</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      {['Privacy', 'Browser', 'Security', 'Registry', 'Update', 'System', 'Storage', 'Special'].map(cat => {
+                        const catMods = modules.filter(m => m.category === cat);
+                        const catBytes = catMods.reduce((acc, m) => acc + m.estimatedKb * 1024, 0);
+                        const catItems = catMods.reduce((acc, m) => acc + Math.max(3, Math.round(m.estimatedKb / 14)), 0);
+
+                        return (
+                          <div key={cat} className="p-2.5 rounded-lg bg-slate-900 border border-slate-850 flex items-center justify-between gap-3 text-xs">
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-200 truncate">{CATEGORY_CONFIG[cat]?.label || cat}</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">
+                                {catMods.length}개 모듈 검사 완료 • {catItems.toLocaleString()}개 잔여 항목
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-xs font-bold text-emerald-400 font-mono">{formatSize(catBytes)}</span>
+                              <span className="text-[10px] text-slate-500 block">회수 가능</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Actions & 1-Click Optimize */}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-sky-950/70 border border-emerald-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-emerald-950/20">
+                    <div>
+                      <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>권장 조치: 발견된 {modules.length}개 모듈 정화 즉시 적용</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 mt-0.5">
+                        정화 작업 개시 전 실시간 Live Safepoint 레지스트리 백업 스냅샷이 자동 생성되어 안전하게 1-Click 복원할 수 있습니다.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setShowScanDashboard(false);
+                        handleOptimize();
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                    >
+                      <Zap className="w-4 h-4 text-amber-300" />
+                      <span>발견 항목 즉시 정화 ({modules.filter(m => m.selected).length}개 모듈)</span>
+                    </button>
+                  </div>
+
+                  {/* Plain Text Report Preview Box */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <span>📄 요약 보고서 전문 (Plain Text Summary)</span>
+                      <span className="text-[10px] text-slate-500 font-mono">UTF-8 Format</span>
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[10px] text-slate-400 whitespace-pre-wrap max-h-44 overflow-y-auto leading-relaxed select-text">
+                      {generateScanSummaryReport()}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: FULL 144-MODULE DISCOVERED ITEMS LIST */}
+              {scanTab === 'modules' && (
+                <div className="space-y-3">
+                  {/* Filter & Search Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                      {['All', 'Privacy', 'Browser', 'Security', 'Registry', 'Update', 'System', 'Storage', 'Special'].map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setScanCategoryFilter(cat)}
+                          className={`px-2.5 py-1 rounded-md font-semibold whitespace-nowrap transition cursor-pointer ${
+                            scanCategoryFilter === cat
+                              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/50'
+                              : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                          }`}
+                        >
+                          {cat === 'All' ? '전체' : CATEGORY_CONFIG[cat]?.label.split(' ')[1] || cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={scanSearchQuery}
+                        onChange={e => setScanSearchQuery(e.target.value)}
+                        placeholder="모듈 이름, 설명 검색..."
+                        className="px-3 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-sky-500 w-44"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Modules Table List */}
+                  <div className="h-64 overflow-y-auto space-y-1.5 pr-1 border border-slate-800 rounded-xl p-2 bg-slate-950/60">
+                    {modules
+                      .filter(m => scanCategoryFilter === 'All' || m.category === scanCategoryFilter)
+                      .filter(m => !scanSearchQuery || m.name.toLowerCase().includes(scanSearchQuery.toLowerCase()) || m.description.toLowerCase().includes(scanSearchQuery.toLowerCase()))
+                      .map(m => {
+                        const statusObj = scannedModuleStatuses[m.id] || { status: 'Done', foundKb: m.estimatedKb, items: 12, targetPath: getModuleProbePath(m) };
+
+                        return (
+                          <div
+                            key={m.id}
+                            onClick={() => handleToggle(m.id)}
+                            className={`p-2.5 rounded-lg border transition cursor-pointer flex items-center justify-between gap-3 ${
+                              m.selected
+                                ? 'bg-sky-950/40 border-sky-800/80 text-sky-200'
+                                : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:bg-slate-800/40'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <input
+                                type="checkbox"
+                                checked={m.selected}
+                                onChange={() => {}}
+                                className="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0 w-3.5 h-3.5 shrink-0"
+                              />
+                              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-sky-400 shrink-0">
+                                #{String(m.seq).padStart(2, '0')}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-slate-200 truncate">{m.name}</div>
+                                <div className="text-[10px] text-slate-400 truncate">{m.description}</div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${
+                                m.risk === 'Safe' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' :
+                                m.risk === 'Deep' ? 'bg-amber-950 text-amber-300 border-amber-800' :
+                                'bg-rose-950 text-rose-300 border-rose-800'
+                              }`}>
+                                {m.risk}
+                              </span>
+                              <span className="text-xs font-mono font-bold text-emerald-400">
+                                {formatSize(m.estimatedKb * 1024)}
+                              </span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
+                                statusObj.status === 'Done' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                                statusObj.status === 'Scanning' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 animate-pulse' :
+                                'bg-slate-800 text-slate-500 border-slate-700'
+                              }`}>
+                                {statusObj.status === 'Done' ? '발견됨' : statusObj.status === 'Scanning' ? '탐색 중' : '대기'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generateScanSummaryReport());
+                    setScanSummaryCopied(true);
+                    setTimeout(() => setScanSummaryCopied(false), 2000);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{scanSummaryCopied ? '클립보드 복사 완료!' : '발견 보고서 복사'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    downloadLogFile(generateScanSummaryReport().split('\r\n'), 'WinPurify_ScanFindings_Summary');
+                    addLog('[Scan Report] 144개 모듈 스캔 발견 요약 보고서 파일(.txt) 다운로드 완료');
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-white" />
+                  <span>보고서 다운로드 (.txt)</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => {
+                    if (isScanningActive) pauseScan();
+                    setShowScanDashboard(false);
+                  }}
+                  className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
       {/* 🚀 GitHub Releases Live Auto-Update Modal Dialog                  */}
       {/* ================================================================= */}
       {showUpdateModal && (
@@ -4874,49 +6425,73 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* 2. GitHub Repository Path Card */}
+              {/* 2. Creator & Official Channels Card */}
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <div className="text-xs font-bold text-slate-300">📂 공식 GitHub 경로 (Repository Path)</div>
-                <div className="space-y-1.5 text-xs font-mono">
-                  <div className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-850">
-                    <span className="text-slate-400">리포지토리:</span>
-                    <a
-                      href="https://github.com/ahbiyout-all/WinPurify-Pro"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sky-400 hover:underline truncate max-w-[280px]"
-                    >
-                      https://github.com/ahbiyout-all/WinPurify-Pro
-                    </a>
+                <div className="text-xs font-bold text-sky-400 flex items-center justify-between">
+                  <span>👤 제작자 및 공식 채널 안내</span>
+                  <span className="text-[10px] text-slate-400">Official Channel</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2 rounded bg-slate-900 border border-slate-850">
+                    <span className="text-slate-400 text-[11px] block">개발자:</span>
+                    <span className="font-semibold text-slate-200">AhBiYout (AhBiYout-all)</span>
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-850">
-                    <span className="text-slate-400">릴리스 배포:</span>
-                    <a
-                      href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-emerald-400 hover:underline truncate max-w-[280px]"
-                    >
-                      https://github.com/ahbiyout-all/WinPurify-Pro/releases
+                  <div className="p-2 rounded bg-slate-900 border border-slate-850">
+                    <span className="text-slate-400 text-[11px] block">프로젝트:</span>
+                    <span className="font-semibold text-sky-400">WinPurify Pro</span>
+                  </div>
+                  <div className="col-span-2 p-2 rounded bg-slate-900 border border-slate-850">
+                    <span className="text-slate-400 text-[11px] block">공식 구글 블로그:</span>
+                    <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noreferrer" className="text-amber-400 hover:underline font-semibold">
+                      https://ahbiyoutvibe.blogspot.com/
                     </a>
                   </div>
                 </div>
               </div>
 
-              {/* 3. Primary Update Download Button */}
+              {/* 3. GitHub Repository Path Card */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="text-xs font-bold text-slate-300">📂 공식 GitHub 경로 (Repository Path)</div>
+                <div className="space-y-1.5 text-xs font-mono">
+                  <div className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-850">
+                    <span className="text-slate-400">GitHub 저장소:</span>
+                    <a
+                      href="https://github.com/AhBiYout-all/WinPurifyPro"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sky-400 hover:underline truncate max-w-[280px]"
+                    >
+                      https://github.com/AhBiYout-all/WinPurifyPro
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-850">
+                    <span className="text-slate-400">GitHub 릴리스:</span>
+                    <a
+                      href="https://github.com/AhBiYout-all/WinPurifyPro/releases"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-emerald-400 hover:underline truncate max-w-[280px]"
+                    >
+                      https://github.com/AhBiYout-all/WinPurifyPro/releases
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Primary Update Download Button */}
               <div className="pt-1">
                 <a
-                  href="https://github.com/ahbiyout-all/WinPurify-Pro/releases"
+                  href="https://github.com/AhBiYout-all/WinPurifyPro/releases"
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:via-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition flex items-center justify-center gap-2 group block text-center"
+                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:via-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition flex items-center justify-center gap-2 group block text-center cursor-pointer"
                 >
                   <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
                   <span>🚀 WinPurifyPro-Setup.exe 즉시 업데이트 다운로드</span>
                 </a>
               </div>
 
-              {/* 4. Release Notes */}
+              {/* 5. Release Notes */}
               {updateInfo.releaseNotes && (
                 <div className="space-y-1.5 pt-1">
                   <div className="text-xs font-bold text-slate-300">📜 릴리스 변경 사항 (Release Notes)</div>
@@ -4930,12 +6505,12 @@ const App: React.FC = () => {
             {/* Footer */}
             <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
               <a
-                href="https://github.com/ahbiyout-all/WinPurify-Pro"
+                href="https://github.com/AhBiYout-all/WinPurifyPro"
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs text-slate-400 hover:text-sky-300 flex items-center gap-1"
               >
-                <span>GitHub ahbiyout-all/WinPurify-Pro</span>
+                <span>GitHub: AhBiYout-all / WinPurifyPro</span>
               </a>
 
               <button

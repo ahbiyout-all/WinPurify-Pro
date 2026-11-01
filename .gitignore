@@ -59,9 +59,6 @@ dist-web/
 Output/
 _Output/
 *.iss.bak
-mobile-dist/
-temp_apk_build/
-temp_ipa_build/
 
 # ------------------------------------------------------------------------------
 # Runtime Logs, Temporary Files & Environment Markers

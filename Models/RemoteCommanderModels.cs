@@ -73,6 +73,8 @@ namespace WinPurifyPro.Models
         public int AppliedRules { get; set; }
         public int TotalRules { get; set; } = 144;
         public string LastSeen { get; set; } = "방금 전";
+        public string MacAddress { get; set; } = string.Empty;
+        public uint PingMs { get; set; } = 0;
         public bool IsSelected { get; set; } = true;
     }
 }

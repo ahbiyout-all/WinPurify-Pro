@@ -192,7 +192,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "seq": 17,
     "id": "pri-explorer-breadcrumb",
     "name": "탐색기 이동 경로 캐시",
-    "description": "탐색기 상단 브레드크럼 네비게이션 캐시 정리",
+    "description": "탐색기 상단 브레드크럼 네비게이션 및 검색창 입력 쿼리(WordWheelQuery) 캐시 정리",
     "category": "Privacy",
     "risk": "Safe",
     "selected": true,
@@ -651,7 +651,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 4056
   },
   {
-    "seq": 581,
+    "seq": 59,
     "id": "sec-ms-account-purge",
     "name": "Microsoft 계정 & Office WAM 토큰 소거 (강제 로그아웃)",
     "description": "Windows 자격 증명 관리자의 MicrosoftAccount/SSO_POP 토큰 및 WAM(IdentityCache/OneAuth/TokenBroker) 캐시를 소거하여 Office/Windows Live에서 강제 로그아웃합니다. [특수 기능: 자동 선택 제외 / 전용 센터 연동]",
@@ -663,7 +663,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 18420
   },
   {
-    "seq": 582,
+    "seq": 60,
     "id": "sec-adobe-session-purge",
     "name": "Adobe Creative Cloud 계정 로그인 세션 & OOBE 소거",
     "description": "Adobe Creative Cloud, Photoshop, Acrobat의 OOBE 인증 토큰 및 로컬 세션 캐시를 소거하여 모든 Adobe 앱에서 즉시 로그아웃합니다. [특수 기능: 자동 선택 제외 / 전용 센터 연동]",
@@ -675,7 +675,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 32150
   },
   {
-    "seq": 583,
+    "seq": 61,
     "id": "sec-autodesk-session-purge",
     "name": "Autodesk (AutoCAD) 로그인 상태 & 토큰 소거",
     "description": "AutoCAD 및 Autodesk 제품군의 Web Services LoginState.xml 세션 및 AdskIdentityManager 토큰을 초기화하여 로그아웃합니다. [특수 기능: 자동 선택 제외 / 전용 센터 연동]",
@@ -687,7 +687,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 14200
   },
   {
-    "seq": 584,
+    "seq": 62,
     "id": "sec-edge-login-purge",
     "name": "Microsoft Edge 브라우저 로그인 세션 & Login Data 소거",
     "description": "Edge 브라우저 프로필의 자동 로그인 쿠키, Login Data(비밀번호), Token Service 및 탭 복원 세션을 소거하여 모든 사이트에서 로그아웃합니다. [특수 기능: 자동 선택 제외 / 전용 센터 연동]",
@@ -699,7 +699,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 24900
   },
   {
-    "seq": 585,
+    "seq": 63,
     "id": "sec-chrome-login-purge",
     "name": "Google Chrome 브라우저 로그인 세션 & 동기화 토큰 소거",
     "description": "Google Chrome 브라우저의 구글 계정 동기화 토큰, 자동 로그인 쿠키, Login Data 및 세션을 초기화하여 모든 웹사이트에서 로그아웃합니다. [특수 기능: 자동 선택 제외 / 전용 센터 연동]",
@@ -711,7 +711,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 29800
   },
   {
-    "seq": 586,
+    "seq": 64,
     "id": "sec-wincred-generic-purge",
     "name": "Windows 자격 증명 관리자 일반(Generic) 암호 일괄 소거",
     "description": "Windows 자격 증명 관리자에 자동 저장된 모든 일반 웹/앱/서버 로그인 자격 증명을 일괄 제거합니다. [특수 기능: 자동 선택 제외 / 전용 센터 연동]",
@@ -723,7 +723,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 1240
   },
   {
-    "seq": 587,
+    "seq": 65,
     "id": "spc-chrome-factory-reset",
     "name": "[공장초기화] Google Chrome 전체 프로필 & 데이터 영구 소거",
     "description": "Chrome 프로세스를 강제 종료하고 User Data 디렉터리를 완전 소거하여 최초 설치 상태(북마크/비밀번호/확장앱/캐시 완전 제거)로 초기화합니다. [특수 기능: 파괴적 작업 / 자동 선택 제외]",
@@ -735,7 +735,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 185000
   },
   {
-    "seq": 588,
+    "seq": 66,
     "id": "spc-edge-factory-reset",
     "name": "[공장초기화] Microsoft Edge 전체 프로필 & 데이터 영구 소거",
     "description": "Edge 프로세스를 강제 종료하고 User Data 디렉터리를 완전 소거하여 최초 설치 상태(북마크/비밀번호/확장앱/캐시 완전 제거)로 초기화합니다. [특수 기능: 파괴적 작업 / 자동 선택 제외]",
@@ -747,7 +747,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 164000
   },
   {
-    "seq": 589,
+    "seq": 67,
     "id": "spc-whale-factory-reset",
     "name": "[공장초기화] Naver Whale 전체 프로필 & 데이터 영구 소거",
     "description": "Whale 프로세스를 강제 종료하고 User Data 디렉터리를 완전 소거하여 최초 설치 상태(북마크/비밀번호/확장앱/캐시 완전 제거)로 초기화합니다. [특수 기능: 파괴적 작업 / 자동 선택 제외]",
@@ -759,7 +759,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 142000
   },
   {
-    "seq": 590,
+    "seq": 68,
     "id": "spc-firefox-factory-reset",
     "name": "[공장초기화] Mozilla Firefox 전체 프로필 & 데이터 영구 소거",
     "description": "Firefox 프로세스를 강제 종료하고 AppData/LocalAppData의 Firefox Profiles 폴더를 완전 소거하여 최초 설치 상태로 초기화합니다. [특수 기능: 파괴적 작업 / 자동 선택 제외]",
@@ -771,7 +771,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 118000
   },
   {
-    "seq": 591,
+    "seq": 69,
     "id": "spc-sync-default-user-profile",
     "name": "[기본 프로필 복제] 현재 사용자 설정을 Windows 기본 프로필(Default)로 복제",
     "description": "현재 계정의 테마, 작업표시줄, 탐색기 옵션, 바탕화면 레지스트리(reg save HKCU)를 C:\\Users\\Default로 복제하여 향후 생성되는 모든 신규 사용자 계정에 동일하게 자동 적용합니다. (기존 Default 프로필 자동 백업 및 Everyone/Users ACL 권한 자동 보정) [특수 기능: 시스템 템플릿 변경 / 자동 선택 제외]",
@@ -783,7 +783,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 32000
   },
   {
-    "seq": 59,
+    "seq": 70,
     "id": "reg-mui-cache-clean",
     "name": "MUI 인터페이스 캐시",
     "description": "실행되었던 프로그램들의 다국어 셸 텍스트 레지스트리 캐시 정리",
@@ -794,7 +794,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 2203
   },
   {
-    "seq": 60,
+    "seq": 71,
     "id": "reg-compat-flags",
     "name": "호환성 레이어 기록",
     "description": "이전 실행 앱에 임시 부여되었던 AppCompat 호환성 플래그 초기화",
@@ -805,7 +805,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 12833
   },
   {
-    "seq": 61,
+    "seq": 72,
     "id": "reg-shell-ext-broken",
     "name": "셸 익스텐션 무효 파편",
     "description": "삭제된 프로그램의 탐색기 우클릭 셸 확장 레지스트리 참조 제거",
@@ -816,7 +816,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 41600
   },
   {
-    "seq": 62,
+    "seq": 73,
     "id": "reg-firewall-orphans",
     "name": "방화벽 고립 규칙",
     "description": "이미 삭제된 프로그램 경로를 가리키는 유령 방화벽 허용 규칙 정리",
@@ -827,7 +827,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 41936
   },
   {
-    "seq": 63,
+    "seq": 74,
     "id": "reg-clsid-orphans",
     "name": "고립된 CLSID 클래스 식별자",
     "description": "연결 대상 COM 서버/DLL이 존재하지 않는 고립 CLSID 레지스트리 정리",
@@ -838,7 +838,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 20210
   },
   {
-    "seq": 64,
+    "seq": 75,
     "id": "reg-app-paths-invalid",
     "name": "무효 앱 실행 경로 (App Paths)",
     "description": "실행 파일이 삭제되었으나 레지스트리에 남아있는 App Paths 키 소거",
@@ -849,7 +849,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 1726
   },
   {
-    "seq": 65,
+    "seq": 76,
     "id": "reg-shared-dlls",
     "name": "공유 DLL 잔여물",
     "description": "디스크에 존재하지 않는 공유 동적 라이브러리(SharedDlls) 카운터 정리",
@@ -860,7 +860,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 22474
   },
   {
-    "seq": 66,
+    "seq": 77,
     "id": "reg-sound-events",
     "name": "무효 사운드 알림 이벤트",
     "description": "삭제된 애플리케이션이 등록해 둔 사운드 이벤트 연결 키 정리",
@@ -871,7 +871,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 22318
   },
   {
-    "seq": 67,
+    "seq": 78,
     "id": "reg-font-associates",
     "name": "글꼴 연결 오류 수정",
     "description": "시스템 폰트 대체 목록 중 무효한 항목 정리",
@@ -882,7 +882,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 10200
   },
   {
-    "seq": 68,
+    "seq": 79,
     "id": "reg-help-paths",
     "name": "도움말 파일 경로 파편",
     "description": "오래된 도움말 파일(HLP/CHM) 경로 레지스트리 잔재 제거",
@@ -893,7 +893,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 45082
   },
   {
-    "seq": 69,
+    "seq": 80,
     "id": "reg-installer-fragments",
     "name": "인스톨러 분리 파편",
     "description": "삭제된 MSI 설치 패키지의 유령 레지스트리 키 정리",
@@ -904,7 +904,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 7098
   },
   {
-    "seq": 70,
+    "seq": 81,
     "id": "reg-user-classes",
     "name": "사용자 클래스 파편",
     "description": "HKCU Software Classes 내의 빈 하위 키 정리",
@@ -915,7 +915,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 27308
   },
   {
-    "seq": 71,
+    "seq": 82,
     "id": "reg-run-keys-invalid",
     "name": "자동 실행 무효 키",
     "description": "삭제된 프로그램이 Run 레지스트리에 남겨둔 시작 프로그램 찌꺼기 제거",
@@ -926,7 +926,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 3233
   },
   {
-    "seq": 72,
+    "seq": 83,
     "id": "reg-start-menu-links",
     "name": "시작 메뉴 무효 바로가기",
     "description": "시작 메뉴 프로그램 목록 중 대상이 없는 빈 LNK 바로가기 제거",
@@ -937,7 +937,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 6725
   },
   {
-    "seq": 73,
+    "seq": 84,
     "id": "reg-typelib-orphans",
     "name": "TypeLib 분리 파편",
     "description": "참조 대상이 없는 고립된 TypeLib 레지스트리 인터페이스 정의 소거",
@@ -948,7 +948,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 44968
   },
   {
-    "seq": 74,
+    "seq": 85,
     "id": "upd-cache-clean",
     "name": "업데이트 다운로드 캐시",
     "description": "설치 완료된 Windows Update 다운로드 임시 패키지 소거",
@@ -959,7 +959,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 45983
   },
   {
-    "seq": 75,
+    "seq": 86,
     "id": "upd-winsxs-reset",
     "name": "WinSxS 정밀 압축/청소",
     "description": "DISM을 통한 대체된 구버전 구성요소 백업 정리 및 베이스라인 리셋",
@@ -970,7 +970,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 28350
   },
   {
-    "seq": 76,
+    "seq": 87,
     "id": "upd-delivery-opt",
     "name": "전송 최적화 캐시 (Delivery Optimization)",
     "description": "P2P 업데이트 공유를 위해 저장된 로컬 전송 최적화 캐시 파일 삭제",
@@ -981,7 +981,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 13461
   },
   {
-    "seq": 77,
+    "seq": 88,
     "id": "upd-bits-queue-reset",
     "name": "BITS 전송 대기열 초기화",
     "description": "백그라운드 지능형 전송 서비스 대기열 초기화",
@@ -992,7 +992,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 40812
   },
   {
-    "seq": 78,
+    "seq": 89,
     "id": "upd-windows-old-del",
     "name": "이전 Windows 설치본 (Windows.old)",
     "description": "대규모 기능 업데이트 후 잔류한 이전 OS 롤백용 거대 폴더 삭제",
@@ -1003,7 +1003,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 13365
   },
   {
-    "seq": 79,
+    "seq": 90,
     "id": "upd-driver-store-tmp",
     "name": "드라이버 설치 임시 잔해",
     "description": "DriverStore 설치 중 생성된 임시 압축 해제 잔해 소거",
@@ -1014,7 +1014,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 34154
   },
   {
-    "seq": 80,
+    "seq": 91,
     "id": "upd-msi-patch-cache",
     "name": "MSI 패치 백업 캐시",
     "description": "윈도우 인스톨러 $PatchCache$ 폴더 내의 백업 패치 데이터 정리",
@@ -1025,7 +1025,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 50042
   },
   {
-    "seq": 81,
+    "seq": 92,
     "id": "upd-cbs-logs-all",
     "name": "CBS 매니페스트 로그",
     "description": "Windows 서비스 및 업데이트 처리 CBS(Component-Based Servicing) 로그 소거",
@@ -1036,7 +1036,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 14694
   },
   {
-    "seq": 82,
+    "seq": 93,
     "id": "upd-store-cache-dat",
     "name": "Store 패키지 데이터 캐시",
     "description": "SoftwareDistribution DataStore 데이터베이스 임시 트랜잭션 파일 정리",
@@ -1047,7 +1047,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 44111
   },
   {
-    "seq": 83,
+    "seq": 94,
     "id": "upd-pending-rename",
     "name": "파일 이름 변경 대기열 소거",
     "description": "재부팅 시 처리 예정으로 남아있는 잔여 파일 이름 변경 대기열 초기화",
@@ -1058,7 +1058,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 44573
   },
   {
-    "seq": 84,
+    "seq": 95,
     "id": "upd-manifest-cache",
     "name": "컴포넌트 매니페스트 캐시",
     "description": "WinSxS 내부 ManifestCache 임시 참조 데이터 정리",
@@ -1069,7 +1069,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 23112
   },
   {
-    "seq": 85,
+    "seq": 96,
     "id": "upd-reboot-required",
     "name": "시스템 재부팅 보류 플래그 초기화",
     "description": "업데이트 완료 후 남아있는 불필요한 RebootRequired 플래그 정리",
@@ -1080,7 +1080,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 4090
   },
   {
-    "seq": 86,
+    "seq": 97,
     "id": "upd-wu-text-logs",
     "name": "Windows Update 텍스트 로그",
     "description": "루트 디렉터리의 레거시 WindowsUpdate.log 텍스트 로그 삭제",
@@ -1091,7 +1091,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 44870
   },
   {
-    "seq": 87,
+    "seq": 98,
     "id": "upd-office-temp-cache",
     "name": "Office 배포 패키지 캐시",
     "description": "MS Office 업데이트 설치 시 다운로드된 임시 압축 해제 캐시 삭제",
@@ -1102,7 +1102,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 35840
   },
   {
-    "seq": 88,
+    "seq": 99,
     "id": "upd-sqm-data-all",
     "name": "SQM 품질 개선 통계 데이터",
     "description": "서비스 프로필에 저장된 Windows 소프트웨어 품질 메트릭스 파일 삭제",
@@ -1113,7 +1113,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 17656
   },
   {
-    "seq": 89,
+    "seq": 100,
     "id": "sys-dns-cache-flush",
     "name": "DNS 해석기 캐시 초기화",
     "description": "로컬 DNS 리졸버 캐시를 비워 도메인 해석 속도 및 최신 IP 반영",
@@ -1124,7 +1124,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 40117
   },
   {
-    "seq": 90,
+    "seq": 101,
     "id": "sys-icon-cache-reset",
     "name": "시스템 아이콘 캐시 재생성",
     "description": "손상되었거나 깨진 파일/프로그램 아이콘 캐시 파일(IconCache.db) 재생성",
@@ -1135,7 +1135,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 1074
   },
   {
-    "seq": 91,
+    "seq": 102,
     "id": "sys-shader-cache",
     "name": "DirectX 그래픽 셰이더 캐시",
     "description": "D3DSCache 폴더에 컴파일되어 적체된 구형 DirectX 셰이더 캐시 소거",
@@ -1146,7 +1146,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 19734
   },
   {
-    "seq": 92,
+    "seq": 103,
     "id": "sys-net-stack-reset",
     "name": "네트워크 스택 / IP 리셋",
     "description": "TCP/IP 및 Winsock 스택을 초기화하여 네트워크 지연 및 핑 안정화",
@@ -1157,7 +1157,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 11717
   },
   {
-    "seq": 93,
+    "seq": 104,
     "id": "sys-spooler-reset",
     "name": "프린터 인쇄 대기열 초기화",
     "description": "인쇄 오류로 멈춘 스풀러 서비스 및 대기열(PRINTERS) 임시 파일 강제 초기화",
@@ -1168,7 +1168,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 8149
   },
   {
-    "seq": 94,
+    "seq": 105,
     "id": "sys-wsreset-cache",
     "name": "MS Store 서비스 캐시 리셋",
     "description": "Microsoft Store 앱의 실행 장애 및 캐시 리셋 (wsreset)",
@@ -1179,7 +1179,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 39962
   },
   {
-    "seq": 95,
+    "seq": 106,
     "id": "sys-timesync-all",
     "name": "표준 시간 서버 동기화",
     "description": "Windows Time 서비스 표준 시간 서버 즉시 동기화",
@@ -1190,7 +1190,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 1657
   },
   {
-    "seq": 96,
+    "seq": 107,
     "id": "sys-wmi-salvage",
     "name": "WMI 관리 데이터베이스 정합성 검사",
     "description": "손상된 WMI 저장소 점검 및 자동 복구 (salvagerepository)",
@@ -1201,7 +1201,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 1898
   },
   {
-    "seq": 97,
+    "seq": 108,
     "id": "sys-winhttp-proxy",
     "name": "시스템 프록시 구성 초기화",
     "description": "악성코드나 비정상 종료로 잘못 설정된 WinHTTP 프록시를 다이렉트로 초기화",
@@ -1212,7 +1212,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 21291
   },
   {
-    "seq": 98,
+    "seq": 109,
     "id": "sys-arp-cache-flush",
     "name": "ARP 테이블 캐시 초기화",
     "description": "로컬 라우터 및 네트워크 ARP 캐시 테이블을 비워 네트워크 충돌 해결",
@@ -1223,7 +1223,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 30974
   },
   {
-    "seq": 99,
+    "seq": 110,
     "id": "sys-perf-counters",
     "name": "성능 측정 카운터 리셋",
     "description": "손상된 시스템 리소스 모니터 성능 카운터 레지스트리 복원 (lodctr /r)",
@@ -1234,7 +1234,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 49187
   },
   {
-    "seq": 100,
+    "seq": 111,
     "id": "sys-com-catalog-reset",
     "name": "COM+ 구성 카탈로그 캐시 정리",
     "description": "Registration 폴더 내의 COM+ 임시 카탈로그 백업 파일 정리",
@@ -1245,7 +1245,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 22839
   },
   {
-    "seq": 101,
+    "seq": 112,
     "id": "sys-winsock-reset",
     "name": "Winsock 소켓 카탈로그 리셋",
     "description": "Winsock 레이어 소켓 프로토콜 카탈로그 전체 기본값 복원",
@@ -1256,7 +1256,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 29365
   },
   {
-    "seq": 102,
+    "seq": 113,
     "id": "sys-system32-temp",
     "name": "System32 루트 임시 파일",
     "description": "C:\\\\Windows\\\\System32\\\\Temp 폴더 내의 시스템 프로세스 잔여물 소거",
@@ -1267,7 +1267,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 26768
   },
   {
-    "seq": 103,
+    "seq": 114,
     "id": "sys-event-logs-clear",
     "name": "Windows 전체 이벤트 로그 비우기",
     "description": "용량을 차지하는 누적된 애플리케이션 및 시스템 이벤트 로그 전체 비우기",
@@ -1278,7 +1278,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 34789
   },
   {
-    "seq": 104,
+    "seq": 115,
     "id": "stg-windows-temp",
     "name": "Windows 공용 임시 폴더 (%WinDir%\\\\Temp)",
     "description": "윈도우 운영체제 공용 임시 디렉터리 내의 잔여 파일 완전 삭제",
@@ -1289,7 +1289,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 22058
   },
   {
-    "seq": 105,
+    "seq": 116,
     "id": "stg-user-temp-data",
     "name": "사용자 프로필 임시 폴더 (%TEMP%)",
     "description": "현재 로그인 사용자 계정의 임시 파일 디렉터리 일괄 비우기",
@@ -1300,7 +1300,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 36507
   },
   {
-    "seq": 106,
+    "seq": 117,
     "id": "stg-recycle-bin-all",
     "name": "모든 드라이브 휴지통 완전 비우기",
     "description": "C, D 등 모든 시스템 드라이브의 휴지통 파일 영구 무음 소거",
@@ -1311,7 +1311,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 9950
   },
   {
-    "seq": 107,
+    "seq": 118,
     "id": "stg-crash-memory-dump",
     "name": "시스템 전체 메모리 덤프 (MEMORY.DMP)",
     "description": "블루스크린(BSOD) 발생 시 디스크에 생성된 수 GB 크기의 메모리 덤프 파일 삭제",
@@ -1322,7 +1322,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 13457
   },
   {
-    "seq": 108,
+    "seq": 119,
     "id": "stg-prefetch-all",
     "name": "Prefetch 가속 캐시 정리",
     "description": "Windows\\\\Prefetch 내의 구형 프로그램 가속 캐시 파일 정리",
@@ -1333,7 +1333,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 38613
   },
   {
-    "seq": 109,
+    "seq": 120,
     "id": "stg-wer-reports",
     "name": "사용자 계정 오류 보고서 (WER)",
     "description": "Windows 오류 보고 서비스(WER)에 누적된 크래시 로그 및 메모리 스냅샷 소거",
@@ -1344,7 +1344,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 46898
   },
   {
-    "seq": 110,
+    "seq": 121,
     "id": "stg-app-crash-dumps",
     "name": "개별 앱 크래시 덤프 (CrashDumps)",
     "description": "서드파티 애플리케이션 오류 시 생성된 미니 덤프(.dmp) 파일 정리",
@@ -1355,7 +1355,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 8492
   },
   {
-    "seq": 111,
+    "seq": 122,
     "id": "stg-font-render-cache",
     "name": "시스템 글꼴 렌더링 캐시",
     "description": "Windows FontCache 서비스의 손상되거나 비대해진 글꼴 렌더링 캐시 초기화",
@@ -1366,7 +1366,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 48665
   },
   {
-    "seq": 112,
+    "seq": 123,
     "id": "stg-iis-log-files",
     "name": "IIS 웹 서버 로그 파일",
     "description": "로컬 IIS 웹 서버 로그 디렉터리(inetpub\\\\logs) 잔여 데이터 삭제",
@@ -1377,7 +1377,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 38868
   },
   {
-    "seq": 113,
+    "seq": 124,
     "id": "stg-catroot2-cleanup",
     "name": "암호화 카탈로그 저장소 캐시 (Catroot2)",
     "description": "CryptSvc 서명 카탈로그 임시 트랜잭션 파일 초기화",
@@ -1388,7 +1388,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 34292
   },
   {
-    "seq": 114,
+    "seq": 125,
     "id": "stg-nvidia-gl-cache",
     "name": "NVIDIA OpenGL 셰이더 캐시",
     "description": "NVIDIA 그래픽 카드 드라이버 OpenGL/Vulkan 셰이더 캐시 소거",
@@ -1399,7 +1399,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 49455
   },
   {
-    "seq": 115,
+    "seq": 126,
     "id": "stg-directx-shader",
     "name": "DirectX 범용 셰이더 캐시",
     "description": "DirectX 게임 플레이 중 생성된 셰이더 컴파일 캐시 정리",
@@ -1410,7 +1410,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 41251
   },
   {
-    "seq": 116,
+    "seq": 127,
     "id": "stg-minidumps-all",
     "name": "시스템 미니덤프 진단 요약본 (Minidump)",
     "description": "C:\\\\Windows\\\\Minidump 내의 소형 크래시 분석 파일들 소거",
@@ -1421,7 +1421,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 29264
   },
   {
-    "seq": 117,
+    "seq": 128,
     "id": "stg-inf-install-logs",
     "name": "드라이버 설치 이력 로그 (setupapi.dev.log)",
     "description": "장치 드라이버 설치 과정에서 적체된 거대 로그 텍스트 파일 삭제",
@@ -1432,7 +1432,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 40316
   },
   {
-    "seq": 118,
+    "seq": 129,
     "id": "stg-bits-cache",
     "name": "BITS 백그라운드 전송 캐시",
     "description": "ProgramData Network Downloader 임시 큐 파일 삭제",
@@ -1443,7 +1443,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 30768
   },
   {
-    "seq": 119,
+    "seq": 130,
     "id": "stg-package-cache",
     "name": "대형 앱 패키지 설치 캐시",
     "description": "Visual Studio / C++ Redistributable 등 인스톨러 캐시 정리",
@@ -1454,10 +1454,10 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 35404
   },
   {
-    "seq": 120,
+    "seq": 131,
     "id": "stg-setupapi-breadcrumb",
     "name": "장치 드라이버 로딩 로그",
-    "description": "Windows inf 폴더 내의 잔여 드라이버 셋업 로그 정리",
+    "description": "Windows inf 폴더 내의 잔여 드라이버 셋업 및 오프라인 배포 로그(setupapi.setup.log / offline.log) 정리",
     "category": "Storage",
     "risk": "Safe",
     "selected": true,
@@ -1465,7 +1465,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 15862
   },
   {
-    "seq": 121,
+    "seq": 132,
     "id": "stg-win-logfiles-all",
     "name": "Windows 범용 시스템 로그",
     "description": "System32 LogFiles 폴더 내의 각종 서비스 텍스트 로그 파일 일괄 소거",
@@ -1476,7 +1476,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 39961
   },
   {
-    "seq": 122,
+    "seq": 133,
     "id": "stg-desktop-bridge",
     "name": "데스크톱 브릿지 가상화 데이터",
     "description": "UWP / MSIX 가상화 앱 레포지토리의 임시 패키지 캐시 삭제",
@@ -1487,7 +1487,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 32929
   },
   {
-    "seq": 123,
+    "seq": 134,
     "id": "stg-dism-work-logs",
     "name": "DISM 이미지 복구 작업 로그",
     "description": "DISM 명령어 수행 시 기록된 디버깅 텍스트 로그 소거",
@@ -1498,7 +1498,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 32074
   },
   {
-    "seq": 124,
+    "seq": 135,
     "id": "stg-local-temp-extra",
     "name": "AppData 로컬 임시 잔해 (%LocalAppData%\\\\Temp)",
     "description": "각종 프로그램이 AppData\\\\Local\\\\Temp에 생성해 둔 임시 파일 완전 소거",
@@ -1509,7 +1509,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 22436
   },
   {
-    "seq": 125,
+    "seq": 136,
     "id": "stg-was-activation",
     "name": "WAS 서비스 실행 로그",
     "description": "Windows Process Activation Service 로그 파일 정리",
@@ -1520,7 +1520,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 15906
   },
   {
-    "seq": 126,
+    "seq": 137,
     "id": "stg-msi-installer-tmp",
     "name": "MSI 인스톨러 임시 데이터",
     "description": "C:\\\\Windows\\\\Installer 폴더 내의 .tmp 확장자 임시 파일 소거",
@@ -1531,7 +1531,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 16293
   },
   {
-    "seq": 127,
+    "seq": 138,
     "id": "stg-sys-profile-temp",
     "name": "시스템 프로필 전용 임시 파일",
     "description": "LocalService 및 NetworkService 프로필 임시 폴더 잔여물 소거",
@@ -1542,7 +1542,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 18008
   },
   {
-    "seq": 128,
+    "seq": 139,
     "id": "stg-global-wer-clear",
     "name": "전체 오류 보고 통합 저장소",
     "description": "ProgramData Microsoft WER 통합 크래시 저장소 완전 소거",
@@ -1553,7 +1553,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 46535
   },
   {
-    "seq": 129,
+    "seq": 140,
     "id": "stg-hiberfil-toggle",
     "name": "최대 절전 모드 파일 (hiberfil.sys) 해제",
     "description": "최대 절전 모드를 비활성화하여 물리 RAM 크기(16GB~64GB)만큼의 C: 시스템 디스크 공간 즉시 회수",
@@ -1564,7 +1564,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 39025
   },
   {
-    "seq": 130,
+    "seq": 141,
     "id": "stg-dism-resetbase",
     "name": "DISM WinSxS 컴포넌트 베이스라인 리셋",
     "description": "구버전 윈도우 업데이트 컴포넌트 백업을 영구 정리 및 압축하여 3GB~10GB 대용량 공간 확보",
@@ -1575,7 +1575,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 43537
   },
   {
-    "seq": 131,
+    "seq": 142,
     "id": "stg-driver-store-backup",
     "name": "DriverStore 구버전 드라이버 백업 정리",
     "description": "DriverStore FileRepository에 누적된 구버전 그래픽/오디오 드라이버 패키지 소거",
@@ -1586,7 +1586,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 37804
   },
   {
-    "seq": 132,
+    "seq": 143,
     "id": "stg-wsearch-edb-shrink",
     "name": "Windows Search 색인 DB (Windows.edb) 압축",
     "description": "수 GB로 비대해진 Windows Search 인덱싱 데이터베이스를 초기화하여 대용량 공간 회수",
@@ -1597,7 +1597,7 @@ export const INITIAL_MODULES: ModuleItem[] = [
     "estimatedKb": 29769
   },
   {
-    "seq": 133,
+    "seq": 144,
     "id": "stg-cipher-zero-wipe",
     "name": "디스크 빈 공간 난수 덮어쓰기 (자유 공간 포렌식 와이핑)",
     "description": "이미 삭제된 파일들의 복구 프로그램(Recuva 등)을 통한 복원을 원천 차단하기 위해 자유 공간에 0x00 난수 덮어쓰기 [특수 기능: 자동 선택 제외]",

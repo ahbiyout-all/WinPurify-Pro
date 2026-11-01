@@ -251,6 +251,57 @@ namespace WinPurifyPro.Services
         }
 
         /// <summary>
+        /// 선택된 다중 PC 노드들에게 C++ 순수 네이티브 하드웨어 Magic Packet (Wake-on-LAN)을 병렬 발송하여 원격 부팅시킵니다.
+        /// </summary>
+        public async Task<List<(RemoteNodeItem Node, CommandResponseDto Response)>> BatchWakeOnLanAsync(IEnumerable<RemoteNodeItem> targetNodes)
+        {
+            var results = new List<(RemoteNodeItem Node, CommandResponseDto Response)>();
+            var tasks = new List<Task>();
+
+            foreach (var node in targetNodes)
+            {
+                tasks.Add(Task.Run(() =>
+                {
+                    bool sent = false;
+                    string mac = node.MacAddress;
+
+                    if (!string.IsNullOrWhiteSpace(mac))
+                    {
+                        sent = NativeEngineService.TrySendMagicPacket(mac);
+                    }
+
+                    var resp = new CommandResponseDto
+                    {
+                        Success = sent,
+                        Message = sent
+                            ? $"네이티브 하드웨어 WOL 매직 패킷 송신 완료 ({node.Name} / {mac})"
+                            : $"WOL 패킷 송신 실패 (MAC 주소 미등록 또는 소켓 오류: {node.Name})"
+                    };
+
+                    lock (results)
+                    {
+                        results.Add((node, resp));
+                    }
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+            return results;
+        }
+
+        /// <summary>
+        /// 원격 노드의 ICMP / ARP 네트워크 응답 지연시간(RTT)을 순수 C++ 네이티브 레벨에서 즉시 측정합니다.
+        /// </summary>
+        public uint PingNodeNative(string ip)
+        {
+            if (NativeEngineService.TryFastIcmpPing(ip, 1000, out uint rtt))
+            {
+                return rtt;
+            }
+            return 0;
+        }
+
+        /// <summary>
         /// 선택된 다중 PC 노드들에게 복원 지점 생성 명령을 병렬 전송합니다.
         /// </summary>
         public async Task<List<(RemoteNodeItem Node, CommandResponseDto Response)>> BatchCreateRestorePointAsync(IEnumerable<RemoteNodeItem> targetNodes)

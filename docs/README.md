@@ -5,7 +5,6 @@ WinPurify Pro 프로젝트의 주요 아키텍처, 기능 가이드 및 개발 �
 > **현재 공식 버전**: `v4.43.0`  
 > **공식 GitHub 저장소**: [https://github.com/ahbiyout-all/WinPurify-Pro](https://github.com/ahbiyout-all/WinPurify-Pro)  
 > **공식 개발자 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
-> **공식 홈페이지**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/)
 
 ---
 
@@ -30,7 +29,7 @@ WinPurify Pro 프로젝트의 주요 아키텍처, 기능 가이드 및 개발 �
 8. [작업 로그 & 개발 마일스톤 (WorkLog.md)](./WorkLog.md)
    - 주요 마일스톤, 패치 진행 로그 및 시스템 정합성 검증 기록.
 9. [소프트웨어 사용권 계약서 2종 (LICENSE_KO.md / LICENSE_EN.md)](./LICENSE_KO.md)
-   - Cisnet Soft 정식 한국어/영어 EULA 라이선스 계약서.
+   - WinPurify Pro 정식 한국어/영어 EULA 라이선스 계약서.
 10. [패치 노트 & 변경 이력 (PATCH_NOTES.md)](./PATCH_NOTES.md)
     - 버전별 상세 변경 및 최적화 이력 기록.
 

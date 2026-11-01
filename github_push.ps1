@@ -1,6 +1,10 @@
 # ==============================================================================
 # WinPurify Pro - GitHub Automated Sync & Push Script (PowerShell)
-# Target: https://github.com/ahbiyout-all/WinPurify-Pro
+# Developer:   AhBiYout
+# Account:     AhBiYout-all
+# Repository:  WinPurifyPro
+# Target URL:  https://github.com/AhBiYout-all/WinPurifyPro
+# Blog:        https://ahbiyoutvibe.blogspot.com/
 # ==============================================================================
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -10,9 +14,11 @@ Set-Location $PSScriptRoot
 
 Write-Host "=====================================================================" -ForegroundColor Cyan
 Write-Host " WinPurify Pro - GitHub Automated Sync & Push Pipeline" -ForegroundColor Green
-Write-Host " Account:    ahbiyout-all" -ForegroundColor Yellow
-Write-Host " Repository: WinPurify-Pro" -ForegroundColor Yellow
-Write-Host " Target URL: https://github.com/ahbiyout-all/WinPurify-Pro" -ForegroundColor Yellow
+Write-Host " Developer:   AhBiYout" -ForegroundColor Yellow
+Write-Host " Account:     AhBiYout-all" -ForegroundColor Yellow
+Write-Host " Repository:  WinPurifyPro" -ForegroundColor Yellow
+Write-Host " Target URL:  https://github.com/AhBiYout-all/WinPurifyPro" -ForegroundColor Yellow
+Write-Host " Blog:        https://ahbiyoutvibe.blogspot.com/" -ForegroundColor Yellow
 Write-Host "=====================================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -50,7 +56,7 @@ Write-Host ""
 
 # 3. Check and configure Git remote
 Write-Host "[*] Step 2: Checking Git remote origin repository..." -ForegroundColor Cyan
-$expectedUrl = "https://github.com/ahbiyout-all/WinPurify-Pro.git"
+$expectedUrl = "https://github.com/AhBiYout-all/WinPurifyPro.git"
 $remoteUrl = git remote get-url origin 2>$null
 
 if (-not $remoteUrl) {
@@ -61,32 +67,41 @@ if (-not $remoteUrl) {
     Write-Host "[+] Remote origin configured: $expectedUrl" -ForegroundColor Green
 }
 
-# 4. Git status & staging
+# 4. Security & Privacy Check (Prevent personal email and sensitive files)
+Write-Host "[*] Checking for sensitive personal info before staging..." -ForegroundColor Cyan
+$sensitiveMatches = git grep -i "ahbiyout@gmail.com" 2>$null
+if ($sensitiveMatches) {
+    Write-Host "[SECURITY ALERT] Personal email found in repository files. Aborting commit!" -ForegroundColor Red
+    pause
+    exit 1
+}
+
+# 5. Git status & staging
 Write-Host ""
 Write-Host "[*] Step 3: Staging all modified files (respecting .gitignore)..." -ForegroundColor Cyan
 git add -A
 git status --short
 
-# 5. Commit message input
+# 6. Commit message input
 Write-Host ""
 $customCommit = Read-Host "Enter commit description (Press Enter for default: 'Release v$appVersion')"
 if ([string]::IsNullOrWhiteSpace($customCommit)) {
-    $customCommit = "Release v$appVersion - WinPurify Pro Full Update (ahbiyout-all)"
+    $customCommit = "Release v$appVersion - WinPurify Pro Official Update (AhBiYout-all)"
 }
 
-# 6. Commit changes
+# 7. Commit changes
 Write-Host ""
 Write-Host "[*] Step 4: Committing changes with message: '$customCommit'..." -ForegroundColor Cyan
 git commit -m "$customCommit"
 
-# 7. Tagging
+# 8. Tagging
 Write-Host ""
 Write-Host "[*] Step 5: Creating or updating Git tag v$appVersion..." -ForegroundColor Cyan
 git tag -fa "v$appVersion" -m "WinPurify Pro v$appVersion Release"
 
-# 8. Push to origin
+# 9. Push to origin
 Write-Host ""
-Write-Host "[*] Step 6: Pushing branch and tags to GitHub (ahbiyout-all/WinPurify-Pro)..." -ForegroundColor Cyan
+Write-Host "[*] Step 6: Pushing branch and tags to GitHub (AhBiYout-all/WinPurifyPro)..." -ForegroundColor Cyan
 git branch -M main
 git push -u origin main --force
 if ($LASTEXITCODE -ne 0) {

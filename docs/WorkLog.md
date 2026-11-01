@@ -1,11 +1,10 @@
 # 📝 WinPurify Pro - 작업 로그 (Work Log)
 
 > **프로젝트**: WinPurify Pro (Remix WinPurify3-windowform-net)  
-> **총괄 개발자**: AhBiYout (Cisnet Soft)  
+> **총괄 개발자**: AhBiYout (WinPurify Pro)  
 > **현재 공식 버전**: `v4.43.0`  
 > **공식 저장소**: [https://github.com/ahbiyout-all/WinPurify-Pro](https://github.com/ahbiyout-all/WinPurify-Pro)  
 > **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
-> **공식 홈페이지**: [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/)
 
 ---
 
@@ -38,7 +37,7 @@
 
 ### [2026-10-04] v4.40.0 상단 헤더 서브타이틀 텍스트 간소화 및 레이아웃 정리
 1. **웹 클라이언트 (`index.tsx`) 상단 브랜딩 레이아웃 정제**:
-   - 부제목 문구(`Decoupled Native C++...`)를 제거하고 `블로그 • CISNET • 라이선스` 미니멀 링크 구성.
+   - 부제목 문구(`Decoupled Native C++...`)를 제거하고 `블로그 • 라이선스` 미니멀 링크 구성.
 
 ---
 

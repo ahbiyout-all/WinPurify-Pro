@@ -4,8 +4,8 @@
 > **문서 버전**: v4.32.0  
 > **점검 일자**: 2026-09-26  
 > **점검 대상**: WinPurify Pro 코어 엔진, 원격 에이전트 서비스(`WinPurifyAgentService`), 센트럴 커맨더(`WinPurifyCommander`), 웹 관제 대시보드(`index.tsx`), C++ 네이티브 가속 코어(`PurifyEngineCore.dll`)  
-> **수석 보안 아키텍트**: Cisnet Soft (개발 총괄: AhBiYout)  
-> **공식 링크**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/) | [http://www.cisnet.co.kr/](http://www.cisnet.co.kr/)
+> **수석 보안 아키텍트**: WinPurify Pro (개발 총괄: AhBiYout)  
+> **공식 링크**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)
 
 ---
 

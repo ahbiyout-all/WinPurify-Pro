@@ -1660,15 +1660,19 @@ namespace WinPurifyPro.ViewModels
         {
             if (IsBusy) return;
             IsBusy = true;
-            StatusText = "물리 RAM 커널 압축(Working Set Trim) 실행 중...";
-            AddLog("[RAM 최적화] 커널 특권 획득 후 전체 프로세스 물리 메모리 페이징 압축 개시");
+            StatusText = "물리 RAM 커널 압축 및 NT 대기 메모리(Standby List) 완전 정화 중...";
+            AddLog("[RAM 최적화] 커널 특권 획득 후 전체 프로세스 Working Set 압축 및 Standby List 정화 개시");
 
-            int count = await Task.Run(() => NativeEngineService.CompressPhysicalRAM());
+            int count = await Task.Run(() =>
+            {
+                NativeEngineService.TryPurgeStandbyList(4);
+                return NativeEngineService.CompressPhysicalRAM();
+            });
 
             IsBusy = false;
-            StatusText = $"RAM 압축 완료 ({count}개 프로세스 메모리 회수)";
-            AddLog($"[RAM 최적화 완료] {count}개 활성 프로세스에 대한 Working Set Trim 완료.");
-            SystemTrayService.Instance.ShowTrayNotification("🧠 RAM 압축 완료", $"{count}개 프로세스의 Working Set Trim 완료. 여유 메모리가 확보되었습니다.", TrayNotificationType.Success);
+            StatusText = $"RAM 압축 및 대기 메모리 정화 완료 ({count}개 프로세스 메모리 회수)";
+            AddLog($"[RAM 최적화 완료] {count}개 활성 프로세스 Working Set Trim 및 NT 커널 대기 메모리 완전 정화 완료.");
+            SystemTrayService.Instance.ShowTrayNotification("🧠 RAM & 대기 메모리 정화 완료", $"{count}개 프로세스 Trim 및 커널 Standby List 정화 완료. 가용 메모리가 즉시 확보되었습니다.", TrayNotificationType.Success);
         }
 
         public async Task ApplyGameBoostAsync()
@@ -1676,19 +1680,20 @@ namespace WinPurifyPro.ViewModels
             if (IsBusy) return;
             IsBusy = true;
             StatusText = "하이퍼 게이밍 가속 모드 활성화 중...";
-            AddLog("[Game Boost] 게임 프로세스 우선순위 HIGH 격상 및 네트워크 스택 최적화 개시");
+            AddLog("[Game Boost] 게임 프로세스 우선순위 HIGH 격상, 대기 메모리 정화 및 네트워크 스택 최적화 개시");
 
             await Task.Run(() =>
             {
                 NativeEngineService.TrySetKernelGameBoost(true);
-                NativeEngineService.TryOptimizeNetwork(1); // Low-Latency Gaming TCP Tuning
-                NativeEngineService.ExecuteQuickMaintenance(2); // DNS Flush
+                NativeEngineService.TryOptimizeNetwork(1); // Low-Latency Gaming TCP Tuning (DefaultTTL 64)
+                NativeEngineService.ExecuteQuickMaintenance(2); // Direct Win32 DnsFlushResolverCache API
+                NativeEngineService.TryPurgeStandbyList(4); // NT Kernel Standby List Zero-Lag Purge
                 NativeEngineService.CompressPhysicalRAM();
             });
 
             IsBusy = false;
             StatusText = "게이밍 가속 적용 완료 (Low-Latency Mode)";
-            AddLog("[Game Boost 완료] 지연시간 단축 및 프레임 드랍 방지 가속 설정 적용됨.");
+            AddLog("[Game Boost 완료] 대기 메모리 정화, 지연시간 단축 및 프레임 드랍 방지 가속 설정 적용됨.");
         }
 
         private void OpenCommanderModal()
@@ -1816,7 +1821,7 @@ namespace WinPurifyPro.ViewModels
                     LicenseKoreanText = "WinPurify Pro 최종 사용자 사용권 계약서 (EULA - Korean Edition)\n\n" +
                                         "제1조 (사용권의 부여): 개인 및 기업 사용자에게 비독점적이고 양도 불가능한 소프트웨어 사용 권한을 부여합니다.\n" +
                                         "제2조 (원격 관제): TCP 9870 및 UDP 9871 포트를 통한 로컬 네트워크 관제를 지원합니다.\n" +
-                                        "제3조 (저작권): Cisnet Soft에 모든 지적재산권이 귀속됩니다.\n" +
+                                        "제3조 (저작권): 개발자 AhBiYout에 모든 지적재산권이 귀속됩니다.\n" +
                                         "제4조 (데이터 보호): 모든 정화 작업은 로컬 장치 내에서 오프라인 완결형으로 실행됩니다.\n" +
                                         "제5조 (보증의 한계): 소프트웨어는 AS-IS로 제공되며 세이프포인트 백업 사용을 권장합니다.";
                 }
@@ -1828,9 +1833,9 @@ namespace WinPurifyPro.ViewModels
                 else
                 {
                     LicenseEnglishText = "WinPurify Pro End User License Agreement (EULA - Standard English Edition)\n\n" +
-                                         "1. Grant of License: Cisnet Soft grants a non-exclusive, non-transferable license to use WinPurify Pro.\n" +
+                                         "1. Grant of License: Lead Developer AhBiYout grants a non-exclusive, non-transferable license to use WinPurify Pro.\n" +
                                          "2. Remote Ports: Operates over TCP 9870 and UDP 9871 strictly for authorized administration.\n" +
-                                         "3. Intellectual Property: All title and copyright belong exclusively to Cisnet Soft.\n" +
+                                         "3. Intellectual Property: All title and copyright belong exclusively to Lead Developer AhBiYout.\n" +
                                          "4. Data Privacy: Operates entirely offline with zero external telemetry transmission.\n" +
                                          "5. Disclaimer: Provided 'AS IS'. Users are advised to utilize Live Safepoint registry backups.";
                 }
@@ -1868,7 +1873,7 @@ namespace WinPurifyPro.ViewModels
             if (isManual)
             {
                 IsUpdateModalOpen = true;
-                AddLog("[자동 업데이트] GitHub API (ahbiyout-all/WinPurify-Pro) 최신 릴리스 검사 시작...");
+                AddLog("[자동 업데이트] GitHub API (AhBiYout-all/WinPurifyPro) 최신 릴리스 검사 시작...");
             }
             else
             {

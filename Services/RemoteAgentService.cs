@@ -550,11 +550,26 @@ namespace WinPurifyPro.Services
 
             try
             {
-                var mem = SystemDiagnosticsService.GetSystemMemoryInfo();
-                dto.RamUsagePercent = mem.usagePercent;
-                dto.RamUsageText = $"{mem.usedGb:F1} / {mem.totalGb:F1} GB";
-                dto.DiskFreeText = $"{SystemDiagnosticsService.GetSystemDriveFreeSpaceGb():F1} GB Free";
-                dto.CpuUsagePercent = 12.0; // 기본 유휴 상태
+                if (NativeEngineService.TryQueryFleetHealth(out uint cpu, out long freeRam, out long totalRam, out long freeDisk, out int procCount))
+                {
+                    double usedRamGb = (totalRam - freeRam) / (1024.0 * 1024.0 * 1024.0);
+                    double totalRamGb = totalRam / (1024.0 * 1024.0 * 1024.0);
+                    double diskFreeGb = freeDisk / (1024.0 * 1024.0 * 1024.0);
+                    double ramPct = (totalRam > 0) ? ((double)(totalRam - freeRam) / totalRam) * 100.0 : 0;
+
+                    dto.CpuUsagePercent = cpu;
+                    dto.RamUsagePercent = ramPct;
+                    dto.RamUsageText = $"{usedRamGb:F1} / {totalRamGb:F1} GB";
+                    dto.DiskFreeText = $"{diskFreeGb:F1} GB Free";
+                }
+                else
+                {
+                    var mem = SystemDiagnosticsService.GetSystemMemoryInfo();
+                    dto.RamUsagePercent = mem.usagePercent;
+                    dto.RamUsageText = $"{mem.usedGb:F1} / {mem.totalGb:F1} GB";
+                    dto.DiskFreeText = $"{SystemDiagnosticsService.GetSystemDriveFreeSpaceGb():F1} GB Free";
+                    dto.CpuUsagePercent = 12.0; // 기본 유휴 상태
+                }
             }
             catch { }
 
@@ -1038,6 +1053,9 @@ namespace WinPurifyPro.Services
 
         public static string ComputeHmacSha256(string data, string key)
         {
+            string signed = NativeEngineService.SignCommanderPayload(data, key);
+            if (!string.IsNullOrEmpty(signed)) return signed;
+
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
             byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
             return Convert.ToHexString(hash);

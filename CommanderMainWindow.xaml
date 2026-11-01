@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:WinPurifyPro.ViewModels"
         xmlns:conv="clr-namespace:WinPurifyPro.Converters"
         mc:Ignorable="d"
-        Title="WinPurify Pro Central Commander Console v4.47.0 (Fleet Management)"
+        Title="WinPurify Pro Central Commander Console v4.56.4 (Fleet Management)"
         Height="820" Width="1280"
         MinHeight="600" MinWidth="1050"
         WindowStartupLocation="CenterScreen"
@@ -286,10 +286,10 @@
 
         <Style x:Key="CommanderComboBoxItemStyle" TargetType="ComboBoxItem">
             <Setter Property="Background" Value="#0F172A" />
-            <Setter Property="Foreground" Value="#F8FAFC" />
+            <Setter Property="Foreground" Value="#38BDF8" />
             <Setter Property="Padding" Value="8,5" />
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
             <Style.Triggers>
@@ -305,10 +305,10 @@
         </Style>
 
         <Style x:Key="CommanderComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Background" Value="#1E293B" />
+            <Setter Property="Background" Value="#0F172A" />
             <Setter Property="Foreground" Value="#38BDF8" />
-            <Setter Property="BorderBrush" Value="#475569" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#38BDF8" />
+            <Setter Property="BorderThickness" Value="1.5" />
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="FontSize" Value="11" />
             <Setter Property="ItemContainerStyle" Value="{StaticResource CommanderComboBoxItemStyle}" />
@@ -349,7 +349,7 @@
                         <TextBlock Text="Standalone Fleet Console" FontSize="10" FontWeight="Bold" Foreground="#93C5FD" />
                     </Border>
                     <Border Background="#4C1D95" CornerRadius="4" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="v4.47.0" FontSize="10" FontWeight="Bold" Foreground="#DDD6FE" />
+                        <TextBlock Text="v4.56.4" FontSize="10" FontWeight="Bold" Foreground="#DDD6FE" />
                     </Border>
                 </StackPanel>
 
@@ -532,11 +532,11 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="최적화 프로필: " FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,6,0" />
-                            <ComboBox ItemsSource="{Binding PresetList}" SelectedItem="{Binding SelectedPreset}" Width="110" Height="28" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#475569" FontWeight="Bold" FontSize="11" Style="{StaticResource CommanderComboBoxStyle}" ItemContainerStyle="{StaticResource CommanderComboBoxItemStyle}" Margin="0,0,8,0">
+                            <TextBlock Text="최적화 프로필: " FontSize="11" Foreground="#38BDF8" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <ComboBox ItemsSource="{Binding PresetList}" SelectedItem="{Binding SelectedPreset}" Width="120" Height="28" Background="#0F172A" Foreground="#38BDF8" BorderBrush="#38BDF8" FontWeight="Bold" FontSize="11" Style="{StaticResource CommanderComboBoxStyle}" ItemContainerStyle="{StaticResource CommanderComboBoxItemStyle}" Margin="0,0,8,0">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding}" Foreground="#F8FAFC" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding}" Foreground="#38BDF8" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" />
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>

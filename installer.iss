@@ -5,8 +5,8 @@
 ; =====================================================================
 
 #define MyAppName "WinPurify Pro"
-#define MyAppVersion "4.47.0"
-#define MyAppPublisher "Cisnet Soft"
+#define MyAppVersion "4.56.4"
+#define MyAppPublisher "AhBiYout"
 #define MyAppURL "https://ahbiyoutvibe.blogspot.com/"
 #define MyAppExeName "WinPurifyPro.exe"
 
@@ -135,11 +135,13 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#MyAppName} v{#MyAppVersion}"" dir=in action=allow program=""""{app}\{#MyAppExeName}"""" enable=yes profile=any description=""{#MyAppName} v{#MyAppVersion} 메인 최적화 클라이언트 인바운드 방화벽 허용 규칙"""; Flags: runhidden; Tasks: openremoteport
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#MyAppName} v{#MyAppVersion} (Outbound)"" dir=out action=allow program=""""{app}\{#MyAppExeName}"""" enable=yes profile=any description=""{#MyAppName} v{#MyAppVersion} 메인 최적화 클라이언트 아웃바운드 방화벽 허용 규칙"""; Flags: runhidden; Tasks: openremoteport
 
-; 4) 메인 클라이언트 범용 규칙 (Inbound & Outbound)
+; 4) 메인 클라이언트 기본 이름 규칙 (기본이름 & 버전이름 둘 다 등록)
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName}"""; Flags: runhidden; Tasks: openremoteport
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName} (Outbound)"""; Flags: runhidden; Tasks: openremoteport
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName} Main Client"""; Flags: runhidden; Tasks: openremoteport
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName} Main Client Outbound"""; Flags: runhidden; Tasks: openremoteport
-Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#MyAppName} Main Client"" dir=in action=allow program=""""{app}\{#MyAppExeName}"""" enable=yes profile=any description=""{#MyAppName} 메인 최적화 클라이언트 범용 인바운드 방화벽 허용 규칙"""; Flags: runhidden; Tasks: openremoteport
-Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#MyAppName} Main Client Outbound"" dir=out action=allow program=""""{app}\{#MyAppExeName}"""" enable=yes profile=any description=""{#MyAppName} 메인 최적화 클라이언트 범용 아웃바운드 방화벽 허용 규칙"""; Flags: runhidden; Tasks: openremoteport
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#MyAppName}"" dir=in action=allow program=""""{app}\{#MyAppExeName}"""" enable=yes profile=any description=""{#MyAppName} 메인 최적화 클라이언트 기본 인바운드 방화벽 허용 규칙"""; Flags: runhidden; Tasks: openremoteport
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#MyAppName} (Outbound)"" dir=out action=allow program=""""{app}\{#MyAppExeName}"""" enable=yes profile=any description=""{#MyAppName} 메인 최적화 클라이언트 기본 아웃바운드 방화벽 허용 규칙"""; Flags: runhidden; Tasks: openremoteport
 
 ; 5) Central Commander 버전 표기 규칙 (Inbound & Outbound)
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""WinPurify Central Commander v{#MyAppVersion}"""; Flags: runhidden; Tasks: openremoteport
@@ -177,6 +179,8 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=
 ; 애플리케이션 규칙 삭제
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName} v{#MyAppVersion}"""; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName} v{#MyAppVersion} (Outbound)"""; Flags: runhidden
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName}"""; Flags: runhidden
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName} (Outbound)"""; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName} Main Client"""; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#MyAppName} Main Client Outbound"""; Flags: runhidden
 

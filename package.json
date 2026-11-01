@@ -1,7 +1,7 @@
 {
   "name": "winpurify-portable",
-  "version": "4.47.0",
-  "description": "WinPurify v4.47.0 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
+  "version": "4.56.4",
+  "description": "WinPurify v4.56.4 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
   "author": "AhBiYout",
   "main": "electron-main.js",
   "scripts": {
@@ -18,7 +18,7 @@
     "electron-builder": "24.13.3"
   },
   "build": {
-    "appId": "com.cisnet.winpurify",
+    "appId": "com.winpurify.pro",
     "productName": "Remix:_WinPurify3-windowform",
     "win": {
       "target": [
@@ -34,13 +34,13 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Cisnet WinPurify Pro",
+      "shortcutName": "WinPurify Pro",
       "artifactName": "WinPurify_Setup.${ext}"
     },
     "msi": {
       "oneClick": false,
       "perMachine": true,
-      "shortcutName": "Cisnet WinPurify Pro",
+      "shortcutName": "WinPurify Pro",
       "artifactName": "WinPurify_Setup_Enterprise.${ext}"
     },
     "portable": {
