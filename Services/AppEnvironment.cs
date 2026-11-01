@@ -21,7 +21,7 @@ namespace WinPurifyPro.Services
             get
             {
                 var ver = typeof(AppEnvironment).Assembly.GetName().Version;
-                return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "4.56.4";
+                return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "4.59.0";
             }
         }
 

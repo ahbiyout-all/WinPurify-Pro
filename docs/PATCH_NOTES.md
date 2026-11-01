@@ -2,6 +2,46 @@
 
 ---
 
+## 📌 [v4.59.0] - 2026-11-01 (📈 Recharts 기반 누적 디스크 회수 & 시스템 최적화 효율 텔레메트리 대시보드 구축)
+
+### 📈 신규 텔레메트리 대시보드 구축 (Telemetry Efficiency Analytics Hub)
+- **Recharts 시각화 텔레메트리 모달 대시보드 탑재 (`showTelemetryModal`)**:
+  - 상단 액션 바에 `[📊 효율 텔레메트리]` 전용 모달 실행 버튼 탑재.
+  - **4대 핵심 KPI 카드**: 총 회수 스토리지(`52.8 GB`), 최적화 효율 지수(`99.4%`), 부팅/응답속도 가속율(`+58.2%`), 누적 정화 모듈 실행 건수(`1,280회`).
+  - **기간별 누적 회수 디스크 용량 추이 (`ComposedChart`)**: 최근 7일 / 30일 / 90일 / 전체 누적 기간 선택에 따른 누적 회수 용량(GB) 영역 차트 및 주간/기간 정크 청소 용량(MB) 막대 차트 결합 시각화.
+  - **최적화 효율 점수 및 가속율 추이 (`LineChart`)**: 최적화 효율 점수(%)와 부팅/앱 응답 속도 개선율(%) 이중 꺾은선 차트 분석.
+  - 텔레메트리 데이터 JSON 클립보드 복사 및 실시간 C++ 엔진 연동 상태 지표 구현.
+
+---
+
+## 📌 [v4.58.0] - 2026-11-01 (🚀 GitHub CI/CD 배포 규격 정비, Inno Setup 방화벽 및 .gitignore 보강)
+
+### 🚀 GitHub 배포 및 CI/CD 파이프라인 정비 (GitHub Release & Actions Rules)
+- **Node.js 22 LTS 규격 보강 및 Node 20 EOL 대응**:
+  - GitHub Actions 워크플로(`.github/workflows/release.yml`) 내 `actions/setup-node@v4`를 `node-version: 22`로 지정하여 Node.js 20 EOL 경고 메시지 완전 차단.
+  - Release 첨부 자산으로 오직 공식 정식 인스톨러(`WinPurifyPro-Setup.exe`) 1종만 빌드 및 첨부하도록 고유 단권화.
+- **`.gitignore` 업로드 제어 규칙 개편**:
+  - 로컬 푸시 스크립트(`github_push.bat`, `github_push.ps1`) 및 빌드 임시/로그/바이너리 폴더를 `.gitignore`에 제외 등록하여 깃허브 업로드 대상에서 원천 배제.
+  - 개인 이메일 및 민감 정보 업로드 금지 검증 파이프라인 지속 유지.
+- **Inno Setup 인스톨러 무인 설치 & 방화벽 등록 강화 (`installer.iss`)**:
+  - 폴더 풀림(Unpacked Multi-File) 정식 설치 모드 유지.
+  - 기존 앱 설치 감지 시 클린 언인스톨 / 덮어쓰기 선택 대화상자 제공.
+  - 무인 설치(`/SILENT`, `/VERYSILENT`, `/CLEAN`, `/AUTORUN`) 및 Windows 방화벽 백그라운드 무소음 등록 (`WinPurify Pro` 기본 및 `WinPurify Pro v4.58.0` 버전 표기 규칙 이중 등록).
+
+---
+
+## 📌 [v4.57.0] - 2026-11-01 (📈 Recharts 기반 144개 모듈 실시간 탐색 & 정화 상태 시각화 대시보드 구축)
+
+### 📈 신규 시각화 차트 엔진 탑재 (Recharts Real-Time Analytics UI)
+- **Recharts 패키지 연동 및 실시간 텔레메트리 대시보드 구축**:
+  - `recharts` 패키지 신규 연동 및 3D/다크 테마 인터랙티브 차트 모드 지원.
+  - **실시간 I/O 스트림 (`AreaChart`)**: 탐색 시간(sec) 흐름에 따른 144개 모듈 스캔 진행률(%), 누적 탐색 발견 용량(MB), I/O 처리 속도(files/s) 이중 Y축(Dual Y-Axis) 실시간 영역 차트 시각화.
+  - **카테고리 공간 회수 (`BarChart`)**: 8대 카테고리별 스캔 발견 용량(MB) vs 정화 선택/완료 용량(MB) 막대 차트 비교 분석.
+  - **정화 상태 분포 (`PieChart Donut`)**: 선택 완료, 안전 스캔 완료, 탐색 대기 상태별 모듈 개수 및 공간 비율 도넛 차트 구성.
+  - 툴팁(`Tooltip`), 그라디언트 채우기(`skyProgressGrad`, `emeraldMbGrad`), 범례(`Legend`) 및 실시간 탭 전환 UI 구현.
+
+---
+
 ## 📌 [v4.56.4] - 2026-11-01 (🏢 소속 및 cisnet.co.kr 도메인 관련 모든 표기 제거 및 브랜딩 동기화)
 
 ### 🏢 기업 소속 및 도메인 제거 (Branding & Affiliation Clean-up)

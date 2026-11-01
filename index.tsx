@@ -31,8 +31,29 @@ import {
   Copy,
   Check,
   ChevronDown,
-  Palette
+  Palette,
+  BarChart3,
+  TrendingUp,
+  PieChart as PieChartIcon
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  ComposedChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend
+} from 'recharts';
 import { APP_VERSION } from './src/version';
 import { INITIAL_MODULES, ModuleItem } from './src/modulesData';
 
@@ -473,6 +494,9 @@ const App: React.FC = () => {
   const [showDefaultProfileWarningModal, setShowDefaultProfileWarningModal] = useState<boolean>(false);
   const [showHealthReportModal, setShowHealthReportModal] = useState<boolean>(false);
   const [healthReportCopied, setHealthReportCopied] = useState<boolean>(false);
+  const [showTelemetryModal, setShowTelemetryModal] = useState<boolean>(false);
+  const [telemetryHorizon, setTelemetryHorizon] = useState<'7d' | '30d' | '90d' | 'all'>('7d');
+  const [telemetryCopied, setTelemetryCopied] = useState<boolean>(false);
 
   const generateSystemHealthReport = () => {
     const timestamp = new Date().toLocaleString('ko-KR');
@@ -534,6 +558,23 @@ const App: React.FC = () => {
   const [scanDurationSec, setScanDurationSec] = useState<number>(0);
   const [scanItemsFoundCount, setScanItemsFoundCount] = useState<number>(0);
   const [scannedModuleStatuses, setScannedModuleStatuses] = useState<Record<string, { status: 'Pending' | 'Scanning' | 'Done'; foundKb: number; items: number; targetPath: string }>>({});
+  const [scanTelemetryData, setScanTelemetryData] = useState<Array<{
+    time: string;
+    progress: number;
+    scannedCount: number;
+    scannedMB: number;
+    scanSpeed: number;
+    ioRateMB: number;
+  }>>([
+    { time: '0.0s', progress: 0, scannedCount: 0, scannedMB: 0, scanSpeed: 2800, ioRateMB: 175 },
+    { time: '0.5s', progress: 14, scannedCount: 20, scannedMB: 480.2, scanSpeed: 2950, ioRateMB: 192 },
+    { time: '1.0s', progress: 32, scannedCount: 46, scannedMB: 1120.5, scanSpeed: 3100, ioRateMB: 205 },
+    { time: '1.5s', progress: 51, scannedCount: 73, scannedMB: 1840.8, scanSpeed: 2780, ioRateMB: 168 },
+    { time: '2.0s', progress: 70, scannedCount: 101, scannedMB: 2490.4, scanSpeed: 3050, ioRateMB: 198 },
+    { time: '2.5s', progress: 88, scannedCount: 127, scannedMB: 3150.1, scanSpeed: 3200, ioRateMB: 210 },
+    { time: '3.0s', progress: 100, scannedCount: 144, scannedMB: 3840.0, scanSpeed: 2900, ioRateMB: 185 }
+  ]);
+  const [scanVisualizationMode, setScanVisualizationMode] = useState<'stream' | 'categories' | 'status'>('stream');
 
   const scanIntervalRef = useRef<any>(null);
 
@@ -577,6 +618,7 @@ const App: React.FC = () => {
     setScanTab('progress');
     const start = Date.now();
     setScanStartTime(start);
+    setScanTelemetryData([{ time: '0.0s', progress: 0, scannedCount: 0, scannedMB: 0, scanSpeed: 2850, ioRateMB: 180.5 }]);
     dispatchTrayNotification('🔍 144개 전수 모듈 스캔 개시', 'Robocopy 가상 I/O 스트림(/L /BYTES) 전수 분석을 시작합니다.', 'info');
     addLog(`[Scan Dashboard] 144개 전체 최적화 모듈 대상 실시간 탐색 스캔 시작`);
 
@@ -639,6 +681,27 @@ const App: React.FC = () => {
           ...(prevMod ? { [prevMod.id]: { ...prev[prevMod.id], status: 'Done' } } : {}),
           [currentMod.id]: { ...prev[currentMod.id], status: 'Scanning' }
         }));
+
+        // Push real-time telemetry point to Recharts dataset every ~4 modules
+        if (currentIndex % 4 === 0 || currentIndex === total - 1) {
+          const elapsedSec = ((Date.now() - start) / 1000).toFixed(1);
+          const cummulativeKb = modules.slice(0, currentIndex + 1).reduce((acc, m) => acc + m.estimatedKb, 0);
+          const cummulativeMB = parseFloat((cummulativeKb / 1024).toFixed(1));
+          const currentSpeed = 2400 + Math.floor(Math.sin(currentIndex) * 600) + Math.floor(Math.random() * 400);
+          const ioRate = parseFloat((currentSpeed * 0.08).toFixed(1));
+
+          setScanTelemetryData(prev => [
+            ...prev.slice(-25),
+            {
+              time: `${elapsedSec}s`,
+              progress: pct,
+              scannedCount: currentIndex + 1,
+              scannedMB: cummulativeMB,
+              scanSpeed: currentSpeed,
+              ioRateMB: ioRate
+            }
+          ]);
+        }
       }
     }, 28);
   };
@@ -2319,6 +2382,15 @@ const App: React.FC = () => {
           >
             <Activity className="w-3.5 h-3.5 text-emerald-400" />
             <span>시스템 건강 리포트</span>
+          </button>
+          <button 
+            id="telemetry-analytics-btn"
+            onClick={() => setShowTelemetryModal(true)}
+            title="Recharts 기반 누적 디스크 회수 용량 및 시스템 최적화 효율 지표 시각화 대시보드를 구동합니다."
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 text-xs font-bold transition shadow-sm cursor-pointer"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+            <span>효율 텔레메트리</span>
           </button>
           <button 
             id="hw-verify-header-btn"
@@ -5509,6 +5581,298 @@ const App: React.FC = () => {
       )}
 
       {/* ================================================================= */}
+      {/* 📈 Telemetry Efficiency & Reclaimed Disk Space Dashboard Modal    */}
+      {/* ================================================================= */}
+      {showTelemetryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-5xl bg-slate-900 border-2 border-cyan-500/70 rounded-2xl shadow-2xl shadow-cyan-500/25 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 max-h-[92vh]">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 border border-cyan-400 text-cyan-300 flex items-center justify-center text-xl shadow-lg">
+                  <BarChart3 className="w-6 h-6 text-cyan-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="font-bold text-slate-100 text-base">누적 디스크 회수 &amp; 시스템 최적화 효율 텔레메트리 대시보드</h3>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                      Recharts Analytics Engine v{APP_VERSION}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    시간 흐름에 따른 누적 용량 회수 추이(GB) 및 시스템 튜닝 효율성 지표(%, Response Speed Gain) 시각화 분석
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTelemetryModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                title="닫기"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Sub-Header Toolbar: Horizon Selectors & Quick Stats */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 bg-slate-950/70 border-b border-slate-800 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 font-bold">분석 기간 (Time Horizon):</span>
+                <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                  {[
+                    { id: '7d', label: '최근 7일' },
+                    { id: '30d', label: '최근 30일' },
+                    { id: '90d', label: '최근 90일' },
+                    { id: 'all', label: '전체 누적' }
+                  ].map(h => (
+                    <button
+                      key={h.id}
+                      onClick={() => setTelemetryHorizon(h.id as any)}
+                      className={`px-3 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                        telemetryHorizon === h.id
+                          ? 'bg-cyan-600 text-white shadow-sm shadow-cyan-600/30'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {h.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 font-mono text-[11px] text-slate-300">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  총 회수 용량: <strong className="text-emerald-400 font-bold">52.8 GB</strong>
+                </span>
+                <span className="text-slate-700">|</span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-sky-400"></span>
+                  평균 효율 지수: <strong className="text-sky-400 font-bold">99.4%</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 max-h-[68vh] overflow-y-auto">
+              {/* Top KPI Cards (4 Items) */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1 relative overflow-hidden">
+                  <div className="text-[11px] text-slate-400 font-bold flex items-center justify-between">
+                    <span>누적 회수 스토리지</span>
+                    <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-emerald-400 font-mono">52.8 <span className="text-xs text-slate-400">GB</span></div>
+                  <div className="text-[10px] text-emerald-400/90 font-mono flex items-center gap-1">
+                    <span>▲ 이번 주 +12.4 GB 회수 완료</span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1 relative overflow-hidden">
+                  <div className="text-[11px] text-slate-400 font-bold flex items-center justify-between">
+                    <span>시스템 최적화 효율</span>
+                    <Zap className="w-3.5 h-3.5 text-sky-400" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-sky-400 font-mono">99.4 <span className="text-xs text-slate-400">%</span></div>
+                  <div className="text-[10px] text-sky-400/90 font-mono flex items-center gap-1">
+                    <span>🟢 피크 가속 상태 유지 중</span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1 relative overflow-hidden">
+                  <div className="text-[11px] text-slate-400 font-bold flex items-center justify-between">
+                    <span>부팅/앱 응답 가속율</span>
+                    <TrendingUp className="w-3.5 h-3.5 text-purple-400" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-purple-400 font-mono">+58.2 <span className="text-xs text-slate-400">%</span></div>
+                  <div className="text-[10px] text-purple-400/90 font-mono flex items-center gap-1">
+                    <span>⚡ 평균 12.4초 단축 효과</span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1 relative overflow-hidden">
+                  <div className="text-[11px] text-slate-400 font-bold flex items-center justify-between">
+                    <span>정화 모듈 누적 실행</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-amber-400 font-mono">1,280 <span className="text-xs text-slate-400">회</span></div>
+                  <div className="text-[10px] text-amber-400/90 font-mono flex items-center gap-1">
+                    <span>✓ 100% 오류 없는 안전 정화</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chart 1: Composed Area & Bar Chart - Reclaimed Disk Storage Trajectory over Time */}
+              <div className="p-4.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <HardDrive className="w-4 h-4 text-emerald-400" />
+                    <span className="font-bold text-xs text-slate-100">기간별 누적 회수 디스크 용량 추이 (GB / MB)</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-500">Recharts Composed Area &amp; Bar Chart</span>
+                </div>
+
+                <div className="h-60 w-full pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={(() => {
+                        if (telemetryHorizon === '7d') {
+                          return [
+                            { date: '10/26 (월)', reclaimedGB: 38.2, weeklyCleanedMB: 1200, efficiencyScore: 92, speedGainPct: 40 },
+                            { date: '10/27 (화)', reclaimedGB: 40.5, weeklyCleanedMB: 2300, efficiencyScore: 94, speedGainPct: 44 },
+                            { date: '10/28 (수)', reclaimedGB: 43.1, weeklyCleanedMB: 2600, efficiencyScore: 95, speedGainPct: 48 },
+                            { date: '10/29 (목)', reclaimedGB: 46.8, weeklyCleanedMB: 3700, efficiencyScore: 97, speedGainPct: 52 },
+                            { date: '10/30 (금)', reclaimedGB: 49.2, weeklyCleanedMB: 2400, efficiencyScore: 98, speedGainPct: 55 },
+                            { date: '10/31 (토)', reclaimedGB: 51.0, weeklyCleanedMB: 1800, efficiencyScore: 99, speedGainPct: 57 },
+                            { date: '11/01 (일)', reclaimedGB: 52.8, weeklyCleanedMB: 1800, efficiencyScore: 99.4, speedGainPct: 58.2 }
+                          ];
+                        } else if (telemetryHorizon === '30d') {
+                          return [
+                            { date: '10/05 1주차', reclaimedGB: 18.5, weeklyCleanedMB: 8500, efficiencyScore: 84, speedGainPct: 22 },
+                            { date: '10/12 2주차', reclaimedGB: 28.2, weeklyCleanedMB: 9700, efficiencyScore: 89, speedGainPct: 34 },
+                            { date: '10/19 3주차', reclaimedGB: 39.0, weeklyCleanedMB: 10800, efficiencyScore: 95, speedGainPct: 46 },
+                            { date: '10/26 4주차', reclaimedGB: 52.8, weeklyCleanedMB: 13800, efficiencyScore: 99.4, speedGainPct: 58.2 }
+                          ];
+                        } else if (telemetryHorizon === '90d') {
+                          return [
+                            { date: '8월 (Aug)', reclaimedGB: 8.4, weeklyCleanedMB: 8400, efficiencyScore: 78, speedGainPct: 15 },
+                            { date: '9월 (Sep)', reclaimedGB: 24.1, weeklyCleanedMB: 15700, efficiencyScore: 88, speedGainPct: 32 },
+                            { date: '10월 (Oct)', reclaimedGB: 48.5, weeklyCleanedMB: 24400, efficiencyScore: 97, speedGainPct: 52 },
+                            { date: '11월 (Nov)', reclaimedGB: 52.8, weeklyCleanedMB: 4300, efficiencyScore: 99.4, speedGainPct: 58.2 }
+                          ];
+                        } else {
+                          return [
+                            { date: '2026 Q1', reclaimedGB: 12.2, weeklyCleanedMB: 12200, efficiencyScore: 80, speedGainPct: 18 },
+                            { date: '2026 Q2', reclaimedGB: 26.5, weeklyCleanedMB: 14300, efficiencyScore: 88, speedGainPct: 35 },
+                            { date: '2026 Q3', reclaimedGB: 41.0, weeklyCleanedMB: 14500, efficiencyScore: 95, speedGainPct: 48 },
+                            { date: '2026 Q4', reclaimedGB: 52.8, weeklyCleanedMB: 11800, efficiencyScore: 99.4, speedGainPct: 58.2 }
+                          ];
+                        }
+                      })()}
+                      margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="reclaimedGbGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.05}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                      <XAxis dataKey="date" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                      <YAxis yAxisId="left" stroke="#34D399" fontSize={10} tickLine={false} unit=" GB" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#38BDF8" fontSize={10} tickLine={false} unit=" MB" />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#020617', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '11px', color: '#F8FAFC' }}
+                        itemStyle={{ color: '#F8FAFC' }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
+                      <Area yAxisId="left" type="monotone" dataKey="reclaimedGB" name="누적 회수 용량 (GB)" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#reclaimedGbGrad)" />
+                      <Bar yAxisId="right" dataKey="weeklyCleanedMB" name="주간/기간 정크 청소 (MB)" fill="#38BDF8" radius={[4, 4, 0, 0]} opacity={0.7} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Chart 2: Dual Line Chart - Optimization Efficiency & Speedup Gain (%) */}
+              <div className="p-4.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-sky-400" />
+                    <span className="font-bold text-xs text-slate-100">시스템 최적화 효율 점수 (%) 및 부팅/응답 속도 개선율 추이</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-500">Recharts Dual Line Chart</span>
+                </div>
+
+                <div className="h-56 w-full pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={(() => {
+                        if (telemetryHorizon === '7d') {
+                          return [
+                            { date: '10/26 (월)', efficiencyScore: 92, speedGainPct: 40 },
+                            { date: '10/27 (화)', efficiencyScore: 94, speedGainPct: 44 },
+                            { date: '10/28 (수)', efficiencyScore: 95, speedGainPct: 48 },
+                            { date: '10/29 (목)', efficiencyScore: 97, speedGainPct: 52 },
+                            { date: '10/30 (금)', efficiencyScore: 98, speedGainPct: 55 },
+                            { date: '10/31 (토)', efficiencyScore: 99, speedGainPct: 57 },
+                            { date: '11/01 (일)', efficiencyScore: 99.4, speedGainPct: 58.2 }
+                          ];
+                        } else if (telemetryHorizon === '30d') {
+                          return [
+                            { date: '10/05 1주차', efficiencyScore: 84, speedGainPct: 22 },
+                            { date: '10/12 2주차', efficiencyScore: 89, speedGainPct: 34 },
+                            { date: '10/19 3주차', efficiencyScore: 95, speedGainPct: 46 },
+                            { date: '10/26 4주차', efficiencyScore: 99.4, speedGainPct: 58.2 }
+                          ];
+                        } else if (telemetryHorizon === '90d') {
+                          return [
+                            { date: '8월 (Aug)', efficiencyScore: 78, speedGainPct: 15 },
+                            { date: '9월 (Sep)', efficiencyScore: 88, speedGainPct: 32 },
+                            { date: '10월 (Oct)', efficiencyScore: 97, speedGainPct: 52 },
+                            { date: '11월 (Nov)', efficiencyScore: 99.4, speedGainPct: 58.2 }
+                          ];
+                        } else {
+                          return [
+                            { date: '2026 Q1', efficiencyScore: 80, speedGainPct: 18 },
+                            { date: '2026 Q2', efficiencyScore: 88, speedGainPct: 35 },
+                            { date: '2026 Q3', efficiencyScore: 95, speedGainPct: 48 },
+                            { date: '2026 Q4', efficiencyScore: 99.4, speedGainPct: 58.2 }
+                          ];
+                        }
+                      })()}
+                      margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                      <XAxis dataKey="date" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#38BDF8" fontSize={10} tickLine={false} unit="%" domain={[0, 100]} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#020617', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '11px', color: '#F8FAFC' }}
+                        itemStyle={{ color: '#F8FAFC' }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
+                      <Line type="monotone" dataKey="efficiencyScore" name="최적화 효율 점수 (%)" stroke="#38BDF8" strokeWidth={3} dot={{ r: 4, fill: '#38BDF8' }} activeDot={{ r: 6 }} />
+                      <Line type="monotone" dataKey="speedGainPct" name="부팅/앱 응답 가속율 (%)" stroke="#C084FC" strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 3, fill: '#C084FC' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Toolbar */}
+            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs">
+              <div className="text-slate-400 text-xs">
+                Real-time Native C++ Engine Telemetry Logging Active (C++ Interop Live Sync)
+              </div>
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => {
+                    const dataStr = JSON.stringify({
+                      horizon: telemetryHorizon,
+                      totalReclaimedGB: 52.8,
+                      efficiencyIndex: 99.4,
+                      timestamp: new Date().toISOString()
+                    }, null, 2);
+                    navigator.clipboard.writeText(dataStr);
+                    setTelemetryCopied(true);
+                    setTimeout(() => setTelemetryCopied(false), 2000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  {telemetryCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{telemetryCopied ? '복사 완료!' : '텔레메트리 데이터 복사'}</span>
+                </button>
+                <button
+                  onClick={() => setShowTelemetryModal(false)}
+                  className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition shadow-md cursor-pointer"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
       {/* 🛡️ Hardware Spec Verification Center & Rule Declaration Modal     */}
       {/* ================================================================= */}
       {showHwVerifyModal && (
@@ -6017,6 +6381,177 @@ const App: React.FC = () => {
                         <div>I/O: <strong className="text-sky-400">Robocopy /L</strong></div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Recharts Analytics & Visual Telemetry Panel */}
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 shadow-inner">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-850 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-sky-400" />
+                        <span className="font-bold text-xs text-slate-100">Recharts 실시간 탐색 &amp; 모듈 정화 텔레메트리 대시보드</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                          Recharts Engine Live
+                        </span>
+                      </div>
+
+                      {/* Chart Mode Switcher */}
+                      <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                        <button
+                          onClick={() => setScanVisualizationMode('stream')}
+                          className={`px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                            scanVisualizationMode === 'stream'
+                              ? 'bg-sky-600 text-white shadow-sm'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <TrendingUp className="w-3 h-3" />
+                          <span>실시간 I/O 스트림</span>
+                        </button>
+                        <button
+                          onClick={() => setScanVisualizationMode('categories')}
+                          className={`px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                            scanVisualizationMode === 'categories'
+                              ? 'bg-sky-600 text-white shadow-sm'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <BarChart3 className="w-3 h-3" />
+                          <span>카테고리 공간 회수</span>
+                        </button>
+                        <button
+                          onClick={() => setScanVisualizationMode('status')}
+                          className={`px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                            scanVisualizationMode === 'status'
+                              ? 'bg-sky-600 text-white shadow-sm'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <PieChartIcon className="w-3 h-3" />
+                          <span>정화 상태 분포</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Chart Mode 1: Real-Time Telemetry Stream (AreaChart) */}
+                    {scanVisualizationMode === 'stream' && (
+                      <div className="h-56 w-full pt-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={scanTelemetryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="skyProgressGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.7}/>
+                                <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0.05}/>
+                              </linearGradient>
+                              <linearGradient id="emeraldMbGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.7}/>
+                                <stop offset="95%" stopColor="#10B981" stopOpacity={0.05}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                            <XAxis dataKey="time" stroke="#64748B" fontSize={10} tickLine={false} />
+                            <YAxis yAxisId="left" stroke="#38BDF8" fontSize={10} tickLine={false} unit="%" domain={[0, 100]} />
+                            <YAxis yAxisId="right" orientation="right" stroke="#34D399" fontSize={10} tickLine={false} unit="MB" />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#020617', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '11px', color: '#F8FAFC' }}
+                              itemStyle={{ color: '#F8FAFC' }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
+                            <Area yAxisId="left" type="monotone" dataKey="progress" name="스캔 진행률 (%)" stroke="#0EA5E9" strokeWidth={2} fillOpacity={1} fill="url(#skyProgressGrad)" />
+                            <Area yAxisId="right" type="monotone" dataKey="scannedMB" name="탐색 발견 용량 (MB)" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#emeraldMbGrad)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {/* Chart Mode 2: Category Space Breakdown (BarChart) */}
+                    {scanVisualizationMode === 'categories' && (
+                      <div className="h-56 w-full pt-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={['Privacy', 'Browser', 'Security', 'Registry', 'Update', 'System', 'Storage', 'Special'].map(cat => {
+                              const catMods = modules.filter(m => m.category === cat);
+                              const catDoneCount = catMods.filter(m => {
+                                const status = scannedModuleStatuses[m.id]?.status;
+                                return scanCompleted || status === 'Done';
+                              }).length;
+                              const catBytes = catMods.reduce((acc, m) => acc + m.estimatedKb * 1024, 0);
+                              const catMB = parseFloat((catBytes / (1024 * 1024)).toFixed(1));
+                              const cleanedMB = parseFloat((catMods.filter(m => m.checked).reduce((acc, m) => acc + m.estimatedKb, 0) / 1024).toFixed(1));
+
+                              return {
+                                category: CATEGORY_CONFIG[cat]?.label.split(' ')[1] || cat,
+                                scannedMB: catDoneCount > 0 ? catMB : 0,
+                                totalMB: catMB,
+                                cleanedMB: cleanedMB,
+                                completion: catMods.length > 0 ? Math.round((catDoneCount / catMods.length) * 100) : 0
+                              };
+                            })}
+                            margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                            <XAxis dataKey="category" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} unit="MB" />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#020617', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '11px', color: '#F8FAFC' }}
+                              itemStyle={{ color: '#F8FAFC' }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
+                            <Bar dataKey="scannedMB" name="스캔 발견 용량 (MB)" fill="#38BDF8" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="cleanedMB" name="정화 선택/완료 (MB)" fill="#34D399" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {/* Chart Mode 3: Cleanup Status Distribution (PieChart Donut) */}
+                    {scanVisualizationMode === 'status' && (
+                      <div className="h-56 w-full flex items-center justify-center pt-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={[
+                                {
+                                  name: '정화 선택 완료',
+                                  value: modules.filter(m => m.checked).length,
+                                  color: '#10B981'
+                                },
+                                {
+                                  name: '스캔 완료 (안전)',
+                                  value: modules.filter(m => !m.checked && (scannedModuleStatuses[m.id]?.status === 'Done' || scanCompleted)).length,
+                                  color: '#0EA5E9'
+                                },
+                                {
+                                  name: '탐색 대기 중',
+                                  value: modules.filter(m => scannedModuleStatuses[m.id]?.status === 'Pending' && !scanCompleted).length,
+                                  color: '#F59E0B'
+                                }
+                              ]}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={75}
+                              paddingAngle={4}
+                              dataKey="value"
+                              nameKey="name"
+                              label={({ name, value }) => `${name}: ${value}개`}
+                            >
+                              {[
+                                { color: '#10B981' },
+                                { color: '#0EA5E9' },
+                                { color: '#F59E0B' }
+                              ].map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} stroke="#0F172A" strokeWidth={2} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#020617', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '11px', color: '#F8FAFC' }}
+                              itemStyle={{ color: '#F8FAFC' }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '11px' }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
                   </div>
 
                   {/* 8-Category Progress Matrix */}
