@@ -2,6 +2,56 @@
 
 ---
 
+## 📌 [v4.68.3] - 2026-11-02 (🛠️ validate-xaml.ps1 PowerShell 변수 파서 InvalidVariableReferenceWithDrive 구문 수정)
+
+### 🛠️ PowerShell 문자열 보간 드라이브 구문 파싱 예외 완전 해결 (`validate-xaml.ps1`)
+- **`$col:` 파서 오류 원인 수정**:
+  - PowerShell의 문자열 보간(`"..."`) 환경에서 변수명 바로 뒤에 콜론이 오는 경우(`$col:`), PowerShell 인터프리터가 이를 스코프/드라이브 참조 구문(`$drive:variable`)으로 오인식하여 발생하던 `InvalidVariableReferenceWithDrive` / `ParserError: (:)` 결함 수정.
+  - MSBuild 표준 오류 포맷인 `$relPath($curLine,$curCol): error MC3023: ...` 형태로 전면 개편하여 PowerShell 인터프리터 파싱 충돌을 원천 차단하고 터미널 및 IDE에서 클릭 시 해당 파일 및 행/열로 즉시 이동할 수 있도록 DX 고도화.
+
+---
+
+## 📌 [v4.68.2] - 2026-11-02 (🔍 재귀적 XAML MC3023 리소스 딕셔너리 구문 분석기(validate-xaml.ps1) 완성)
+
+### 🔍 `validate-xaml.ps1` XML 파싱 기반 MC3023 전용 재귀 검증기 완성
+- **MSVC/MSBuild 파이프라인 시작 전 비-Dictionary 태그 사용 조기 탐지**:
+  - `[System.Xml.XmlReader]` 기반 고속 파싱 스트림을 활용하여 프로젝트 내 모든 `.xaml` 파일을 재귀적으로 탐색(`Get-ChildItem -Recurse`).
+  - `x:Key` 속성이 `<ResourceDictionary>` 또는 `<*.Resources>` 외부(예: `<Setter>`, `<ControlTemplate>`, `<Grid>` 등)에 선언된 경우 공식 오류 코드 `error MC3023: Key attribute can only be used on a tag contained in a Dictionary` 및 직전 미폐쇄 태그 힌트를 출력.
+  - 임시 및 바이너리 출력 폴더(`bin`, `obj`, `publish`, `dist-web` 등) 자동 제외 및 정밀 행/열 위치 표시.
+  - 검증 실패 시 Exit Code `1`을 반환하여 상위 빌드 배치(`build.bat`) 파이프라인을 즉시 중단.
+
+---
+
+## 📌 [v4.68.1] - 2026-11-02 (⚡ 빌드 배치 파일(build.bat) 사전 빌드 훅(Pre-Build Hook) 아키텍처 및 딕셔너리 키 오류 차단 강화)
+
+### ⚡ `build.bat` 전용 사전 빌드 훅(`:EXECUTE_PREBUILD_XAML_HOOK`) 연동
+- **`validate-xaml.ps1` 기반 프리빌드 훅 격리 및 실행 보장**:
+  - `build.bat` 내부에 독립 서브루틴 `:EXECUTE_PREBUILD_XAML_HOOK`를 신설하여, MSVC C++ 및 .NET 컴파일 진입 전에 PowerShell 스크립트 `validate-xaml.ps1`을 호출.
+  - XAML 파일 내 비정상 딕셔너리 키(`MC3023` 미폐쇄 태그 내부의 `x:Key`, 빈 키 `Key=""`, 중복 키 `Duplicate Key`) 검출 시 오류 코드와 함께 전체 빌드 파이프라인을 즉시 중단(`exit /b 1`).
+  - 중복 실행 방지 플래그(`XAML_HOOK_ALREADY_RUN`)를 통해 빌드 단계 간 불필요한 반복 오버헤드 최소화.
+
+### 🔍 딕셔너리 키 무결성 검증 규칙 고도화 (`validate-xaml.ps1` & `validate-xaml.js`)
+- **중복 키(Duplicate Key) 탐지**: 동일 `ResourceDictionary` 스코프 내에서 동일한 `x:Key`가 중복 정의되어 런타임 초기화 크래시가 발생하는 것을 사전에 감지.
+- **공백/빈 키(Empty Key) 탐지**: `x:Key=""`와 같이 공백만 지정된 잘못된 딕셔너리 키를 빌드 전 사전 포착.
+
+---
+
+## 📌 [v4.68.0] - 2026-11-02 (🛡️ 빌드 파이프라인 사전 XAML 구문 및 리소스 딕셔너리 계층 구조 검증기(Early XAML Validator) 전면 도입)
+
+### 🛡️ 사전 XAML 유효성 검사기(`validate-xaml.ps1` & `validate-xaml.js`) 신설
+- **MSVC C++ 및 .NET 컴파일 착수 전 XAML 사전 무결성 검증 체계 구축**:
+  - `build.bat` 및 `build.ps1` 빌드 파이프라인의 최우선 단계에 **사전 XAML 검증 단계(Preliminary XAML Validation Check)**를 신설.
+  - 시간이 오래 소요되는 MSVC C++ 네이티브 컴파일(`cl.exe /O2 PurifyEngineCore.dll`) 및 무거운 .NET 종속성 복원(`dotnet restore`) 이전에 프로젝트 내 모든 XAML 파일(`MainWindow.xaml`, `CommanderMainWindow.xaml`, `App.xaml`, `CommanderApp.xaml` 등)을 수 밀리초 만에 초고속 스캔.
+  - XML Well-Formedness 검사, 태그 개폐 불일치(`Mismatched closing tag`), 닫히지 않은 블록(`Unclosed tag`) 감지.
+- **WPF XAML MC3023 리소스 딕셔너리 위반 조기 탐지 엔진**:
+  - `x:Key` 속성을 정의한 태그가 `<ResourceDictionary>` 또는 `<*.Resources>` 외부(예: 미닫힌 `<Setter>` 내부)에 위치하는 경우, 컴파일러가 실패하기 전에 정확한 파일명, 행/열 번호, 원인이 된 미폐쇄 부모 태그를 안내하며 즉시 빌드를 조기 중단.
+- **다중 실행 환경 호환성 및 CLI 옵션**:
+  - **PowerShell 네이티브 엔진 (`validate-xaml.ps1`)**: Windows 표준 `System.Xml.XmlReader` 기반으로 추가 런타임 설치 없이 100% 무인 동작.
+  - **Node.js 크로스 플랫폼 엔진 (`validate-xaml.js`)**: CI/CD 및 Linux/Web 환경에서도 동일한 검증 엔진 구동 (`npm run validate:xaml`).
+  - **CLI 바이패스 플래그**: 긴급 빌드 필요 시 `--skip-xaml-check` 또는 `-skipxaml` 옵션을 통해 검증 건너뛰기 지원.
+
+---
+
 ## 📌 [v4.67.1] - 2026-11-02 (🛠️ WPF XAML MC3023 구문 오류 수정 및 .NET 10 Dual-TFM 빌드 파이프라인 무결성 확보)
 
 ### 🛠️ WPF XAML ResourceDictionary 구문 오류 완전 해결 (`MainWindow.xaml`)

@@ -6,12 +6,12 @@ cd /d "%~dp0"
 :: ---------------------------------------------------------------------
 :: 0. Detect Application Version from docs/PATCH_NOTES.md or sync-version.js
 :: ---------------------------------------------------------------------
-set "APP_VERSION=4.67.1"
+set "APP_VERSION=4.68.3"
 if exist "sync-version.js" (
     where node.exe >nul 2>&1
     if not errorlevel 1 (
         for /f "delims=" %%v in ('node sync-version.js') do (
-            if not "%%v"=="" set "APP_VERSION=4.67.1"
+            if not "%%v"=="" set "APP_VERSION=4.68.3"
         )
     )
 )
@@ -20,7 +20,7 @@ if not defined APP_VERSION (
     if exist "docs\PATCH_NOTES.md" (
         for /f "tokens=2 delims=[]" %%a in ('findstr /r /c:"\[v[0-9]" docs\PATCH_NOTES.md') do (
             set "RAW_VER=%%a"
-            set "APP_VERSION=4.67.1"
+            set "APP_VERSION=4.68.3"
             goto :FOUND_VER
         )
     )
@@ -61,6 +61,7 @@ set "CLI_TFM_SET=0"
 set "CLI_DUAL=0"
 set "IS_SEQUENTIAL_DUAL=0"
 set "DUAL_STAGE=0"
+set "SKIP_XAML_CHECK=0"
 
 :ARG_PARSE_LOOP
 if "%~1"=="" goto :ARG_PARSE_DONE
@@ -79,6 +80,8 @@ if /i "%~1"=="sequential"   set "CLI_DUAL=1"
 if /i "%~1"=="both"         set "CLI_DUAL=1"
 if /i "%~1"=="multi"        set "CLI_DUAL=1"
 if /i "%~1"=="d"            set "CLI_DUAL=1"
+if /i "%~1"=="--skip-xaml-check" set "SKIP_XAML_CHECK=1"
+if /i "%~1"=="-skipxaml"         set "SKIP_XAML_CHECK=1"
 shift
 goto :ARG_PARSE_LOOP
 
@@ -98,6 +101,13 @@ if "%CLI_DUAL%"=="1" (
         echo [*] Detected .NET SDK environment ^(!DETECTED_DOTNET_VER!^).
     )
 )
+
+:: ---------------------------------------------------------------------
+:: 1.5. Pre-Build Hook: Execute validate-xaml.ps1 (XAML Dictionary & Syntax Check)
+:: ---------------------------------------------------------------------
+call :EXECUTE_PREBUILD_XAML_HOOK
+if errorlevel 1 goto :ERROR_PREBUILD_HOOK_FAILED
+
 
 :: 2. Check for pre-existing C++ Native DLL
 if exist "PurifyEngineCore.dll" echo [*] Found existing PurifyEngineCore.dll.
@@ -731,6 +741,74 @@ echo =====================================================================
 echo  [SUCCESS] All Build Profiles Completed for !TARGET_FRAMEWORK! (v!APP_VERSION!)!
 echo  - Output Directory: !PUBLISH_DIR!\
 echo =====================================================================
+goto :BUILD_END
+
+:: ---------------------------------------------------------------------
+:: Pre-Build Hook Subroutine: Validates XAML Dictionary Keys & Syntax via validate-xaml.ps1
+:: ---------------------------------------------------------------------
+:EXECUTE_PREBUILD_XAML_HOOK
+if defined XAML_HOOK_ALREADY_RUN (
+    if "%XAML_HOOK_ALREADY_RUN%"=="1" exit /b 0
+)
+
+if "%SKIP_XAML_CHECK%"=="1" (
+    echo [INFO] Skipping pre-build XAML validation hook via CLI flag.
+    set "XAML_HOOK_ALREADY_RUN=1"
+    exit /b 0
+)
+
+echo.
+echo =====================================================================
+echo [*] [PRE-BUILD HOOK] Executing validate-xaml.ps1
+echo     Validating ResourceDictionary Keys, Hierarchy, and Syntax...
+echo =====================================================================
+
+set "XAML_HOOK_FAILED=0"
+
+if exist "%~dp0validate-xaml.ps1" (
+    where powershell.exe >nul 2>&1
+    if not errorlevel 1 (
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0validate-xaml.ps1" -TargetDir "%~dp0."
+        if errorlevel 1 set "XAML_HOOK_FAILED=1"
+    ) else if exist "%~dp0validate-xaml.js" (
+        where node.exe >nul 2>&1
+        if not errorlevel 1 (
+            node "%~dp0validate-xaml.js" "%~dp0."
+            if errorlevel 1 set "XAML_HOOK_FAILED=1"
+        )
+    )
+) else if exist "%~dp0validate-xaml.js" (
+    where node.exe >nul 2>&1
+    if not errorlevel 1 (
+        node "%~dp0validate-xaml.js" "%~dp0."
+        if errorlevel 1 set "XAML_HOOK_FAILED=1"
+    )
+)
+
+if "%XAML_HOOK_FAILED%"=="1" (
+    echo.
+    echo =====================================================================
+    echo [FATAL] PRE-BUILD HOOK FAILED: Invalid XAML Dictionary Keys Detected!
+    echo =====================================================================
+    echo The build pipeline has been halted immediately.
+    echo One or more XAML files contain invalid or misplaced dictionary keys (MC3023),
+    echo duplicate dictionary keys, empty keys, or unclosed syntax tags.
+    echo.
+    echo Full compilation halted before MSVC C++ and .NET builds to avoid wasted time.
+    echo Please resolve the XAML errors listed above and re-run build.bat.
+    echo =====================================================================
+    echo.
+    pause
+    exit /b 1
+)
+
+set "XAML_HOOK_ALREADY_RUN=1"
+echo [SUCCESS] Pre-build XAML hook passed. All dictionary keys and syntax valid.
+echo.
+exit /b 0
+
+:ERROR_PREBUILD_HOOK_FAILED
+echo [ABORT] Build pipeline halted by Pre-Build XAML Hook.
 goto :BUILD_END
 
 :ERROR_NO_DOTNET

@@ -5,7 +5,7 @@
 ; =====================================================================
 
 #define MyAppName "WinPurify Pro"
-#define MyAppVersion "4.67.1"
+#define MyAppVersion "4.68.3"
 #define MyAppPublisher "AhBiYout"
 #define MyAppURL "https://ahbiyoutvibe.blogspot.com/"
 #define MyAppExeName "WinPurifyPro.exe"

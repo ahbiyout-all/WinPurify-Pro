@@ -3,7 +3,8 @@ param(
     [string]$TargetFramework = "net8.0-windows", # Options: net8.0-windows, net10.0-windows
     [switch]$Net10,
     [switch]$Dual,
-    [switch]$Sequential
+    [switch]$Sequential,
+    [switch]$SkipXamlCheck
 )
 
 if ($Net10) {
@@ -12,9 +13,9 @@ if ($Net10) {
 
 $IsDual = ($Dual -or $Sequential -or ($Mode -eq "Dual") -or ($Mode -eq "Sequential"))
 
-# WinPurify Pro v4.67.1 PowerShell 1-Click Automation Builder
+# WinPurify Pro v4.68.3 PowerShell 1-Click Automation Builder
 Write-Host "=====================================================================" -ForegroundColor Cyan
-Write-Host "   WinPurify Pro v4.67.1 Unified Automation Builder" -ForegroundColor Cyan
+Write-Host "   WinPurify Pro v4.68.3 Unified Automation Builder" -ForegroundColor Cyan
 Write-Host "   Target: Native C++ Core + .NET 8 / .NET 10 WPF Suite" -ForegroundColor Cyan
 if ($IsDual) {
     Write-Host "   Mode: Sequential Dual-TFM Build (.NET 10.0 & .NET 8.0 Isolated Paths)" -ForegroundColor Cyan
@@ -22,6 +23,28 @@ if ($IsDual) {
     Write-Host "   Framework: $TargetFramework | Mode: $Mode" -ForegroundColor Cyan
 }
 Write-Host "=====================================================================" -ForegroundColor Cyan
+
+# 0. Preliminary XAML Validation Check
+if (-not $SkipXamlCheck) {
+    Write-Host "`n[*] [Step 0/3] Running preliminary XAML validation check..." -ForegroundColor Cyan
+    $validatorPassed = $true
+    if (Test-Path "$PSScriptRoot\validate-xaml.ps1") {
+        & "$PSScriptRoot\validate-xaml.ps1" -TargetDir $PSScriptRoot
+        if ($LASTEXITCODE -ne 0) { $validatorPassed = $false }
+    } elseif (Test-Path "$PSScriptRoot\validate-xaml.js") {
+        if (Get-Command node -ErrorAction SilentlyContinue) {
+            node "$PSScriptRoot\validate-xaml.js" $PSScriptRoot
+            if ($LASTEXITCODE -ne 0) { $validatorPassed = $false }
+        }
+    }
+
+    if (-not $validatorPassed) {
+        Write-Host "`n[FATAL] Preliminary XAML validation failed. Aborting build pipeline before C++ and .NET compilation." -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "`n[INFO] Skipping preliminary XAML validation check (-SkipXamlCheck)." -ForegroundColor DarkGray
+}
 
 # 1. Check & Compile C++ Native Core
 Write-Host "`n[*] [Step 1/2] Invoking C++ Native Compiler..." -ForegroundColor Yellow
@@ -108,7 +131,7 @@ function Build-FrameworkTarget([string]$tfm, [string]$targetMode) {
 
         if ($iscc -and (Test-Path "installer.iss")) {
             Write-Host "[+] Running ISCC: $iscc with Isolated Paths" -ForegroundColor Yellow
-            $setupFilename = "WinPurifyPro_v4.67.1_${tfmDir}_Setup"
+            $setupFilename = "WinPurifyPro_v4.68.3_${tfmDir}_Setup"
             $isccArgs = @(
                 "/DAppSourceDir=$pubBase\App",
                 "/DOutputDir=$pubBase\Installer",

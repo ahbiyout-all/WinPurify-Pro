@@ -1,7 +1,7 @@
 {
   "name": "winpurify-portable",
-  "version": "4.67.1",
-  "description": "WinPurify v4.67.1 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
+  "version": "4.68.3",
+  "description": "WinPurify v4.68.3 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
   "author": "AhBiYout",
   "main": "electron-main.js",
   "scripts": {
@@ -12,6 +12,7 @@
     "start:master": "electron electron-remote-center.js",
     "install-deps": "npm install",
     "build": "node build.js",
+    "validate:xaml": "node validate-xaml.js",
     "build-installers": "node build-pipeline.js",
     "build:commander": "electron-builder --win -c.extraMetadata.main=electron-remote-center.js -c.productName=\"WinPurify_Commander\" -c.portable.artifactName=\"WinPurify_Commander.${ext}\" -c.win.target=portable -c.win.requestedExecutionLevel=asInvoker",
     "build-remote": "electron-builder --win -c.extraMetadata.main=electron-remote-center.js -c.productName=\"WinPurify_RemoteCenter\" -c.portable.artifactName=\"WinPurify_RemoteCenter.${ext}\" -c.win.target=portable -c.win.requestedExecutionLevel=asInvoker"
