@@ -210,6 +210,9 @@
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Theme Selector ComboBox Item Style -->
         <Style x:Key="ThemeComboBoxItemStyle" TargetType="ComboBoxItem">
             <Setter Property="SnapsToDevicePixels" Value="True" />

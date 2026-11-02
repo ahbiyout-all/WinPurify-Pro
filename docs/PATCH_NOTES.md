@@ -2,6 +2,20 @@
 
 ---
 
+## 📌 [v4.67.1] - 2026-11-02 (🛠️ WPF XAML MC3023 구문 오류 수정 및 .NET 10 Dual-TFM 빌드 파이프라인 무결성 확보)
+
+### 🛠️ WPF XAML ResourceDictionary 구문 오류 완전 해결 (`MainWindow.xaml`)
+- **MC3023 빌드 차단 오류 원인 분석 및 수정**:
+  - `MainWindow.xaml`의 `ThemeToggleButton` 스타일 블록 끝부분(Line 212)에서 `<Setter Property="Template">` 및 `<Style>`의 닫는 태그(`</Setter>`, `</Style>`)가 누락되어 있던 문제 해결.
+  - 뒤이어 선언된 `ThemeComboBoxItemStyle`이 미닫힌 태그 내부에 중첩 선언된 것으로 파서에 의해 오인식되어 발생하던 `error MC3023: Key 특성은 ResourceDictionary와 같은 Dictionary에 포함된 태그에서만 사용할 수 있습니다.` 오류를 태그 정상 폐쇄를 통해 완전히 박멸.
+  - 이제 `ThemeToggleButton`, `ThemeComboBoxItemStyle`, `ThemeComboBoxStyle` 모두 `Window.Resources`의 정규 직속 자식 요소로 정상 등록되어 .NET 10.0 및 .NET 8.0 LTS 듀얼 타겟 프레임워크(Dual-TFM) 빌드 파이프라인(`build.bat` [D] 옵션)에서 100% 무결점 성공 컴파일 보장.
+
+### 🔄 버전 동기화 및 전사 빌드 스크립트 정합성 확보
+- **v4.67.1 정식 패치 버전 자동 동기화**:
+  - `sync-version.js`를 통해 `WinPurifyPro.csproj`, `version.rc`, `build.bat`, `build.ps1`, `src/version.ts`, `metadata.json`, `package.json` 등 전사 리소스 및 어셈블리 버전 정보를 일괄 갱신.
+
+---
+
 ## 📌 [v4.67.0] - 2026-11-02 (🖥️ 마스터 중앙 관제 콘솔 브라우저 의존 탈피 및 독립 데스크톱 패키징 앱(Electron) 전면 도입)
 
 ### 🖥️ 마스터 관제 콘솔 독립 데스크톱 패키징 앱화 (`electron-remote-center.js` & `remote-center.html`)
