@@ -46,6 +46,17 @@ namespace WinPurifyPro.Models
         public long Timestamp { get; set; }
         public string Nonce { get; set; } = string.Empty;
         public string Signature { get; set; } = string.Empty;
+        public string? ChallengeNonce { get; set; }
+        public string? ChallengeSignature { get; set; }
+    }
+
+    public class AuthChallengeResponseDto
+    {
+        public bool Success { get; set; } = true;
+        public string ChallengeNonce { get; set; } = string.Empty;
+        public long ExpiresInSeconds { get; set; } = 60;
+        public long ServerTimestamp { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        public string Message { get; set; } = "Challenge nonce issued successfully";
     }
 
     public class CommandResponseDto
@@ -54,27 +65,75 @@ namespace WinPurifyPro.Models
         public string Message { get; set; } = string.Empty;
         public string ExecutionDetails { get; set; } = string.Empty;
         public long ExecutionTimeMs { get; set; }
+        public string? AuthErrorPoint { get; set; }
+        public string? AuthCategory { get; set; }
+        public long HandshakeLatencyMs { get; set; }
     }
 
-    public class RemoteNodeItem
+    public class RemoteNodeItem : System.ComponentModel.INotifyPropertyChanged
     {
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        protected virtual void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null)
+            => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
-        public string Name { get; set; } = "Unknown Node";
-        public string IpAddress { get; set; } = "127.0.0.1";
+        
+        private string _name = "Unknown Node";
+        public string Name { get => _name; set { _name = value; OnPropertyChanged(); } }
+
+        private string _ipAddress = "127.0.0.1";
+        public string IpAddress { get => _ipAddress; set { _ipAddress = value; OnPropertyChanged(); OnPropertyChanged(nameof(ClientIp)); } }
         public string ClientIp { get => IpAddress; set => IpAddress = value; }
-        public int Port { get; set; } = 9870;
-        public string GroupName { get; set; } = "기본 그룹";
-        public bool IsOnline { get; set; }
-        public double CpuUsage { get; set; }
-        public double RamUsage { get; set; }
-        public string RamText { get; set; } = "0 / 0 GB";
-        public string DiskText { get; set; } = "0 GB Free";
-        public int OptimizationScore { get; set; } = 100;
-        public int AppliedRules { get; set; }
-        public int TotalRules { get; set; } = 144;
-        public string LastSeen { get; set; } = "방금 전";
-        public string MacAddress { get; set; } = string.Empty;
-        public uint PingMs { get; set; } = 0;
-        public bool IsSelected { get; set; } = true;
+
+        private int _port = 9870;
+        public int Port { get => _port; set { _port = value; OnPropertyChanged(); } }
+
+        private string _groupName = "기본 그룹";
+        public string GroupName { get => _groupName; set { _groupName = value; OnPropertyChanged(); } }
+
+        private bool _isOnline;
+        public bool IsOnline { get => _isOnline; set { _isOnline = value; OnPropertyChanged(); } }
+
+        private double _cpuUsage;
+        public double CpuUsage { get => _cpuUsage; set { _cpuUsage = value; OnPropertyChanged(); } }
+
+        private double _ramUsage;
+        public double RamUsage { get => _ramUsage; set { _ramUsage = value; OnPropertyChanged(); } }
+
+        private string _ramText = "0 / 0 GB";
+        public string RamText { get => _ramText; set { _ramText = value; OnPropertyChanged(); } }
+
+        private string _diskText = "0 GB Free";
+        public string DiskText { get => _diskText; set { _diskText = value; OnPropertyChanged(); } }
+
+        private int _optimizationScore = 100;
+        public int OptimizationScore { get => _optimizationScore; set { _optimizationScore = value; OnPropertyChanged(); } }
+
+        private int _appliedRules;
+        public int AppliedRules { get => _appliedRules; set { _appliedRules = value; OnPropertyChanged(); } }
+
+        private int _totalRules = 144;
+        public int TotalRules { get => _totalRules; set { _totalRules = value; OnPropertyChanged(); } }
+
+        private string _lastSeen = "방금 전";
+        public string LastSeen { get => _lastSeen; set { _lastSeen = value; OnPropertyChanged(); } }
+
+        private string _macAddress = string.Empty;
+        public string MacAddress { get => _macAddress; set { _macAddress = value; OnPropertyChanged(); } }
+
+        private uint _pingMs;
+        public uint PingMs { get => _pingMs; set { _pingMs = value; OnPropertyChanged(); } }
+
+        private bool _isSelected = true;
+        public bool IsSelected { get => _isSelected; set { _isSelected = value; OnPropertyChanged(); } }
+
+        private long _handshakeLatencyMs;
+        public long HandshakeLatencyMs { get => _handshakeLatencyMs; set { _handshakeLatencyMs = value; OnPropertyChanged(); } }
+
+        private string _lastAuthErrorPoint = "None";
+        public string LastAuthErrorPoint { get => _lastAuthErrorPoint; set { _lastAuthErrorPoint = value; OnPropertyChanged(); } }
+
+        private string _lastAuthCategory = "None";
+        public string LastAuthCategory { get => _lastAuthCategory; set { _lastAuthCategory = value; OnPropertyChanged(); } }
     }
 }

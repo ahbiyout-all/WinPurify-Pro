@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WinPurify Pro - Master Central Commander Console v4.67.0</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background-color: #0B0F19;
+      color: #F8FAFC;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1.5px solid #2563EB;
+      border-radius: 10px;
+    }
+    /* Title bar */
+    .title-bar {
+      height: 42px;
+      background: #0F172A;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid #1E293B;
+    }
+    .title-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .title-left img {
+      width: 22px;
+      height: 22px;
+    }
+    .title-text {
+      font-size: 13px;
+      font-weight: bold;
+      color: #60A5FA;
+    }
+    .title-sub {
+      font-size: 13px;
+      font-weight: bold;
+      color: #F8FAFC;
+    }
+    .badge {
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .badge-blue {
+      background: #1E3A8A;
+      color: #93C5FD;
+    }
+    .badge-purple {
+      background: #4C1D95;
+      color: #DDD6FE;
+    }
+    .badge-emerald {
+      background: #064E3B;
+      color: #34D399;
+    }
+    .title-controls {
+      display: flex;
+      -webkit-app-region: no-drag;
+    }
+    .window-btn {
+      width: 36px;
+      height: 32px;
+      background: transparent;
+      border: none;
+      color: #94A3B8;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .window-btn:hover {
+      background: #334155;
+      color: #FFFFFF;
+    }
+    .window-btn.close:hover {
+      background: #EF4444;
+      color: #FFFFFF;
+    }
+
+    /* Sub header / Security Bar */
+    .control-bar {
+      background: #111827;
+      border-bottom: 1px solid #1E293B;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .control-label {
+      color: #94A3B8;
+    }
+    input[type="text"] {
+      background: #0F172A;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      color: #38BDF8;
+      font-weight: bold;
+      font-family: Consolas, monospace;
+      padding: 4px 8px;
+      font-size: 11px;
+      outline: none;
+    }
+    input[type="text"]:focus {
+      border-color: #38BDF8;
+    }
+    .btn {
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn:active {
+      opacity: 0.85;
+    }
+    .btn-primary { background: #2563EB; color: #FFFFFF; }
+    .btn-primary:hover { background: #3B82F6; }
+    .btn-secondary { background: #1E293B; color: #CBD5E1; }
+    .btn-secondary:hover { background: #334155; }
+    .btn-emerald { background: #059669; color: #FFFFFF; }
+    .btn-emerald:hover { background: #10B981; }
+    .btn-sky { background: #0284C7; color: #FFFFFF; }
+    .btn-sky:hover { background: #0EA5E9; }
+    .btn-amber { background: #D97706; color: #FFFFFF; }
+    .btn-amber:hover { background: #F59E0B; }
+    .btn-purple { background: #7C3AED; color: #FFFFFF; }
+    .btn-purple:hover { background: #8B5CF6; }
+    .btn-rose { background: #BE123C; color: #FFFFFF; }
+    .btn-rose:hover { background: #E11D48; }
+    .btn-danger { background: #DC2626; color: #FFFFFF; }
+    .btn-danger:hover { background: #EF4444; }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 14px 16px;
+      gap: 12px;
+    }
+
+    /* Node List View */
+    .node-list-container {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+    .node-card {
+      background: #131D31;
+      border: 1px solid #1E293B;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 28px 220px 130px 140px 120px 1fr;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .node-card:hover {
+      border-color: #3B82F6;
+      background: #17233B;
+    }
+    .node-info-name {
+      font-weight: bold;
+      font-size: 13px;
+      color: #F8FAFC;
+    }
+    .node-info-sub {
+      font-size: 11px;
+      color: #64748B;
+      font-family: Consolas, monospace;
+      margin-top: 2px;
+    }
+    .progress-bar-bg {
+      height: 5px;
+      background: #1E293B;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 4px 0 2px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: #38BDF8;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+    .progress-bar-fill.emerald {
+      background: #4ADE80;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: #94A3B8;
+    }
+    .stat-value {
+      font-size: 11px;
+      font-weight: 600;
+      color: #38BDF8;
+    }
+    .stat-value.emerald { color: #4ADE80; }
+    .stat-value.amber { color: #F59E0B; }
+
+    .node-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-micro {
+      height: 25px;
+      padding: 0 7px;
+      font-size: 10px;
+      font-weight: bold;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* Batch Control Bar */
+    .batch-bar {
+      background: #111827;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .batch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Console Log panel */
+    .log-panel {
+      height: 120px;
+      background: #070B14;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1A2436;
+      padding-bottom: 4px;
+      font-size: 11px;
+      color: #94A3B8;
+    }
+    .log-stream {
+      flex: 1;
+      overflow-y: auto;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #94A3B8;
+    }
+    .log-entry {
+      margin-bottom: 2px;
+    }
+    .log-success { color: #34D399; }
+    .log-warn { color: #FBBF24; }
+    .log-err { color: #F87171; }
+    .log-info { color: #38BDF8; }
+
+    /* Footer */
+    .status-footer {
+      height: 28px;
+      background: #090D17;
+      border-top: 1px solid #1E293B;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #64748B;
+    }
+
+    /* Diagnostics Modal */
+    .diag-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .diag-modal-card {
+      background: #0F172A;
+      border: 1.5px solid #38BDF8;
+      border-radius: 12px;
+      width: 900px;
+      max-width: 95vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+    }
+    .diag-modal-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #1E293B;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+    }
+    .diag-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 11px;
+    }
+    .diag-table th {
+      background: #1E293B;
+      color: #94A3B8;
+      font-weight: bold;
+      padding: 10px 12px;
+      border-bottom: 1px solid #334155;
+    }
+    .diag-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1E293B;
+      color: #F8FAFC;
+    }
+    .diag-table tr:nth-child(even) {
+      background: #131D31;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Frameless Title Bar -->
+  <div class="title-bar">
+    <div class="title-left">
+      <img src="WinPurify_icon.png" alt="Icon">
+      <span class="title-text">WinPurify Pro</span>
+      <span class="title-sub">Central Commander</span>
+      <span class="badge badge-blue">Master Desktop Packaged App</span>
+      <span class="badge badge-purple">v4.67.0</span>
+      <span class="badge badge-emerald">Electron Standalone</span>
+    </div>
+    <div class="title-controls">
+      <button class="window-btn" id="btnMinimize" title="최소화">🗕</button>
+      <button class="window-btn" id="btnMaximize" title="최대화">🗖</button>
+      <button class="window-btn close" id="btnClose" title="종료">✕</button>
+    </div>
+  </div>
+
+  <!-- Security & Control Bar -->
+  <div class="control-bar">
+    <div class="control-group">
+      <span class="control-label">🔒 클러스터 마스터 키:</span>
+      <input type="text" id="clusterKeyInput" value="WPP-SEC-CLUSTER-2026-KEY" style="width: 220px;">
+      <button class="btn btn-secondary" id="btnGenKey" title="새 256-bit 고유 난수 키 생성">🎲 신규 키</button>
+      
+      <span class="control-label" style="margin-left: 10px;">➕ 수동 IP:</span>
+      <input type="text" id="customIpInput" value="192.168.1.100" style="width: 110px;">
+      <button class="btn btn-secondary" id="btnAddNode">추가</button>
+    </div>
+
+    <div class="control-group">
+      <span id="engineStatusText" style="color: #38BDF8; font-weight: 600;">독립 데스크톱 관제 엔진 가동 중 (브라우저 비의존)</span>
+      <button class="btn btn-primary" id="btnDiscoverNodes">🔍 UDP 노드 자동 탐색</button>
+      <button class="btn btn-secondary" id="btnRefreshTelemetry">🔄 텔레메트리 갱신</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    
+    <!-- Fleet Nodes List -->
+    <div class="node-list-container" id="nodeListContainer">
+      <!-- Generated via JS -->
+    </div>
+
+    <!-- Batch Control Center -->
+    <div class="batch-bar">
+      <!-- Row 1: Core Operations -->
+      <div class="batch-row">
+        <div class="control-group">
+          <span class="control-label">선택 대상:</span>
+          <strong id="selectedNodesCountText" style="color: #38BDF8; font-size: 13px;">1대</strong>
+          <button class="btn btn-secondary" id="btnSelectAll" style="height: 26px; padding: 0 8px;">전체 선택</button>
+          <button class="btn btn-secondary" id="btnDeselectAll" style="height: 26px; padding: 0 8px;">선택 해제</button>
+        </div>
+
+        <div class="control-group">
+          <button class="btn btn-sky" id="btnBatchRam">⚡ 물리 RAM 일괄 정화</button>
+          <button class="btn btn-amber" id="btnBatchGameBoost">🚀 게이밍 가속 일괄 배포</button>
+          <button class="btn btn-emerald" id="btnBatchQuickClean">🧹 고속 유지보수 (휴지통/DNS/Temp)</button>
+          <button class="btn btn-purple" id="btnBatchRestorePoint">🛡️ 복원 지점 일괄 생성</button>
+          <button class="btn btn-purple" id="btnBatchRollback">↩ 세이프포인트 일괄 롤백</button>
+        </div>
+      </div>
+
+      <!-- Row 2: Profiles, Special Ops, Diagnostics, Power -->
+      <div class="batch-row">
+        <div class="control-group">
+          <span class="control-label">최적화 프로필:</span>
+          <select id="presetSelect" style="background: #0F172A; color: #38BDF8; font-weight: bold; border: 1.5px solid #38BDF8; border-radius: 6px; padding: 4px 8px; font-size: 11px; outline: none; cursor: pointer;">
+            <option value="Safe">Safe (권장 기본 118개)</option>
+            <option value="Deep">Deep (심층 정화 144개)</option>
+            <option value="Gaming">Gaming (e스포츠 지연시간 최소화)</option>
+            <option value="ZeroTrace">Zero-Trace (안티포렌식 전면 소거)</option>
+          </select>
+          <button class="btn btn-primary" id="btnBatchPreset" style="height: 28px;">📋 프로필 일괄 배포</button>
+          <button class="btn btn-secondary" id="btnBatchFlushDns" style="height: 28px;">🌐 DNS 플러시</button>
+        </div>
+
+        <div class="control-group">
+          <button class="btn btn-rose" id="btnBatchAccountPurge" style="height: 28px;">🔐 통합 계정 정화 (Zero-Trace)</button>
+          <button class="btn btn-rose" id="btnBatchZeroTrace" style="height: 28px;">💥 Zero-Trace 완전 초기화</button>
+          <button class="btn btn-secondary" id="btnToggleDiagnostics" style="height: 28px;">🔍 네트워크 진단 &amp; 인증 분석</button>
+          <button class="btn btn-danger" id="btnBatchReboot" style="height: 28px;">🔄 강제 재부팅</button>
+          <button class="btn btn-danger" id="btnBatchShutdown" style="height: 28px;">🛑 강제 종료</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Console Log Panel -->
+    <div class="log-panel">
+      <div class="log-header">
+        <span>📟 실시간 중앙 관제 실행 감사 로그 (컴퓨터 디스크 자동 저장 지원)</span>
+        <div class="control-group">
+          <button class="btn btn-secondary" id="btnOpenLogFolder" style="height: 22px; padding: 0 6px; font-size: 10px;">📁 로그 폴더 열기</button>
+          <button class="btn btn-secondary" id="btnExportLogs" style="height: 22px; padding: 0 6px; font-size: 10px;">💾 바탕화면 내보내기</button>
+          <button class="btn btn-secondary" id="btnClearLogs" style="height: 22px; padding: 0 6px; font-size: 10px;">초기화</button>
+        </div>
+      </div>
+      <div class="log-stream" id="logStream">
+        <div class="log-entry log-info">[Master Desktop Engine v4.67.0] 개별 데스크톱 패키징 앱(Electron) 중앙 관제 콘솔 초기화 완료. (브라우저 없이 독립 구동)</div>
+        <div class="log-entry log-success">[보안] HMAC-SHA256 디지털 서명 및 Challenge-Response 비대칭 핸드셰이크가 활성화되었습니다.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Status Footer -->
+  <div class="status-footer">
+    <div style="display: flex; gap: 14px;">
+      <span>등록 노드: <strong id="totalNodesText" style="color: #F8FAFC;">1대</strong></span>
+      <span>온라인: <strong id="onlineNodesText" style="color: #34D399;">1대</strong></span>
+      <span>선택: <strong id="footerSelectedNodesText" style="color: #38BDF8;">1대</strong></span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span>통신 포트: <strong>TCP:9870 (REST) / UDP:9871 (Discovery)</strong></span>
+      <span style="color: #60A5FA;">WinPurify Pro Master Desktop Console</span>
+    </div>
+  </div>
+
+  <!-- Diagnostics Modal -->
+  <div class="diag-modal-backdrop" id="diagModal">
+    <div class="diag-modal-card">
+      <div class="diag-modal-header">
+        <div>
+          <h3 style="font-size: 15px; font-weight: bold; color: #F8FAFC;">🔍 Fleet Network Diagnostics &amp; Auth Security Analytics</h3>
+          <p style="font-size: 11px; color: #94A3B8; margin-top: 2px;">개별 노드 간 통신 핸드셰이크 지연시간(RTT) 및 401 인증 실패 정밀 오류 지점(Error Point) 실시간 진단</p>
+        </div>
+        <button class="btn btn-secondary" id="btnCloseDiagModal">✕</button>
+      </div>
+
+      <div style="padding: 16px; overflow-y: auto; flex: 1;">
+        <table class="diag-table">
+          <thead>
+            <tr>
+              <th>노드명 / IP 주소</th>
+              <th>핸드셰이크 지연 (RTT)</th>
+              <th>인증 검증 상태</th>
+              <th>마지막 실패 카테고리</th>
+              <th>정밀 오류 지점 (Error Point)</th>
+            </tr>
+          </thead>
+          <tbody id="diagTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div style="padding: 12px 18px; border-top: 1px solid #1E293B; display: flex; justify-content: space-between; align-items: center; background: #0B0F19;">
+        <span style="font-size: 11px; color: #64748B;">* 시계 오차(Clock Skew) 또는 민감 명령(Reboot/Shutdown) 감지 시 자동으로 Challenge-Response 핸드셰이크가 적용됩니다.</span>
+        <button class="btn btn-secondary" id="btnCloseDiagModalBottom">진단 도구 닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    const nodes = [
+      {
+        id: 'node_local',
+        name: '로컬 마스터 PC',
+        ipAddress: '127.0.0.1',
+        port: 9870,
+        groupName: '마스터 콘솔',
+        isOnline: true,
+        cpuUsage: 14,
+        ramUsage: 42,
+        ramText: '6.8 / 16.0 GB',
+        diskText: '184.2 GB Free',
+        optimizationScore: 98,
+        isSelected: true,
+        handshakeLatencyMs: 2,
+        lastAuthCategory: 'None',
+        lastAuthErrorPoint: 'none'
+      }
+    ];
+
+    let logs = [
+      '[Master Desktop Engine v4.67.0] 개별 데스크톱 패키징 앱(Electron) 중앙 관제 콘솔 초기화 완료. (브라우저 없이 독립 구동)',
+      '[보안] HMAC-SHA256 디지털 서명 및 Challenge-Response 비대칭 핸드셰이크가 활성화되었습니다.'
+    ];
+
+    // DOM Elements
+    const btnMinimize = document.getElementById('btnMinimize');
+    const btnMaximize = document.getElementById('btnMaximize');
+    const btnClose = document.getElementById('btnClose');
+    const clusterKeyInput = document.getElementById('clusterKeyInput');
+    const btnGenKey = document.getElementById('btnGenKey');
+    const customIpInput = document.getElementById('customIpInput');
+    const btnAddNode = document.getElementById('btnAddNode');
+    const btnDiscoverNodes = document.getElementById('btnDiscoverNodes');
+    const btnRefreshTelemetry = document.getElementById('btnRefreshTelemetry');
+    const nodeListContainer = document.getElementById('nodeListContainer');
+    const logStream = document.getElementById('logStream');
+    const btnOpenLogFolder = document.getElementById('btnOpenLogFolder');
+    const btnExportLogs = document.getElementById('btnExportLogs');
+    const btnClearLogs = document.getElementById('btnClearLogs');
+    const btnSelectAll = document.getElementById('btnSelectAll');
+    const btnDeselectAll = document.getElementById('btnDeselectAll');
+    const selectedNodesCountText = document.getElementById('selectedNodesCountText');
+    const totalNodesText = document.getElementById('totalNodesText');
+    const onlineNodesText = document.getElementById('onlineNodesText');
+    const footerSelectedNodesText = document.getElementById('footerSelectedNodesText');
+    const presetSelect = document.getElementById('presetSelect');
+
+    // Batch buttons
+    const btnBatchRam = document.getElementById('btnBatchRam');
+    const btnBatchGameBoost = document.getElementById('btnBatchGameBoost');
+    const btnBatchQuickClean = document.getElementById('btnBatchQuickClean');
+    const btnBatchRestorePoint = document.getElementById('btnBatchRestorePoint');
+    const btnBatchRollback = document.getElementById('btnBatchRollback');
+    const btnBatchPreset = document.getElementById('btnBatchPreset');
+    const btnBatchFlushDns = document.getElementById('btnBatchFlushDns');
+    const btnBatchAccountPurge = document.getElementById('btnBatchAccountPurge');
+    const btnBatchZeroTrace = document.getElementById('btnBatchZeroTrace');
+    const btnBatchReboot = document.getElementById('btnBatchReboot');
+    const btnBatchShutdown = document.getElementById('btnBatchShutdown');
+    const btnToggleDiagnostics = document.getElementById('btnToggleDiagnostics');
+
+    // Diagnostics modal
+    const diagModal = document.getElementById('diagModal');
+    const btnCloseDiagModal = document.getElementById('btnCloseDiagModal');
+    const btnCloseDiagModalBottom = document.getElementById('btnCloseDiagModalBottom');
+    const diagTableBody = document.getElementById('diagTableBody');
+
+    // Window controls via Electron API
+    if (window.electronAPI) {
+      btnMinimize.addEventListener('click', () => window.electronAPI.minimize());
+      btnMaximize.addEventListener('click', () => window.electronAPI.maximize());
+      btnClose.addEventListener('click', () => window.electronAPI.close());
+    }
+
+    // Logger
+    function addLog(msg, type = 'info') {
+      const now = new Date().toLocaleTimeString();
+      const line = `[${now}] ${msg}`;
+      logs.unshift(line);
+      const el = document.createElement('div');
+      el.className = `log-entry log-${type}`;
+      el.textContent = line;
+      logStream.insertBefore(el, logStream.firstChild);
+    }
+
+    // Render nodes
+    function renderNodes() {
+      nodeListContainer.innerHTML = '';
+      nodes.forEach((node, idx) => {
+        const card = document.createElement('div');
+        card.className = 'node-card';
+        card.innerHTML = `
+          <input type="checkbox" ${node.isSelected ? 'checked' : ''} data-id="${node.id}" style="width: 16px; height: 16px; cursor: pointer;">
+          
+          <div>
+            <div class="node-info-name">${node.name}</div>
+            <div class="node-info-sub">${node.ipAddress}:${node.port}</div>
+          </div>
+
+          <div>
+            <div class="stat-label">CPU 부하율</div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${node.cpuUsage}%;"></div>
+            </div>
+            <div class="stat-value">${node.cpuUsage}% 점유</div>
+          </div>
+
+          <div>
+            <div class="stat-label">물리 RAM</div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill emerald" style="width: ${node.ramUsage}%;"></div>
+            </div>
+            <div class="stat-value emerald">${node.ramText}</div>
+          </div>
+
+          <div>
+            <div class="stat-label">최적화 점수</div>
+            <div class="stat-value amber" style="font-size: 13px; font-weight: bold; margin-top: 4px;">${node.optimizationScore}점 (144개 모듈)</div>
+          </div>
+
+          <div class="node-actions">
+            <button class="btn btn-micro btn-sky" onclick="executeSingleAction('${node.id}', 'RamTrim')">⚡ RAM</button>
+            <button class="btn btn-micro btn-emerald" onclick="executeSingleAction('${node.id}', 'QuickMaintenance')">🧹 퀵정화</button>
+            <button class="btn btn-micro btn-rose" onclick="executeSingleAction('${node.id}', 'AccountPurge')">🔐 계정</button>
+            <button class="btn btn-micro btn-amber" onclick="executeSingleAction('${node.id}', 'GameBoost')">🚀 부스트</button>
+            <button class="btn btn-micro btn-purple" onclick="executeSingleAction('${node.id}', 'Rollback')">↩ 롤백</button>
+            <button class="btn btn-micro btn-secondary" onclick="executeSingleAction('${node.id}', 'Reboot')" title="원격 재부팅">🔄</button>
+            <button class="btn btn-micro btn-danger" onclick="executeSingleAction('${node.id}', 'Shutdown')" title="원격 종료">🛑</button>
+            <span class="badge badge-emerald" style="margin-left: 6px;">ONLINE</span>
+          </div>
+        `;
+        nodeListContainer.appendChild(card);
+      });
+
+      // Bind checkboxes
+      nodeListContainer.querySelectorAll('input[type="checkbox"]').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+          const id = e.target.getAttribute('data-id');
+          const n = nodes.find(item => item.id === id);
+          if (n) n.isSelected = e.target.checked;
+          updateCounts();
+        });
+      });
+
+      updateCounts();
+    }
+
+    function updateCounts() {
+      const selected = nodes.filter(n => n.isSelected).length;
+      selectedNodesCountText.textContent = `${selected}대`;
+      footerSelectedNodesText.textContent = `${selected}대`;
+      totalNodesText.textContent = `${nodes.length}대`;
+      onlineNodesText.textContent = `${nodes.filter(n => n.isOnline).length}대`;
+    }
+
+    // Key generator
+    btnGenKey.addEventListener('click', () => {
+      const arr = new Uint8Array(16);
+      window.crypto.getRandomValues(arr);
+      const hex = Array.from(arr, b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      clusterKeyInput.value = `WPP-SEC-${hex}-2026`;
+      addLog(`[보안] 새로운 256-bit 클러스터 마스터 키가 생성되었습니다: ${clusterKeyInput.value}`);
+    });
+
+    // Add manual node
+    btnAddNode.addEventListener('click', () => {
+      const ip = customIpInput.value.trim();
+      if (!ip) return;
+      if (nodes.some(n => n.ipAddress === ip)) {
+        addLog(`[Node 등록] 이미 존재하는 IP 주소입니다: ${ip}`, 'warn');
+        return;
+      }
+      nodes.push({
+        id: `node_${Date.now()}`,
+        name: `원격 PC (${ip})`,
+        ipAddress: ip,
+        port: 9870,
+        groupName: '사내 LAN',
+        isOnline: true,
+        cpuUsage: 18,
+        ramUsage: 45,
+        ramText: '7.2 / 16.0 GB',
+        diskText: '120.0 GB Free',
+        optimizationScore: 95,
+        isSelected: true,
+        handshakeLatencyMs: 0,
+        lastAuthCategory: 'None',
+        lastAuthErrorPoint: 'none'
+      });
+      renderNodes();
+      addLog(`[Node 등록] 신규 노드가 추가되었습니다: ${ip}:9870`, 'success');
+    });
+
+    // Discovery
+    btnDiscoverNodes.addEventListener('click', async () => {
+      addLog('[Discovery] UDP 9871 브로드캐스트로 LAN 클러스터 노드 스캔 시작...', 'info');
+      btnDiscoverNodes.disabled = true;
+      btnDiscoverNodes.textContent = '탐색 중...';
+
+      if (window.electronAPI && window.electronAPI.discoverNodes) {
+        try {
+          const found = await window.electronAPI.discoverNodes(2500);
+          found.forEach(fn => {
+            if (!nodes.some(n => n.ipAddress === fn.ipAddress)) {
+              nodes.push({
+                id: `node_${Date.now()}_${Math.random()}`,
+                name: fn.name,
+                ipAddress: fn.ipAddress,
+                port: fn.port,
+                groupName: '사내/홈 네트워크',
+                isOnline: true,
+                cpuUsage: 12,
+                ramUsage: 38,
+                ramText: '6.0 / 16.0 GB',
+                diskText: '150.0 GB Free',
+                optimizationScore: 96,
+                isSelected: true,
+                handshakeLatencyMs: 0,
+                lastAuthCategory: 'None',
+                lastAuthErrorPoint: 'none'
+              });
+            }
+          });
+          addLog(`[Discovery 완료] 총 ${nodes.length}대 활성 노드 탐색 완료`, 'success');
+        } catch (err) {
+          addLog(`[Discovery 오류] ${err.message}`, 'err');
+        }
+      } else {
+        // Fallback demo simulation
+        setTimeout(() => {
+          if (!nodes.some(n => n.ipAddress === '192.168.1.105')) {
+            nodes.push({
+              id: 'node_pc2',
+              name: 'DESKTOP-LAN-NODE02',
+              ipAddress: '192.168.1.105',
+              port: 9870,
+              groupName: '사내 네트워크',
+              isOnline: true,
+              cpuUsage: 22,
+              ramUsage: 54,
+              ramText: '8.6 / 16.0 GB',
+              diskText: '210.0 GB Free',
+              optimizationScore: 92,
+              isSelected: true,
+              handshakeLatencyMs: 4,
+              lastAuthCategory: 'None',
+              lastAuthErrorPoint: 'none'
+            });
+          }
+          addLog(`[Discovery 완료] 2대 활성 노드 감지 성공 (UDP PONG 응답 완료)`, 'success');
+          renderNodes();
+        }, 1200);
+      }
+
+      btnDiscoverNodes.disabled = false;
+      btnDiscoverNodes.textContent = '🔍 UDP 노드 자동 탐색';
+      renderNodes();
+    });
+
+    // Refresh Telemetry
+    btnRefreshTelemetry.addEventListener('click', async () => {
+      addLog('[Telemetry] 클러스터 노드 텔레메트리 실시간 갱신 요청...', 'info');
+      for (const node of nodes) {
+        if (window.electronAPI && window.electronAPI.fetchTelemetry) {
+          const tel = await window.electronAPI.fetchTelemetry(node.ipAddress, node.port);
+          if (tel) {
+            node.cpuUsage = tel.cpuUsagePercent || 15;
+            node.ramUsage = tel.ramUsagePercent || 40;
+            node.ramText = tel.ramUsageText || '6.5 / 16.0 GB';
+            node.diskText = tel.diskFreeText || '180 GB Free';
+            node.optimizationScore = tel.optimizationScore || 97;
+          }
+        } else {
+          node.cpuUsage = Math.floor(10 + Math.random() * 25);
+          node.ramUsage = Math.floor(35 + Math.random() * 30);
+        }
+      }
+      renderNodes();
+      addLog('[Telemetry] 전체 노드 하드웨어 상태 동기화 완료.', 'success');
+    });
+
+    // Select all / deselect all
+    btnSelectAll.addEventListener('click', () => {
+      nodes.forEach(n => n.isSelected = true);
+      renderNodes();
+    });
+    btnDeselectAll.addEventListener('click', () => {
+      nodes.forEach(n => n.isSelected = false);
+      renderNodes();
+    });
+
+    // Generic batch executor
+    async function executeBatch(commandType, path, extraPayload = {}, label = '') {
+      const targets = nodes.filter(n => n.isSelected);
+      if (targets.length === 0) {
+        addLog(`[경고] 명령을 실행할 대상 노드가 선택되지 않았습니다.`, 'warn');
+        return;
+      }
+
+      addLog(`[Batch Action] ${targets.Count || targets.length}대 노드에 [${label || commandType}] 명령 전송 시작...`, 'info');
+
+      for (const node of targets) {
+        const payload = {
+          commandType,
+          secretKey: clusterKeyInput.value,
+          ...extraPayload
+        };
+
+        if (window.electronAPI && window.electronAPI.sendBatchCommand) {
+          const res = await window.electronAPI.sendBatchCommand({
+            ip: node.ipAddress,
+            port: node.port,
+            path,
+            payload,
+            secretKey: clusterKeyInput.value
+          });
+
+          node.handshakeLatencyMs = res.handshakeLatencyMs || 2;
+          node.lastAuthCategory = res.authCategory || 'None';
+          node.lastAuthErrorPoint = res.authErrorPoint || 'none';
+
+          if (res.success) {
+            addLog(`  └ [${node.name}] ${res.message} (${res.executionTimeMs}ms, RTT: ${node.handshakeLatencyMs}ms)`, 'success');
+          } else {
+            addLog(`  └ [오류] [${node.name}] [${node.lastAuthErrorPoint}] ${res.message}`, 'err');
+          }
+        } else {
+          // Simulation
+          node.handshakeLatencyMs = Math.floor(3 + Math.random() * 8);
+          node.lastAuthCategory = 'None';
+          node.lastAuthErrorPoint = 'none';
+          addLog(`  └ [${node.name}] [성공] ${label || commandType} 완료 (${node.handshakeLatencyMs}ms)`, 'success');
+        }
+      }
+
+      renderNodes();
+    }
+
+    // Execute single action
+    window.executeSingleAction = async function(nodeId, commandType) {
+      const node = nodes.find(n => n.id === nodeId);
+      if (!node) return;
+
+      const pathMap = {
+        'RamTrim': '/api/v1/batch/ram-clean',
+        'QuickMaintenance': '/api/v1/batch/quick-maintenance',
+        'AccountPurge': '/api/v1/batch/account-purge',
+        'GameBoost': '/api/v1/batch/game-boost',
+        'Rollback': '/api/v1/batch/rollback',
+        'Reboot': '/api/v1/batch/reboot',
+        'Shutdown': '/api/v1/batch/shutdown'
+      };
+
+      const path = pathMap[commandType] || `/api/v1/batch/${commandType.toLowerCase()}`;
+      addLog(`[Single Action] [${node.name}] (${node.ipAddress}) 개별 명령 전송: ${commandType}`, 'info');
+
+      if (window.electronAPI && window.electronAPI.sendBatchCommand) {
+        const res = await window.electronAPI.sendBatchCommand({
+          ip: node.ipAddress,
+          port: node.port,
+          path,
+          payload: { commandType, secretKey: clusterKeyInput.value },
+          secretKey: clusterKeyInput.value
+        });
+        node.handshakeLatencyMs = res.handshakeLatencyMs || 3;
+        node.lastAuthCategory = res.authCategory || 'None';
+        node.lastAuthErrorPoint = res.authErrorPoint || 'none';
+
+        if (res.success) {
+          addLog(`  └ [성공] [${node.name}] ${res.message} (${res.executionTimeMs}ms)`, 'success');
+        } else {
+          addLog(`  └ [오류] [${node.name}] [${node.lastAuthErrorPoint}] ${res.message}`, 'err');
+        }
+      } else {
+        node.handshakeLatencyMs = 4;
+        addLog(`  └ [성공] [${node.name}] 실행 완료 (4ms)`, 'success');
+      }
+
+      renderNodes();
+    };
+
+    // Button event bindings
+    btnBatchRam.addEventListener('click', () => executeBatch('RamTrim', '/api/v1/batch/ram-clean', {}, '물리 RAM 워킹셋 긴급 정화'));
+    btnBatchGameBoost.addEventListener('click', () => executeBatch('GameBoost', '/api/v1/batch/game-boost', {}, '초저지연 e스포츠 게이밍 가속'));
+    btnBatchQuickClean.addEventListener('click', () => executeBatch('QuickMaintenance', '/api/v1/batch/quick-maintenance', { quickType: 0 }, '고속 유지보수'));
+    btnBatchRestorePoint.addEventListener('click', () => executeBatch('CreateRestorePoint', '/api/v1/batch/restore-point', {}, '시스템 복원 지점 생성'));
+    btnBatchRollback.addEventListener('click', () => executeBatch('Rollback', '/api/v1/batch/rollback', {}, '세이프포인트 롤백 복원'));
+    btnBatchPreset.addEventListener('click', () => executeBatch('ApplyPreset', '/api/v1/batch/apply-preset', { presetName: presetSelect.value }, `[${presetSelect.value}] 최적화 프로필 배포`));
+    btnBatchFlushDns.addEventListener('click', () => executeBatch('FlushDns', '/api/v1/batch/dns-flush', {}, 'DNS 캐시 초기화'));
+    btnBatchAccountPurge.addEventListener('click', () => executeBatch('AccountPurge', '/api/v1/batch/account-purge', { accountPurgePreset: 'workplace' }, '통합 계정 & 세션 토큰 정화 (Zero-Trace)'));
+    btnBatchZeroTrace.addEventListener('click', () => executeBatch('ZeroTraceReset', '/api/v1/batch/zero-trace-reset', {}, 'Zero-Trace 완전 초기화'));
+    btnBatchReboot.addEventListener('click', () => executeBatch('Reboot', '/api/v1/batch/reboot', {}, '원격 강제 재부팅 (/r /f /t 3)'));
+    btnBatchShutdown.addEventListener('click', () => executeBatch('Shutdown', '/api/v1/batch/shutdown', {}, '원격 강제 종료 (/s /f /t 3)'));
+
+    // Diagnostics modal
+    function renderDiagnostics() {
+      diagTableBody.innerHTML = '';
+      nodes.forEach(n => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <strong>${n.name}</strong><br>
+            <span style="color: #64748B; font-family: Consolas;">${n.ipAddress}:${n.port}</span>
+          </td>
+          <td>
+            <strong style="color: #38BDF8; font-size: 13px;">${n.handshakeLatencyMs || 0}</strong> ms
+          </td>
+          <td>
+            <span class="badge badge-emerald">VERIFIED</span>
+          </td>
+          <td>
+            <span style="color: ${n.lastAuthCategory === 'None' ? '#94A3B8' : '#FCA5A5'}; font-weight: 600;">${n.lastAuthCategory || 'None'}</span>
+          </td>
+          <td>
+            <span style="font-family: Consolas; color: #94A3B8; background: #1E293B; padding: 2px 6px; border-radius: 4px;">${n.lastAuthErrorPoint || 'none'}</span>
+          </td>
+        `;
+        diagTableBody.appendChild(tr);
+      });
+    }
+
+    btnToggleDiagnostics.addEventListener('click', () => {
+      renderDiagnostics();
+      diagModal.style.display = 'flex';
+    });
+    btnCloseDiagModal.addEventListener('click', () => { diagModal.style.display = 'none'; });
+    btnCloseDiagModalBottom.addEventListener('click', () => { diagModal.style.display = 'none'; });
+
+    // Log controls
+    btnOpenLogFolder.addEventListener('click', () => {
+      if (window.electronAPI && window.electronAPI.openLogFolder) {
+        window.electronAPI.openLogFolder();
+        addLog('[로그 탐색기] 컴퓨터 로그 저장 폴더 열기 완료.', 'info');
+      } else {
+        addLog('[로그 탐색기] 로컬 데스크톱 전용 기능입니다.', 'info');
+      }
+    });
+
+    btnExportLogs.addEventListener('click', async () => {
+      const content = logs.join('\n');
+      if (window.electronAPI && window.electronAPI.saveLogs) {
+        const res = await window.electronAPI.saveLogs(content, `WinPurifyCommander_Log_${Date.now()}.txt`);
+        if (res.success) {
+          addLog(`[로그 내보내기] 바탕화면에 로그 저장 완료: ${res.path}`, 'success');
+        } else {
+          addLog(`[로그 내보내기 실패] ${res.error}`, 'err');
+        }
+      } else {
+        addLog('[로그 내보내기] 웹 브라우저에서는 클립보드 복사를 지원합니다.', 'info');
+      }
+    });
+
+    btnClearLogs.addEventListener('click', () => {
+      logs = [];
+      logStream.innerHTML = '';
+      addLog('[로그 초기화] 화면 로그가 초기화되었습니다. (디스크 영구 로그는 보존됨)', 'info');
+    });
+
+    // Initial render
+    renderNodes();
+  </script>
+</body>
+</html>

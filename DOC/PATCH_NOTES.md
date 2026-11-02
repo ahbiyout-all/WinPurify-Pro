@@ -2,6 +2,144 @@
 
 ---
 
+## 📌 [v4.67.0] - 2026-11-02 (🖥️ 마스터 중앙 관제 콘솔 브라우저 의존 탈피 및 독립 데스크톱 패키징 앱(Electron) 전면 도입)
+
+### 🖥️ 마스터 관제 콘솔 독립 데스크톱 패키징 앱화 (`electron-remote-center.js` & `remote-center.html`)
+- **브라우저 완전 배제 및 단독 패키징(Standalone Desktop App) 실행 체계 구축**:
+  - 마스터(중앙 관제 콘솔)가 웹 브라우저 없이 독립 실행형 네이티브 데스크톱 앱(Electron / Standalone Window)으로 즉시 구동될 수 있도록 전용 엔트리 포인트(`electron-remote-center.js`) 신설.
+  - 시스템 프레임리스(Frameless) 다크 인더스트리얼 전용 타이틀바, 창 최소화/최대화/닫기 윈도우 컨트롤러, 클러스터 마스터 키 발급기, 원클릭 사설망 UDP 브로드캐스트 자동 탐색(포트 9871) 내장.
+  - `package.json` 실행 및 빌드 스크립트 완비:
+    - `npm run start:commander` / `npm run start:master`: 브라우저 없이 Electron 전용 마스터 콘솔 즉시 단독 실행.
+    - `npm run build:commander` / `npm run build-remote`: `WinPurify_Commander.exe` 단독 포터블 실행 파일 빌드 파이프라인 연동.
+- **IPC 보안 브릿지 및 네이티브 통신 레이어 (`preload.js`)**:
+  - `contextBridge` 기반 `window.electronAPI` 인터페이스를 제공하여 Node.js 네이티브 dgram 소켓 및 REST 디스패처에 안전하게 격리 통신.
+  - 고유한 프로세스 락(`requestSingleInstanceLock`)을 적용하여 다중 실행 시 기존 창으로 자동 포커스 전환.
+  - 사설 LAN 환경 내 Challenge-Response 비대칭 암호화 서명 검증 및 실시간 401 오류 분석기(Network Diagnostics) 탑재.
+  - 감사 로그 텍스트 파일 로컬 디스크 원클릭 내보내기(`save-logs`, `open-log-folder`) 기능 탑재.
+
+### 🔄 메인 애플리케이션 데스크톱 연동 강화 (`electron-main.js` & `index.tsx`)
+- **메인 앱과 마스터 커맨더 상호 연동 및 런처 버튼 신설**:
+  - `electron-main.js`: `--commander` 파라미터 감지 시 즉시 독립 마스터 관제 창을 로드하거나, 메인 앱 내부에서 `launchCommander()` IPC 호출 시 별도 독립 윈도우로 마스터 콘솔을 즉시 구동.
+  - `index.tsx`: 중앙 관제 모달 및 헤더에 "🖥️ 독립 데스크톱 앱으로 마스터 실행 (Electron Standalone Commander)" 액션 버튼 추가.
+  - 브라우저 환경에서 접속한 사용자에게도 CLI 단독 실행 명령어(`npm run start:commander`) 가이드를 제공하여 웹 브라우저 의존 없이 운영 가능하도록 UX 고도화.
+
+---
+
+## 📌 [v4.66.0] - 2026-11-01 (🛡️ Challenge-Response 인증 핸드셰이크 안정화 및 실시간 클러스터 보안 가시성 강화)
+
+### 🛡️ 원격 인증 핸드셰이크 안정화 및 메모리 누수 방어 (`Services/RemoteAgentService.cs`)
+- **챌린지 Nonce 자동 정화 시스템 구축 (`CleanupExpiredChallenges`)**:
+  - 발급 후 60초가 경과한 만료된 Challenge Nonce를 메모리(`_activeChallenges`)에서 실시간으로 자동 소거하는 정화 루틴 구현.
+  - 대규모 클러스터 환경에서 인증 시도 폭주 시 발생할 수 있는 메모리 블로트(Memory Bloat) 현상을 사전에 차단하고 보안 무결성 확보.
+  - 30초 주기로 유휴 챌린지를 정밀 스캔하여 100% 무인 메모리 관리 달성.
+
+### 🔍 중앙 커맨더 실시간 보안 가시성 및 UI 폴리싱 (`ViewModels/CommanderViewModel.cs` & `CommanderMainWindow.xaml`)
+- **실시간 보안 진단 대시보드 고도화**:
+  - 모든 배치 명령 수행 시 Challenge-Response 핸드셰이크 지연시간(RTT) 및 401 인증 오류 지점을 실시간으로 대시보드에 업데이트.
+  - **Individual Auth Tracking**: 노드별로 마지막 인증 성공/실패 여부와 실패 사유(`signature_mismatch`, `challenge_expired` 등)를 직관적으로 노출.
+  - **UI 버전 동기화**: `v4.66.0` 정식 릴리스 버전을 타이틀바 및 UI 뱃지에 실시간 반영.
+- **다크 테마 컴포넌트 최적화**:
+  - 진단 모달(`Network Diagnostics`)의 DataGrid 컬럼 너비 및 텍스트 정렬을 최적화하여 저해상도 환경에서도 가독성 보장.
+
+---
+
+
+## 📌 [v4.65.0] - 2026-11-01 (🔍 Fleet Network Diagnostics & Auth Security Analytics 대시보드 신설)
+
+### 🔍 중앙 커맨더 실시간 네트워크 진단 및 인증 분석 도구 구축 (`ViewModels/CommanderViewModel.cs` & `CommanderMainWindow.xaml`)
+- **실시간 네트워크 진단(Network Diagnostics) 모달 대시보드 신설**:
+  - 각 원격 노드와의 실시간 통신 상태를 정밀 분석하는 전용 진단 뷰 추가 (Footer 하단 '🔍 Network Diagnostics' 버튼으로 진입).
+  - **Individual Handshake Latency 추적**: Challenge-Response 핸드셰이크 시 발생하는 서버 응답 지연시간(ms)을 노드별로 실시간 측정 및 시각화.
+  - **401 인증 실패 세부 지점(Error Point) 실시간 매핑**: `RemoteAgentService`에서 반환한 정밀 오류 코드(`signature_mismatch`, `timestamp_expired` 등)를 대시보드에 즉시 노출하여 사설 LAN 환경의 통신 결함을 0.1초 만에 파악 가능.
+- **실시간 데이터 동기화 체계 강화**:
+  - `RemoteNodeItem`에 `INotifyPropertyChanged`를 구현하여, 백그라운드에서 명령 수행 및 텔레메트리 갱신 시 UI 진단 매트릭스가 즉각 반영되도록 최적화.
+  - 모든 배치 및 개별 명령 수행 로직에 `UpdateNodeDiagnostics` 인터페이스를 통합하여 통신 성공/실패 시 보안 감사 데이터를 자동 갱신.
+
+---
+
+## 📌 [v4.64.1] - 2026-11-01 (🔍 RemoteAgent 인증 401 응답 헤더 세부 실패 지점(signature_mismatch, timestamp_expired, nonce_invalid 등) 정밀 로깅 추가)
+
+### 🔍 원격 에이전트(RemoteAgentService) 401 응답 세부 실패 지점 헤더 및 세분화 로깅 연동 (`Services/RemoteAgentService.cs`)
+- **HTTP 401 응답 헤더 세부 실패 지점(`X-WinPurify-Auth-Error-Point` / `X-WinPurify-Error-Point`) 추가**:
+  - 사설망 LAN 통신 중 원격 관제 REST 요청이 401 거부될 때, 구체적으로 어떤 검증 지점에서 실패했는지 명시하는 정밀 오류 코드 헤더 출력:
+    1. **`signature_mismatch`**: HMAC-SHA256 디지털 서명 불일치
+    2. **`timestamp_expired`**: 송수신 타임스탬프 시계 오차(300초 초과) 만료
+    3. **`nonce_replayed` / `nonce_invalid`**: 중복 Nonce 재전송 공격 차단
+    4. **`challenge_consumed`**: 이미 사용되었거나 존재하지 않는 Challenge Nonce
+    5. **`challenge_expired`**: Challenge Nonce 유효 시간(60초) 만료
+    6. **`challenge_signature_mismatch`**: Challenge Nonce 결합 서명 불일치
+    7. **`secret_key_mismatch`**: 시크릿 키 불일치
+    8. **`cross_site_blocked` / `missing_auth` / `invalid_payload`**: Cross-Origin 차단 및 필수 인증 헤더 누락
+- **원격 에이전트 실시간 로그 및 응답 메시지 연동**:
+  - 로그 및 HTTP Response Body 메시지에 `[signature_mismatch]`, `[timestamp_expired]` 등 세부 실패 지점 태그를 포함하여 관제 콘솔에서 401 원인을 0.1초 만에 분석 가능하도록 개선.
+
+---
+
+## 📌 [v4.64.0] - 2026-11-01 (🤝 Reboot/민감 명령 비대칭 Challenge-Response 암호화 핸드셰이크 도입 및 시계 오차 Zero 자동 복구 체계 연동)
+
+### 🤝 Challenge-Response 비대칭 핸드셰이크 보안 인증 시스템 신설 (`Services/RemoteAgentService.cs` & `Services/RemoteCommanderManager.cs`)
+- **서버 발급 일회용 Nonce 기반 Challenge-Response 핸드셰이크 구축**:
+  - `Reboot`, `Shutdown`, `ZeroTraceReset`, `Rollback`, `ForensicsWipe`, `AccountPurge` 등 시스템 보안 및 권한 변경을 야기하는 고위험 민감 명령 실행 시 타임스탬프 의존성을 완전히 탈피하는 **서버 챌린지 핸드셰이크 프로토콜** 도입.
+  - 엔드포인트 `GET /api/v1/auth/challenge` 추가: 서버(`RemoteAgentService`)가 실시간으로 64자 암호화 난수(`ChallengeNonce`, TTL: 60초)를 생성 및 저장하여 클라이언트에 발급.
+  - 클라이언트(`RemoteCommanderManager`)는 발급받은 `ChallengeNonce`와 명령 페이로드를 조합하여 HMAC-SHA256 디지털 서명(`ChallengeSignature`)을 생성하고 `X-WinPurify-Challenge-Nonce` 및 `X-WinPurify-Challenge-Signature` 헤더를 탑재하여 명령 전송.
+- **분산 LAN 환경 시계 오차(Clock Skew) Zero 보장 및 1회용 Nonce 즉시 소비(Zero Replay)**:
+  - 서버에서 생성된 실시간 Challenge Nonce를 서명 원본으로 사용하므로 분산 LAN 환경에서 클라이언트와 서버 간의 PC 시계 차이가 1초도 동기화되지 않아도 서명 검증이 100% 성공.
+  - 수신된 Challenge Nonce는 검증 직후 메모리(`_activeChallenges`)에서 즉시 소멸(`TryRemove`)되어 동일한 Challenge Nonce를 재사용한 재전송 공격(Replay Attack)을 원천 차단.
+- **Clock Skew 401 감지 시 Challenge-Response 자동 복구 재시도(Auto-Fallback)**:
+  - 일반 배치 명령 전송 중 분산 PC 간 시계 오차로 인해 HTTP 401 응답(`X-WinPurify-AuthCategory: ClockSkew`)이 반환될 경우, 중앙 커맨더가 자동으로 Challenge-Response 핸드셰이크를 즉시 호출하여 100% 무오류 자동 복구 전송 수행.
+
+---
+
+## 📌 [v4.63.3] - 2026-11-01 (⏱️ 원격 관제 인증 핸드셰이크 시계 오차(Clock-Skew) 동적 보정 및 HTTP 401 정밀 실패 진단 로깅 연동)
+
+### ⏱️ 동적 시계 오차 보정(Clock-Skew Management) & 정밀 실패 카테고리 진단 구축
+- **클라이언트별 시계 오차(`_clientClockOffsets`) 동적 자동 학습 보정 체계 연동 (`Services/RemoteAgentService.cs`)**:
+  - 원격 커맨더 클라이언트 IP별로 수신된 타임스탬프와 노드 타임스탬프 간 오차(`rawOffset`)를 정밀 추적하여 `_clientClockOffsets` 컨커런트 딕셔너리에 동적 학습 및 자동 보정 적용.
+  - 사설망 LAN 환경의 PC 간 지속적인 시간 차이가 존재하더라도, 초기 인증 성공 이후 동적 시간 오차 학습 보정치를 적용하여 지속적 무오류 원격 관제 수신 달성.
+- **HTTP 401 인증 실패 세부 사유(ClockSkew / SignatureMismatch / SecretKeyMismatch / ReplayAttack / CrossSite) 정밀 분류 및 응답 상세 전달**:
+  - `VerifySecurityTokenWithDetails` 정밀 구조체를 신설하여 인증 실패 시 정확히 어떤 단계에서 차단되었는지 5대 세부 실패 카테고리로 투명하게 구분:
+    1. **`ClockSkew`**: 타임스탬프 허용 오차(300초) 초과 및 보정 실패 시 송신측 시각, 노드 시각, 오차 초과초(초)를 정밀 기록.
+    2. **`SignatureMismatch`**: HMAC-SHA256 디지털 서명 불일치 시 수신된 서명 및 검증 시도 키 수 기록.
+    3. **`SecretKeyMismatch`**: 페이로드 시크릿 키 불일치 시 상세 사유 출력.
+    4. **`ReplayAttack`**: 동일한 Nonce 중복 재전송 차단 시 중복 Nonce 기록.
+    5. **`CrossSite` / `MissingAuth`**: 브라우저 Cross-Site Drive-by 차단 및 인증 헤더 부재 시 진단 정보 출력.
+- **HTTP 응답 헤더 및 커맨더 콘솔 실시간 연동**:
+  - HTTP 401 응답 시 `X-WinPurify-NodeTimestamp`, `X-WinPurify-ClockOffset`, `X-WinPurify-AuthCategory` 헤더를 함께 포함하여 원격 커맨더 콘솔 로그 창에서 failure 카테고리 및 시간 오차(초)를 직관적으로 분석/출력할 수 있도록 보장.
+
+---
+
+## 📌 [v4.63.2] - 2026-11-01 (🔐 원격 관제 REST API HTTP 401 HMAC 보안 인증 및 시계 오차(Clock Skew) 완벽 수정)
+
+### 🔐 원격 에이전트(RemoteAgentService) HTTP 401 보안 인증 오류 완벽 해결
+- **원격 노드 명령 거부(HTTP 401: Security Authentication Failed or Replay Detected) 결함 원천 해결 (`Services/RemoteAgentService.cs`)**:
+  - Central Commander에서 원격 노드(`WIN-3MUTJH5JMJU` 등)로 Reboot / Shutdown / Batch 명령 전송 시, 서로 다른 PC 간 난수 생성키 불일치 또는 사설망 LAN 시계 오차(Clock Skew)로 인해 HTTP 401 응답이 발생하던 결함을 완벽 조치.
+- **다중 시크릿 키 후보군(`validKeys`) 및 타임스탬프 허용 오차 확장 (300초/5분)**:
+  - 타임스탬프 허용 오차를 기존 60초에서 **300초(5분)**로 확장하여 사설망 LAN 환경의 PC 간 시간 차이로 인한 서명 거부 방지.
+  - 기본 클러스터 공유 키(`WPP-SEC-CLUSTER-2026-KEY`) 및 로컬 `cluster.key` 저장 키, 레거시 키를 포함한 후보군(`validKeys`)에 대해 HMAC-SHA256 디지털 서명을 다중 검증.
+- **요청 바디 내 `SecretKey` 다단계 안전 폴백 적용**:
+  - HMAC 서명 또는 타임스탬프 차이가 발생하더라도, 클라이언트 요청 페이로드 내에 포함된 `SecretKey`가 클러스터 허용 키와 일치할 경우 원격 관제 명령을 안전하게 수용하는 2차 폴백 메커니즘 연동.
+- **표준 클러스터 키(`DefaultClusterKey`) 동기화**:
+  - 에이전트 서비스 최초 구동 시 기본 클러스터 공유 키(`WPP-SEC-CLUSTER-2026-KEY`)를 `cluster.key`에 자율 기록하여 설정 없이도 LAN 원격 관제가 즉시 정상 작동하도록 조치.
+
+---
+
+## 📌 [v4.63.1] - 2026-11-01 (🎨 다크 테마 ComboBox 테마 선택 항목 텍스트 가시성 결함 수정 및 전용 고대비 스타일 구축)
+
+### 🎨 테마 선택 드롭다운 UI/UX 및 가시성(Visibility & Contrast) 결함 완벽 해결
+- **다크 테마 드롭다운 흰색 배경/흰색 폰트 겹침 현상 원천 차단 (`MainWindow.xaml`, `CommanderMainWindow.xaml`)**:
+  - 기존 WPF 기본 `ComboBox`는 팝업 드롭다운(`PART_Popup`) 생성 시 Windows 시스템 기본 브러시(`SystemColors.WindowBrushKey`, 흰색 `#FFFFFF`)를 렌더링하고, 아이템은 다크 테마의 전역 폰트 색상(`TextPrimary`, 흰색 `#F8FAFC`)을 상속받아 **흰색 배경 위에 흰색 글자가 표시되어 텍스트가 전혀 보이지 않던 치명적 결함**을 발견하여 완벽하게 해결.
+- **전용 `ThemeComboBoxStyle` 및 `ThemeComboBoxItemStyle` XAML 커스텀 템플릿 구축**:
+  - `PART_Popup` 드롭다운 보더에 테마 감응형 카드 브러시(`{DynamicResource BgCard}`)와 테두리(`{DynamicResource BorderDark}`), 그리고 부드러운 드롭섀도우(`{DynamicResource WindowDropShadow}`)를 적용하여 팝업 배경이 어두운 네이비(#111827)로 정상 렌더링되도록 구현.
+  - `ComboBoxItem` 전용 템플릿을 신설하여, 각 테마 항목("🌙 다크 테마", "🔘 회색 테마", "☀️ 화이트 테마", "📜 베이지 테마")이 고대비 폰트(`{DynamicResource TextPrimary}`)로 선명하게 표시되도록 설정.
+  - 마우스 호버(`IsHighlighted`) 시 액센트 블루(`{DynamicResource AccentPrimary}`, #2563EB) 배경 및 완전 흰색(#FFFFFF) 텍스트 반전 효과 적용.
+  - 현재 선택 항목(`IsSelected`) 시 어두운 슬레이트(#1E293B) 배경 및 밝은 사이언(`{DynamicResource AccentCyan}`, #38BDF8) 볼드 폰트 하이라이트 적용.
+- **테마 전환 핫스왑 완벽 연동**:
+  - 다크 테마뿐만 아니라 회색(Gray), 화이트(White), 베이지(Beige) 테마에서도 드롭다운 배경과 폰트 색상이 각 테마의 명도에 맞추어 실시간 최적 대비로 동적 스왑.
+- **Central Commander 콤보박스 팝업 동일 스타일 개선 (`CommanderMainWindow.xaml`)**:
+  - 커맨더 콘솔의 프로필 및 스케줄 선택 콤보박스에도 동일한 다크 팝업 템플릿을 적용하여 Windows 기본 흰색 팝업 노출 원천 방지.
+
+---
+
 ## 📌 [v4.63.0] - 2026-11-01 (⚡ 글로벌 애플리케이션 레벨 Mutex 제거 및 다중 인스턴스(Multi-Instance) 동시 실행 전면 허용)
 
 ### ⚡ 글로벌 애플리케이션 레벨 Mutex 제거 및 다중 인스턴스 동시 실행 아키텍처

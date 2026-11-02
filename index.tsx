@@ -57,6 +57,26 @@ import {
 import { APP_VERSION } from './src/version';
 import { INITIAL_MODULES, ModuleItem } from './src/modulesData';
 
+declare global {
+  interface Window {
+    electronAPI?: {
+      isElectron: boolean;
+      platform: string;
+      version: string;
+      minimize?: () => void;
+      maximize?: () => void;
+      close?: () => void;
+      launchCommander?: () => Promise<{ success: boolean; message: string }>;
+      discoverNodes?: (timeoutMs?: number) => Promise<any[]>;
+      sendBatchCommand?: (nodeList: any[], command: string, preset?: string, clusterKey?: string) => Promise<any[]>;
+      fetchTelemetry?: (ip: string, port?: number) => Promise<any>;
+      fetchChallenge?: (ip: string, port?: number) => Promise<any>;
+      openLogFolder?: () => Promise<boolean>;
+      saveLogs?: (content: string, defaultName?: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+    };
+  }
+}
+
 const LICENSE_TEXT_KO = `================================================================================
                     WinPurify Pro 최종 사용자 사용권 계약서 (EULA)
              (End User License Agreement - Korean Edition)
@@ -491,6 +511,7 @@ const App: React.FC = () => {
   const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
   const [showCommanderModal, setShowCommanderModal] = useState<boolean>(false);
   const [isCommanderRunning, setIsCommanderRunning] = useState<boolean>(false);
+  const [showStandaloneCommanderGuide, setShowStandaloneCommanderGuide] = useState<boolean>(false);
   const [showCommanderConflictModal, setShowCommanderConflictModal] = useState<boolean>(false);
   const [commanderPreset, setCommanderPreset] = useState<string>('Safe (권장 기본)');
   const [showDefaultProfileWarningModal, setShowDefaultProfileWarningModal] = useState<boolean>(false);
@@ -1899,6 +1920,22 @@ const App: React.FC = () => {
         const stored = localStorage.getItem('winpurify_commander_logs') || '';
         localStorage.setItem('winpurify_commander_logs', `${entry}\n${stored}`.slice(0, 50000));
       } catch { }
+    }
+  };
+
+  const handleLaunchStandaloneCommander = async () => {
+    if (typeof window !== 'undefined' && window.electronAPI?.launchCommander) {
+      try {
+        const res = await window.electronAPI.launchCommander();
+        addCommanderLog(`[Electron Master] 독립 데스크톱 패키징 앱(Electron Commander) 분리 구동: ${res?.message || '성공'}`);
+        addLog(`[Central Commander] 웹 브라우저를 탈피하여 독립 데스크톱 앱(Electron Standalone Commander)으로 마스터 관제 창을 분리 실행했습니다.`);
+      } catch (err: any) {
+        addCommanderLog(`[Electron Master 오류] 독립 데스크톱 앱 구동 실패: ${err?.message || err}`);
+      }
+    } else {
+      setShowStandaloneCommanderGuide(true);
+      addCommanderLog('[Electron Master] 브라우저 환경 실행 중: 터미널에서 "npm run start:commander" 또는 "npm run build:commander" 명령어로 단독 데스크톱 앱 구동 가능');
+      addLog('[Central Commander] 브라우저 환경에서 실행 중입니다. 브라우저 없이 독립 데스크톱 앱으로 마스터를 구동하려면 터미널에서 "npm run start:commander" 또는 "npm run build:commander"를 실행하십시오.');
     }
   };
 
@@ -3725,11 +3762,20 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-white">Central Commander (다중 PC 원격 관제)</h3>
                     <span className="text-[10px] px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 font-bold border border-blue-700/50">Option B 데스크톱 전용</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-300 font-bold border border-indigo-700/50">Electron 단독 패키징 지원</span>
                   </div>
                   <p className="text-xs text-slate-400">사내/홈 LAN 내의 WinPurify Pro 노드를 자동 탐색하고 동시 일괄 최적화 및 4중 보안 제어를 수행합니다.</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={handleLaunchStandaloneCommander}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5 cursor-pointer"
+                  title="웹 브라우저를 사용하지 않고 개별 데스크톱 패키징 앱(Electron Standalone Commander)으로 마스터를 독립 실행합니다."
+                >
+                  <Server className="w-3.5 h-3.5" />
+                  <span>🖥️ 독립 데스크톱 앱으로 마스터 실행</span>
+                </button>
                 <button
                   onClick={() => {
                     setIsCommanderRunning(false);
@@ -3749,6 +3795,20 @@ const App: React.FC = () => {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+            </div>
+
+            {/* Standalone Packaging & Coexistence Notice */}
+            <div className="px-6 py-2 bg-indigo-950/40 border-b border-indigo-500/30 flex flex-wrap items-center justify-between text-[11px] text-indigo-200">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                <strong>독립 데스크톱 패키징 앱(Electron) 지원:</strong> 브라우저 없이 완전한 단독 윈도우로 마스터 콘솔을 구동할 수 있습니다. (터미널: <code className="bg-black/40 px-1.5 py-0.5 rounded font-mono text-indigo-300">npm run start:commander</code> / 빌드: <code className="bg-black/40 px-1.5 py-0.5 rounded font-mono text-indigo-300">npm run build:commander</code>)
+              </span>
+              <button
+                onClick={() => setShowStandaloneCommanderGuide(true)}
+                className="text-[10px] text-indigo-300 hover:text-white underline font-semibold cursor-pointer"
+              >
+                단독 실행 가이드 보기 &rarr;
+              </button>
             </div>
 
             {/* Coexistence & Simultaneous Execution Status Notice */}
@@ -4257,6 +4317,84 @@ const App: React.FC = () => {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Standalone Commander Desktop App Guide Modal */}
+      {showStandaloneCommanderGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-indigo-500/80 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
+                  <Server className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">마스터 독립 데스크톱 패키징 앱 (Electron) 실행 가이드</h3>
+                  <p className="text-xs text-slate-400">웹 브라우저를 일체 사용하지 않고 단독 데스크톱 애플리케이션으로 마스터 관제 콘솔을 구동합니다.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowStandaloneCommanderGuide(false)}
+                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 text-xs text-slate-300 max-h-[70vh] overflow-y-auto">
+              <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-800/40 space-y-2">
+                <div className="font-bold text-indigo-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                  방법 1: Electron 개발 런처로 즉시 단독 실행 (권장)
+                </div>
+                <p className="text-slate-400 leading-relaxed">
+                  터미널(PowerShell 또는 CMD)에서 아래 명령어를 실행하면 브라우저 없이 네이티브 다크 인더스트리얼 프레임리스 창으로 마스터 관제 콘솔이 즉시 단독 구동됩니다:
+                </p>
+                <div className="p-2.5 rounded-lg bg-black/60 font-mono text-amber-300 border border-slate-800 flex items-center justify-between">
+                  <span>npm run start:commander</span>
+                  <span className="text-slate-500 text-[10px]">또는 npm run start:master</span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-800/40 space-y-2">
+                <div className="font-bold text-blue-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-400" />
+                  방법 2: 단독 포터블 실행 파일 (WinPurify_Commander.exe) 패키징 빌드
+                </div>
+                <p className="text-slate-400 leading-relaxed">
+                  웹 브라우저 및 Node.js 설치가 필요 없는 독립 단독 실행 파일(.exe)로 패키징하려면 다음 명령어를 실행하십시오:
+                </p>
+                <div className="p-2.5 rounded-lg bg-black/60 font-mono text-emerald-300 border border-slate-800 flex items-center justify-between">
+                  <span>npm run build:commander</span>
+                  <span className="text-slate-500 text-[10px]">출력: dist/WinPurify_Commander.exe</span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div className="font-bold text-slate-200 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-slate-400" />
+                  방법 3: 메인 데스크톱 앱 내 원클릭 분리 실행
+                </div>
+                <p className="text-slate-400 leading-relaxed">
+                  Electron 기반 WinPurify Pro 메인 앱에서 상단의 <strong>[🖥️ 독립 데스크톱 앱으로 마스터 실행]</strong> 버튼을 누르면 브라우저 없이 별도의 독립 창으로 즉시 분리되어 나란히 실행됩니다.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/30 text-amber-300 text-[11px] leading-relaxed">
+                💡 <strong>보안 및 무결성:</strong> 마스터 관제 콘솔은 UDP 9871 포트 자동 탐색, Challenge-Response 비대칭 암호화 서명 검증, 실시간 401 오류 분석기, 로컬 텍스트 로그 자동 저장 기능을 내장하고 있어 사설 LAN 환경에서 완벽한 독립 관제를 보장합니다.
+              </div>
+            </div>
+
+            <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/70 flex justify-end">
+              <button
+                onClick={() => setShowStandaloneCommanderGuide(false)}
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition cursor-pointer"
+              >
+                확인 및 닫기
+              </button>
+            </div>
           </div>
         </div>
       )}

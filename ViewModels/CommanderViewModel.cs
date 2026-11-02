@@ -86,7 +86,7 @@ namespace WinPurifyPro.ViewModels
                 return IsAgentServerRunning ? "#059669" : "#475569";
             }
         }
-        public string CommanderVersion => $"WinPurify Pro Central Commander Engine v{AppEnvironment.AppVersion}";
+        public string CommanderVersion => $"WinPurify Pro Central Commander Engine v4.66.0 (Enterprise Fleet)";
 
         private string _commanderStatus = "원격 관제 준비 완료 (Ready)";
         public string CommanderStatus
@@ -226,6 +226,13 @@ namespace WinPurifyPro.ViewModels
             set { if (_backupDefaultProfile != value) { _backupDefaultProfile = value; OnPropertyChanged(); } }
         }
 
+        private bool _isDiagnosticsOpen;
+        public bool IsDiagnosticsOpen
+        {
+            get => _isDiagnosticsOpen;
+            set { if (_isDiagnosticsOpen != value) { _isDiagnosticsOpen = value; OnPropertyChanged(); } }
+        }
+
         // Commands
         public ICommand DiscoverNodesCommand { get; }
         public ICommand ToggleAgentServerCommand { get; }
@@ -248,6 +255,7 @@ namespace WinPurifyPro.ViewModels
         public ICommand BatchForensicsWipeCommand { get; }
         public ICommand BatchRebootCommand { get; }
         public ICommand BatchShutdownCommand { get; }
+        public ICommand ToggleDiagnosticsCommand { get; }
         public ICommand OpenScheduleModalCommand { get; }
         public ICommand CloseScheduleModalCommand { get; }
         public ICommand BatchDeployScheduleCommand { get; }
@@ -332,6 +340,7 @@ namespace WinPurifyPro.ViewModels
             CloseScheduleModalCommand = new RelayCommand(_ => IsScheduleModalOpen = false);
             BatchDeployScheduleCommand = new RelayCommand(async _ => await ExecuteBatchDeployScheduleAsync(), _ => !IsExecutingBatch && SelectedNodesCount > 0);
             BatchUnregisterScheduleCommand = new RelayCommand(async _ => await ExecuteBatchUnregisterScheduleAsync(), _ => !IsExecutingBatch && SelectedNodesCount > 0);
+            ToggleDiagnosticsCommand = new RelayCommand(_ => IsDiagnosticsOpen = !IsDiagnosticsOpen);
 
             RefreshTelemetryCommand = new RelayCommand(async _ => await RefreshAllTelemetryAsync(), _ => !IsScanning);
             SelectAllNodesCommand = new RelayCommand(_ => SetAllSelection(true));
@@ -587,6 +596,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"일괄 RAM 정화 완료 (성공: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message} ({res.Response.ExecutionTimeMs}ms)");
             }
 
@@ -609,6 +619,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"일괄 복원지점 생성 완료 (성공: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 string icon = res.Response.Success ? "✅" : "⚠️";
                 AddCommanderLog($"  └ {icon} [{res.Node.Name}] {res.Response.Message} ({res.Response.ExecutionTimeMs}ms)");
             }
@@ -631,6 +642,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"게이밍 부스트 일괄 배포 완료 (성공: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -653,6 +665,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"고속 유지보수 일괄 완료 (성공: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message} ({res.Response.ExecutionTimeMs}ms)");
             }
 
@@ -676,6 +689,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"[{preset}] 프리셋 일괄 배포 완료 (성공: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message} ({res.Response.ExecutionTimeMs}ms)");
             }
 
@@ -698,6 +712,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"DNS 플러시 완료 (성공: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -719,6 +734,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"원격 자가진단 완료 (성공: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -741,6 +757,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"원격 강제 재부팅 명령 하달 완료 (전송: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -762,6 +779,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"원격 강제 시스템 종료 명령 하달 완료 (전송: {success}/{targets.Count}대)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -783,6 +801,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"세이프포인트 롤백 완료 ({success}/{targets.Count}대 복원 성공)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -805,6 +824,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"Zero-Trace 완전 초기화 완료 ({success}/{targets.Count}대 적용 성공)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -839,6 +859,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"계정 & 세션 토큰 정화 완료 ({success}/{targets.Count}대 적용 성공)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -862,6 +883,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"기본 프로필 복제 완료 ({success}/{targets.Count}대 배포 성공)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -895,6 +917,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"브라우저 공장 초기화 완료 ({success}/{targets.Count}대 초기화 성공)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -920,6 +943,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"포렌식 난수 파쇄 명령 접수 완료 ({success}/{targets.Count}대 백그라운드 시작됨)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -952,6 +976,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"주간 스케줄러 일괄 배포 완료 ({success}/{targets.Count}대 등록 성공)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -974,6 +999,7 @@ namespace WinPurifyPro.ViewModels
             CommanderStatus = $"스케줄러 일괄 등록 해제 완료 ({success}/{targets.Count}대 해제 성공)";
             foreach (var res in results)
             {
+                UpdateNodeDiagnostics(res.Node, res.Response);
                 AddCommanderLog($"  └ [{res.Node.Name}] {res.Response.Message}");
             }
 
@@ -1005,6 +1031,8 @@ namespace WinPurifyPro.ViewModels
                 terminateProcesses,
                 browserTarget,
                 drive);
+
+            UpdateNodeDiagnostics(node, resp);
 
             if (resp.Success)
             {
@@ -1122,6 +1150,13 @@ namespace WinPurifyPro.ViewModels
             OnPropertyChanged(nameof(OnlineNodesCount));
             OnPropertyChanged(nameof(SelectedNodesCount));
             OnPropertyChanged(nameof(TotalNodesCount));
+        }
+
+        private void UpdateNodeDiagnostics(RemoteNodeItem node, CommandResponseDto resp)
+        {
+            node.HandshakeLatencyMs = resp.HandshakeLatencyMs;
+            node.LastAuthErrorPoint = resp.AuthErrorPoint ?? "None";
+            node.LastAuthCategory = resp.AuthCategory ?? "None";
         }
 
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;

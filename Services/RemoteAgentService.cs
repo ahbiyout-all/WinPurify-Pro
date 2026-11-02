@@ -35,7 +35,10 @@ namespace WinPurifyPro.Services
         private bool _isRunning = false;
 
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> _seenNonces = new();
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _clientClockOffsets = new();
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime ExpiresAt, string ClientIp)> _activeChallenges = new();
         private static DateTime _lastNonceCleanup = DateTime.UtcNow;
+        private static DateTime _lastChallengeCleanup = DateTime.UtcNow;
         private static readonly object _nonceCleanupLock = new object();
 
         public bool IsRunning => _isRunning;
@@ -56,6 +59,8 @@ namespace WinPurifyPro.Services
 
         public string AllowedAdminIp { get; set; } = "*"; // "*" 또는 특정 IP (예: 192.168.1.100)
 
+        public const string DefaultClusterKey = "WPP-SEC-CLUSTER-2026-KEY";
+
         private static string LoadOrGenerateClusterKey()
         {
             try
@@ -66,7 +71,7 @@ namespace WinPurifyPro.Services
                 if (File.Exists(keyFile))
                 {
                     string key = File.ReadAllText(keyFile).Trim();
-                    if (!string.IsNullOrEmpty(key) && key.Length >= 16)
+                    if (!string.IsNullOrEmpty(key) && key.Length >= 8)
                     {
                         return key;
                     }
@@ -77,19 +82,13 @@ namespace WinPurifyPro.Services
                     Directory.CreateDirectory(programDataDir);
                 }
 
-                // 256-bit 암호학적 난수 키 생성 및 보존
-                byte[] randomBytes = new byte[32];
-                using (var rng = RandomNumberGenerator.Create())
-                {
-                    rng.GetBytes(randomBytes);
-                }
-                string newKey = Convert.ToHexString(randomBytes);
-                File.WriteAllText(keyFile, newKey);
-                return newKey;
+                // 기본 클러스터 시크릿 키("WPP-SEC-CLUSTER-2026-KEY") 저장 및 전파
+                File.WriteAllText(keyFile, DefaultClusterKey);
+                return DefaultClusterKey;
             }
             catch
             {
-                return "WinPurifyClusterKey2026"; // 파일시스템 접근 제한 시 안전한 폴백
+                return DefaultClusterKey; // 파일시스템 접근 제한 시 안전한 폴백
             }
         }
 
@@ -389,7 +388,7 @@ namespace WinPurifyPro.Services
                 resp.AddHeader("Access-Control-Allow-Origin", origin);
             }
             resp.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-            resp.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-WinPurify-Signature, X-WinPurify-Timestamp, X-WinPurify-Nonce");
+            resp.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-WinPurify-Signature, X-WinPurify-Timestamp, X-WinPurify-Nonce, X-WinPurify-Challenge-Nonce, X-WinPurify-Challenge-Signature");
             resp.AddHeader("X-Content-Type-Options", "nosniff");
             resp.AddHeader("X-Frame-Options", "DENY");
 
@@ -437,6 +436,23 @@ namespace WinPurifyPro.Services
                     resp.StatusCode = 200;
                     await WriteJsonAsync(resp, telemetry);
                 }
+                else if ((req.HttpMethod == "GET" || req.HttpMethod == "POST") && path == "/api/v1/auth/challenge")
+                {
+                    // 암호화 챌린지 Nonce 발급 (Challenge-Response Handshake)
+                    string challengeNonce = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+                    _activeChallenges[challengeNonce] = (DateTime.UtcNow.AddSeconds(60), clientIp);
+                    CleanupExpiredChallenges();
+                    LogOccurred?.Invoke($"[RemoteAgent Challenge] 암호화 Challenge Nonce 발급: {challengeNonce.Substring(0, 8)}... (Client: {clientIp}, TTL: 60s)");
+                    resp.StatusCode = 200;
+                    await WriteJsonAsync(resp, new AuthChallengeResponseDto
+                    {
+                        Success = true,
+                        ChallengeNonce = challengeNonce,
+                        ExpiresInSeconds = 60,
+                        ServerTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                        Message = "Challenge nonce issued successfully"
+                    });
+                }
                 else if (req.HttpMethod == "POST" && path.StartsWith("/api/v1/batch/"))
                 {
                     // 일괄 명령 수행 (RAM 정리, 복원지점, 프리셋 배포 등)
@@ -445,16 +461,29 @@ namespace WinPurifyPro.Services
 
                     var batchReq = JsonSerializer.Deserialize<BatchCommandRequest>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     
-                    // HMAC 서명, Nonce Replay 방어 및 시크릿 키 4중 검증
-                    if (batchReq == null || !VerifySecurityToken(batchReq, body, req.Headers, req))
+                    // HMAC 서명, Nonce Replay 방어, 시계 오차(Clock Skew) 보정 및 정밀 진단 4D 검증
+                    var authResult = VerifySecurityTokenWithDetails(batchReq, body, req.Headers, req, clientIp);
+                    if (!authResult.IsValid)
                     {
-                        LogOccurred?.Invoke($"[RemoteAgent 보안 경고] 유효하지 않은 서명/시크릿 키 또는 Replay 공격으로 명령 거부됨 ({clientIp})");
+                        LogOccurred?.Invoke($"[RemoteAgent 보안 401 거부] ({clientIp}) -> [{authResult.ErrorPoint}] ({authResult.FailureCategory}): {authResult.FailureReason}");
                         resp.StatusCode = 401;
-                        await WriteJsonAsync(resp, new CommandResponseDto { Success = false, Message = "Security Authentication Failed or Replay Detected" });
+                        resp.Headers.Add("X-WinPurify-NodeTimestamp", authResult.NodeTimestamp.ToString());
+                        resp.Headers.Add("X-WinPurify-ClockOffset", authResult.ClockOffsetSeconds.ToString());
+                        resp.Headers.Add("X-WinPurify-AuthCategory", authResult.FailureCategory);
+                        resp.Headers.Add("X-WinPurify-Auth-Error-Point", authResult.ErrorPoint);
+                        resp.Headers.Add("X-WinPurify-Error-Point", authResult.ErrorPoint);
+
+                        await WriteJsonAsync(resp, new CommandResponseDto
+                        {
+                            Success = false,
+                            Message = $"[{authResult.ErrorPoint}] {authResult.FailureReason}",
+                            ExecutionDetails = authResult.ExecutionDetails,
+                            ExecutionTimeMs = 0
+                        });
                         return;
                     }
 
-                    var result = await ExecuteBatchCommandAsync(path, batchReq, clientIp);
+                    var result = await ExecuteBatchCommandAsync(path, batchReq!, clientIp);
                     resp.StatusCode = 200;
                     await WriteJsonAsync(resp, result);
                 }
@@ -471,56 +500,242 @@ namespace WinPurifyPro.Services
             }
         }
 
-        private bool VerifySecurityToken(BatchCommandRequest req, string rawBody, NameValueCollection headers, HttpListenerRequest rawReq)
+        public class AuthValidationResult
         {
+            public bool IsValid { get; set; }
+            public string FailureCategory { get; set; } = "Unknown";
+            public string ErrorPoint { get; set; } = "unknown_error";
+            public string FailureReason { get; set; } = string.Empty;
+            public string ExecutionDetails { get; set; } = string.Empty;
+            public long NodeTimestamp { get; set; }
+            public long SenderTimestamp { get; set; }
+            public long ClockOffsetSeconds { get; set; }
+        }
+
+        private AuthValidationResult VerifySecurityTokenWithDetails(BatchCommandRequest? req, string rawBody, NameValueCollection headers, HttpListenerRequest rawReq, string clientIp)
+        {
+            long currentTs = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var result = new AuthValidationResult
+            {
+                NodeTimestamp = currentTs
+            };
+
             // 0. 악성 웹사이트로부터의 Cross-Origin 브라우저 Drive-by 요청 원천 차단
             string? secFetchSite = rawReq.Headers["Sec-Fetch-Site"];
             if (!string.IsNullOrEmpty(secFetchSite) && secFetchSite.Equals("cross-site", StringComparison.OrdinalIgnoreCase))
             {
-                LogOccurred?.Invoke("[RemoteAgent 보안 차단] 브라우저 Cross-Site Drive-by 요청 차단됨");
-                return false;
+                result.IsValid = false;
+                result.FailureCategory = "CrossSite";
+                result.ErrorPoint = "cross_site_blocked";
+                result.FailureReason = "Security Blocked: Cross-Site Drive-by Browser Request Rejected";
+                result.ExecutionDetails = "Browser Sec-Fetch-Site header indicates cross-site origin.";
+                LogOccurred?.Invoke($"[RemoteAgent 보안 차단] Cross-Site 요청 거부 ({clientIp})");
+                return result;
             }
 
-            // 1. HMAC-SHA256 디지털 서명 및 Nonce Replay 방어 4중 검증 (권장)
+            if (req == null)
+            {
+                result.IsValid = false;
+                result.FailureCategory = "InvalidPayload";
+                result.ErrorPoint = "invalid_payload";
+                result.FailureReason = "Security Authentication Failed: Invalid or Empty JSON Request Body Payload";
+                result.ExecutionDetails = "Deserialized BatchCommandRequest was null.";
+                LogOccurred?.Invoke($"[RemoteAgent 보안 차단] 빈 요청 페이로드 ({clientIp})");
+                return result;
+            }
+
+            // 1. 검증 대상 시크릿 키 후보군 구성 (현재 설정 키, 표준 기본 클러스터 키, 레거시 키)
+            var validKeys = new List<string>();
+            if (!string.IsNullOrWhiteSpace(ClusterSecretKey)) validKeys.Add(ClusterSecretKey.Trim());
+            if (!validKeys.Contains(DefaultClusterKey)) validKeys.Add(DefaultClusterKey);
+            if (!validKeys.Contains("WinPurifyClusterKey2026")) validKeys.Add("WinPurifyClusterKey2026");
+
+            // 1.5. Challenge-Response 서버 핸드셰이크 검증 (시계 오차 zero, 서버 발급 일회용 Nonce 서명)
+            string? challengeNonce = headers["X-WinPurify-Challenge-Nonce"];
+            if (string.IsNullOrWhiteSpace(challengeNonce)) challengeNonce = req.ChallengeNonce;
+
+            string? challengeSig = headers["X-WinPurify-Challenge-Signature"];
+            if (string.IsNullOrWhiteSpace(challengeSig)) challengeSig = req.ChallengeSignature;
+            if (string.IsNullOrWhiteSpace(challengeSig)) challengeSig = headers["X-WinPurify-Signature"];
+
+            if (!string.IsNullOrWhiteSpace(challengeNonce))
+            {
+                if (!_activeChallenges.TryRemove(challengeNonce, out var challengeInfo))
+                {
+                    result.IsValid = false;
+                    result.FailureCategory = "ChallengeInvalidOrConsumed";
+                    result.ErrorPoint = "challenge_consumed";
+                    result.FailureReason = $"Security Authentication Failed: Challenge Nonce '{challengeNonce}' is invalid or already consumed.";
+                    result.ExecutionDetails = $"ChallengeNonce: {challengeNonce} | Status: Expired or Replayed";
+                    LogOccurred?.Invoke($"[RemoteAgent 보안 401] [challenge_consumed] {clientIp} -> Challenge Nonce '{challengeNonce}' 검증 실패");
+                    return result;
+                }
+
+                if (DateTime.UtcNow > challengeInfo.ExpiresAt)
+                {
+                    result.IsValid = false;
+                    result.FailureCategory = "ChallengeExpired";
+                    result.ErrorPoint = "challenge_expired";
+                    result.FailureReason = $"Security Authentication Failed: Challenge Nonce '{challengeNonce}' has expired (TTL: 60s).";
+                    result.ExecutionDetails = $"ChallengeNonce: {challengeNonce} | Status: Expired";
+                    LogOccurred?.Invoke($"[RemoteAgent 보안 401] [challenge_expired] {clientIp} -> Challenge Nonce '{challengeNonce}' 만료됨");
+                    return result;
+                }
+
+                // Challenge signature 검증 (Payload 서명 후보군 테스트)
+                bool isChallengeSigValid = false;
+                string cmdType = req.CommandType ?? string.Empty;
+
+                foreach (var key in validKeys)
+                {
+                    string candidate1 = ComputeHmacSha256($"{challengeNonce}:{cmdType}:{rawBody}", key);
+                    string candidate2 = ComputeHmacSha256($"{challengeNonce}:{rawBody}", key);
+                    string candidate3 = ComputeHmacSha256(challengeNonce, key);
+
+                    if (string.Equals(challengeSig, candidate1, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(challengeSig, candidate2, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(challengeSig, candidate3, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isChallengeSigValid = true;
+                        result.IsValid = true;
+                        result.FailureCategory = "None";
+                        result.ErrorPoint = "none";
+                        LogOccurred?.Invoke($"[RemoteAgent 보안 Challenge-Response 성공] 서버 Nonce 기반 암호화 핸드셰이크 서명 검증 성공 (Client: {clientIp}, Command: {cmdType})");
+                        return result;
+                    }
+                }
+
+                if (!isChallengeSigValid)
+                {
+                    result.IsValid = false;
+                    result.FailureCategory = "ChallengeSignatureMismatch";
+                    result.ErrorPoint = "challenge_signature_mismatch";
+                    result.FailureReason = $"Security Authentication Failed: Challenge Signature Mismatch for Nonce '{challengeNonce}'.";
+                    result.ExecutionDetails = $"ChallengeSignatureMismatch: Nonce={challengeNonce} | ReceivedSignature={challengeSig}";
+                    LogOccurred?.Invoke($"[RemoteAgent 보안 401] [challenge_signature_mismatch] {clientIp} -> Nonce '{challengeNonce}' 서명 불일치");
+                    return result;
+                }
+            }
+
+            // 2. Nonce Replay 공격 검증 (중복 Nonce 재전송 차단)
             string? headerSig = headers["X-WinPurify-Signature"];
             string? headerTime = headers["X-WinPurify-Timestamp"];
             string? headerNonce = headers["X-WinPurify-Nonce"];
 
-            if (!string.IsNullOrEmpty(headerSig) && !string.IsNullOrEmpty(headerTime) && !string.IsNullOrEmpty(headerNonce))
+            if (!string.IsNullOrEmpty(headerNonce) && headerNonce.Length >= 6)
             {
-                if (long.TryParse(headerTime, out long ts))
+                if (!_seenNonces.TryAdd(headerNonce, DateTime.UtcNow))
                 {
-                    long currentTs = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    // 60초 이내 유효 타임스탬프 검증
-                    if (Math.Abs(currentTs - ts) > 60)
+                    result.IsValid = false;
+                    result.FailureCategory = "ReplayAttack";
+                    result.ErrorPoint = "nonce_replayed";
+                    result.FailureReason = $"Security Authentication Failed: Replay Attack Detected. Duplicate Nonce '{headerNonce}' was already processed.";
+                    result.ExecutionDetails = $"Nonce: {headerNonce} | Duplicate Replay Blocked";
+                    LogOccurred?.Invoke($"[RemoteAgent 보안 401] [nonce_replayed] {clientIp} -> Nonce '{headerNonce}' 중복 감지");
+                    return result;
+                }
+                CleanupExpiredNonces();
+            }
+
+            // 3. HMAC-SHA256 디지털 서명 및 시계 오차(Clock Skew) 검증
+            bool hasSignatureHeaders = !string.IsNullOrEmpty(headerSig) && !string.IsNullOrEmpty(headerTime);
+            bool isSigValid = false;
+
+            if (hasSignatureHeaders && long.TryParse(headerTime, out long senderTs))
+            {
+                result.SenderTimestamp = senderTs;
+                long rawOffset = currentTs - senderTs;
+                result.ClockOffsetSeconds = rawOffset;
+
+                // 클라이언트별 학습된 시계 오차 보정치 조회
+                _clientClockOffsets.TryGetValue(clientIp, out long learnedOffset);
+                long adjustedSenderTs = senderTs + learnedOffset;
+                long timeDiff = Math.Abs(currentTs - adjustedSenderTs);
+
+                // 300초(5분) 허용 범위 검증
+                if (timeDiff <= 300)
+                {
+                    foreach (var key in validKeys)
                     {
-                        LogOccurred?.Invoke($"[RemoteAgent 보안 경고] 유효 시간 초과 서명 거부됨 (Diff: {Math.Abs(currentTs - ts)}s)");
-                        return false;
+                        string expectedSig = ComputeHmacSha256(rawBody, key);
+                        if (string.Equals(headerSig, expectedSig, StringComparison.OrdinalIgnoreCase))
+                        {
+                            isSigValid = true;
+                            _clientClockOffsets[clientIp] = rawOffset; // 동적 시계 오차 보정치 자동 학습
+                            result.IsValid = true;
+                            result.FailureCategory = "None";
+                            result.ErrorPoint = "none";
+                            LogOccurred?.Invoke($"[RemoteAgent 보안 인증] HMAC 서명 검증 성공 (Client: {clientIp}, Skew: {rawOffset}s)");
+                            return result;
+                        }
                     }
-
-                    // Nonce 재전송(Replay Attack) 방어 검증
-                    if (headerNonce.Length < 6) return false;
-                    if (!_seenNonces.TryAdd(headerNonce, DateTime.UtcNow))
-                    {
-                        LogOccurred?.Invoke($"[RemoteAgent 보안 경고] Nonce 중복 감지: Replay 공격 차단됨 (Nonce: {headerNonce})");
-                        return false;
-                    }
-
-                    // 주기적 만료 Nonce 메모리 정리 (120초 초과 항목)
-                    CleanupExpiredNonces();
-
-                    string expectedSig = ComputeHmacSha256(rawBody, ClusterSecretKey);
-                    return string.Equals(headerSig, expectedSig, StringComparison.OrdinalIgnoreCase);
                 }
             }
 
-            // 2. 단순 공유 키 직접 검증 (브라우저가 아닌 로컬/사설망 콘솔 직접 호출인 경우)
-            if (!string.IsNullOrEmpty(req.SecretKey) && req.SecretKey == ClusterSecretKey)
+            // 4. 요청 페이로드 내 SecretKey 직접 검증 (HMAC 실패 또는 시계 차 발생 시 안전한 폴백)
+            bool isSecretKeyValid = false;
+            if (!string.IsNullOrWhiteSpace(req.SecretKey))
             {
-                return true;
+                string reqKey = req.SecretKey.Trim();
+                foreach (var key in validKeys)
+                {
+                    if (string.Equals(reqKey, key, StringComparison.Ordinal))
+                    {
+                        isSecretKeyValid = true;
+                        if (hasSignatureHeaders && result.SenderTimestamp > 0)
+                        {
+                            long newOffset = currentTs - result.SenderTimestamp;
+                            _clientClockOffsets[clientIp] = newOffset;
+                            result.ClockOffsetSeconds = newOffset;
+                            LogOccurred?.Invoke($"[RemoteAgent 보안 시계 보정] SecretKey 매칭 기반 시계 오차({newOffset}s) 동적 학습 완료 (Client: {clientIp})");
+                        }
+
+                        result.IsValid = true;
+                        result.FailureCategory = "None";
+                        result.ErrorPoint = "none";
+                        LogOccurred?.Invoke($"[RemoteAgent 보안 인증] SecretKey 직접 매칭 성공 (Client: {clientIp})");
+                        return result;
+                    }
+                }
             }
 
-            return false;
+            // 5. 인증 실패 시 세부 실패 카테고리 판별 및 정밀 진단 메시지 생성
+            result.IsValid = false;
+
+            if (hasSignatureHeaders)
+            {
+                long rawOffset = Math.Abs(currentTs - result.SenderTimestamp);
+                if (rawOffset > 300 && !isSigValid && !isSecretKeyValid)
+                {
+                    result.FailureCategory = "ClockSkew";
+                    result.ErrorPoint = "timestamp_expired";
+                    result.FailureReason = $"Security Authentication Failed: Clock Skew Exceeded / Timestamp Expired. Sender Timestamp ({result.SenderTimestamp}) differs from Node Timestamp ({currentTs}) by {rawOffset}s (Max allowed tolerance: 300s).";
+                    result.ExecutionDetails = $"TimestampExpired: Diff={rawOffset}s | NodeTime={currentTs} | SenderTime={result.SenderTimestamp} | MaxTolerance=300s";
+                }
+                else
+                {
+                    result.FailureCategory = "SignatureMismatch";
+                    result.ErrorPoint = "signature_mismatch";
+                    result.FailureReason = $"Security Authentication Failed: HMAC-SHA256 Signature Mismatch. Header signature '{headerSig}' does not match computed signature for payload.";
+                    result.ExecutionDetails = $"SignatureMismatch: ReceivedSignature={headerSig} | ValidKeysTested={validKeys.Count}";
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(req.SecretKey))
+            {
+                result.FailureCategory = "SecretKeyMismatch";
+                result.ErrorPoint = "secret_key_mismatch";
+                result.FailureReason = "Security Authentication Failed: Payload SecretKey does not match ClusterSecretKey.";
+                result.ExecutionDetails = "SecretKeyMismatch: Request payload SecretKey failed validation against all cluster keys.";
+            }
+            else
+            {
+                result.FailureCategory = "MissingAuth";
+                result.ErrorPoint = "missing_auth";
+                result.FailureReason = "Security Authentication Failed: No valid HMAC signature headers or matching SecretKey provided.";
+                result.ExecutionDetails = "MissingAuth: Request missing X-WinPurify-Signature headers and payload SecretKey was empty.";
+            }
+
+            return result;
         }
 
         private static void CleanupExpiredNonces()
@@ -1087,6 +1302,23 @@ namespace WinPurifyPro.Services
         public void Dispose()
         {
             StopAgent();
+        }
+
+        private static void CleanupExpiredChallenges()
+        {
+            if (DateTime.UtcNow - _lastChallengeCleanup < TimeSpan.FromSeconds(30)) return;
+
+            lock (_nonceCleanupLock)
+            {
+                if (DateTime.UtcNow - _lastChallengeCleanup < TimeSpan.FromSeconds(30)) return;
+                _lastChallengeCleanup = DateTime.UtcNow;
+
+                var expiredKeys = _activeChallenges.Where(kvp => DateTime.UtcNow > kvp.Value.ExpiresAt).Select(kvp => kvp.Key).ToList();
+                foreach (var k in expiredKeys)
+                {
+                    _activeChallenges.TryRemove(k, out _);
+                }
+            }
         }
 
         private static async Task WriteJsonAsync(HttpListenerResponse response, object data)

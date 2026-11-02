@@ -916,7 +916,28 @@ namespace WinPurifyPro.Services
             });
         }
 
-        private async Task<CommandResponseDto> SendSignedCommandAsync(string ip, int port, string path, BatchCommandRequest req)
+        /// <summary>
+        /// 대상 노드로부터 일회용 암호화 Challenge Nonce를 발급받습니다 (Challenge-Response Handshake).
+        /// </summary>
+        public async Task<string?> FetchChallengeNonceAsync(string ip, int port)
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(4000);
+                string url = $"http://{ip}:{port}/api/v1/auth/challenge";
+                var resp = await _httpClient.GetAsync(url, cts.Token);
+                if (resp.IsSuccessStatusCode)
+                {
+                    string json = await resp.Content.ReadAsStringAsync();
+                    var obj = JsonSerializer.Deserialize<AuthChallengeResponseDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    return obj?.ChallengeNonce;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private async Task<CommandResponseDto> SendSignedCommandAsync(string ip, int port, string path, BatchCommandRequest req, bool forceChallengeHandshake = false)
         {
             string localLanIp = RemoteAgentService.GetBestLocalIPv4Address();
             bool isLocal = (ip == "127.0.0.1" || ip == "localhost" || ip == "::1" || ip == localLanIp);
@@ -927,12 +948,81 @@ namespace WinPurifyPro.Services
                 try { RemoteAgentService.Instance.StartAgent(); } catch { }
             }
 
+            bool isSensitiveCommand = forceChallengeHandshake ||
+                req.CommandType.Equals("Reboot", StringComparison.OrdinalIgnoreCase) ||
+                req.CommandType.Equals("Shutdown", StringComparison.OrdinalIgnoreCase) ||
+                req.CommandType.Equals("ZeroTraceReset", StringComparison.OrdinalIgnoreCase) ||
+                req.CommandType.Equals("Rollback", StringComparison.OrdinalIgnoreCase) ||
+                req.CommandType.Equals("ForensicsWipe", StringComparison.OrdinalIgnoreCase) ||
+                req.CommandType.Equals("AccountPurge", StringComparison.OrdinalIgnoreCase);
+
+            long handshakeLatency = 0;
+
+            // 1. Challenge-Response 암호화 핸드셰이크 시도 (Reboot 등 민감 명령 또는 시계 오차 복구 지정 시)
+            if (isSensitiveCommand)
+            {
+                var swHandshake = System.Diagnostics.Stopwatch.StartNew();
+                string? challengeNonce = await FetchChallengeNonceAsync(ip, port);
+                swHandshake.Stop();
+                handshakeLatency = swHandshake.ElapsedMilliseconds;
+
+                if (!string.IsNullOrEmpty(challengeNonce))
+                {
+                    try
+                    {
+                        long ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                        string nonce = Guid.NewGuid().ToString("N");
+                        req.Timestamp = ts;
+                        req.Nonce = nonce;
+                        req.SecretKey = ClusterSecretKey;
+                        req.ChallengeNonce = challengeNonce;
+
+                        string rawJson = JsonSerializer.Serialize(req);
+                        string challengePayload = $"{challengeNonce}:{req.CommandType}:{rawJson}";
+                        string challengeSig = RemoteAgentService.ComputeHmacSha256(challengePayload, ClusterSecretKey);
+                        req.ChallengeSignature = challengeSig;
+
+                        using var requestMsg = new HttpRequestMessage(HttpMethod.Post, $"http://{ip}:{port}{path}")
+                        {
+                            Content = new StringContent(rawJson, Encoding.UTF8, "application/json")
+                        };
+
+                        requestMsg.Headers.Add("X-WinPurify-Challenge-Nonce", challengeNonce);
+                        requestMsg.Headers.Add("X-WinPurify-Challenge-Signature", challengeSig);
+                        requestMsg.Headers.Add("X-WinPurify-Signature", challengeSig);
+                        requestMsg.Headers.Add("X-WinPurify-Timestamp", ts.ToString());
+                        requestMsg.Headers.Add("X-WinPurify-Nonce", nonce);
+
+                        var response = await _httpClient.SendAsync(requestMsg);
+                        string respJson = await response.Content.ReadAsStringAsync();
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var dto = JsonSerializer.Deserialize<CommandResponseDto>(respJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                                   ?? new CommandResponseDto { Success = true, Message = "Command executed successfully via Challenge-Response Handshake" };
+                            dto.HandshakeLatencyMs = handshakeLatency;
+                            return dto;
+                        }
+                        else if (response.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            var errorDto = new CommandResponseDto { Success = false, Message = $"Auth Failed: {respJson}", HandshakeLatencyMs = handshakeLatency };
+                            if (response.Headers.TryGetValues("X-WinPurify-Auth-Error-Point", out var errPoints)) errorDto.AuthErrorPoint = errPoints.FirstOrDefault();
+                            if (response.Headers.TryGetValues("X-WinPurify-AuthCategory", out var categories)) errorDto.AuthCategory = categories.FirstOrDefault();
+                            return errorDto;
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            // 2. 타임스탬프 기반 표준 서명 전송 (일반 배치 명령 또는 챌린지 엔드포인트 수신 거부 폴백)
             try
             {
                 long ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 string nonce = Guid.NewGuid().ToString("N");
                 req.Timestamp = ts;
                 req.Nonce = nonce;
+                req.SecretKey = ClusterSecretKey;
 
                 string json = JsonSerializer.Serialize(req);
                 string signature = RemoteAgentService.ComputeHmacSha256(json, ClusterSecretKey);
@@ -951,11 +1041,19 @@ namespace WinPurifyPro.Services
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    return JsonSerializer.Deserialize<CommandResponseDto>(respJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                    var successDto = JsonSerializer.Deserialize<CommandResponseDto>(respJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                            ?? new CommandResponseDto { Success = true, Message = "Command executed successfully" };
+                    successDto.HandshakeLatencyMs = handshakeLatency;
+                    return successDto;
                 }
                 else
                 {
+                    // 타임스탬프 서명이 시계 오차(Clock Skew)로 401 실패한 경우, Challenge-Response 핸드셰이크로 1회 자동 복구 재시도
+                    if (response.StatusCode == HttpStatusCode.Unauthorized && !forceChallengeHandshake)
+                    {
+                        return await SendSignedCommandAsync(ip, port, path, req, forceChallengeHandshake: true);
+                    }
+
                     // 로컬 노드인 경우 HTTP 에러 반환 시 로컬 직접 실행으로 완벽 대체
                     if (isLocal)
                     {
@@ -963,6 +1061,7 @@ namespace WinPurifyPro.Services
                         {
                             var directResp = await RemoteAgentService.Instance.ExecuteBatchCommandAsync(path, req);
                             directResp.Message = $"[로컬 직접 실행] {directResp.Message}";
+                            directResp.HandshakeLatencyMs = handshakeLatency;
                             return directResp;
                         }
                         catch
@@ -970,17 +1069,20 @@ namespace WinPurifyPro.Services
                             if (req.CommandType.Equals("Reboot", StringComparison.OrdinalIgnoreCase))
                             {
                                 SystemPowerService.ScheduleForceReboot(3);
-                                return new CommandResponseDto { Success = true, Message = "[로컬 비상 직접 실행] 3초 후 4-Tier 시스템 강제 재부팅(/r /f) 시작" };
+                                return new CommandResponseDto { Success = true, Message = "[로컬 비상 직접 실행] 3초 후 4-Tier 시스템 강제 재부팅(/r /f) 시작", HandshakeLatencyMs = handshakeLatency };
                             }
                             else if (req.CommandType.Equals("Shutdown", StringComparison.OrdinalIgnoreCase))
                             {
                                 SystemPowerService.ScheduleForceShutdown(3);
-                                return new CommandResponseDto { Success = true, Message = "[로컬 비상 직접 실행] 3초 후 4-Tier 시스템 강제 종료(/s /f) 시작" };
+                                return new CommandResponseDto { Success = true, Message = "[로컬 비상 직접 실행] 3초 후 4-Tier 시스템 강제 종료(/s /f) 시작", HandshakeLatencyMs = handshakeLatency };
                             }
                         }
                     }
 
-                    return new CommandResponseDto { Success = false, Message = $"HTTP {(int)response.StatusCode}: {respJson}" };
+                    var failDto = new CommandResponseDto { Success = false, Message = $"HTTP {(int)response.StatusCode}: {respJson}", HandshakeLatencyMs = handshakeLatency };
+                    if (response.Headers.TryGetValues("X-WinPurify-Auth-Error-Point", out var errPoints)) failDto.AuthErrorPoint = errPoints.FirstOrDefault();
+                    if (response.Headers.TryGetValues("X-WinPurify-AuthCategory", out var categories)) failDto.AuthCategory = categories.FirstOrDefault();
+                    return failDto;
                 }
             }
             catch (Exception ex)
@@ -992,6 +1094,7 @@ namespace WinPurifyPro.Services
                     {
                         var directResp = await RemoteAgentService.Instance.ExecuteBatchCommandAsync(path, req);
                         directResp.Message = $"[로컬 엔진 직접 실행] {directResp.Message}";
+                        directResp.HandshakeLatencyMs = handshakeLatency;
                         return directResp;
                     }
                     catch (Exception localEx)
@@ -999,18 +1102,18 @@ namespace WinPurifyPro.Services
                         if (req.CommandType.Equals("Reboot", StringComparison.OrdinalIgnoreCase))
                         {
                             SystemPowerService.ScheduleForceReboot(3);
-                            return new CommandResponseDto { Success = true, Message = "[로컬 비상 직접 실행] 3초 후 4-Tier 시스템 강제 재부팅(/r /f) 시작" };
+                            return new CommandResponseDto { Success = true, Message = "[로컬 비상 직접 실행] 3초 후 4-Tier 시스템 강제 재부팅(/r /f) 시작", HandshakeLatencyMs = handshakeLatency };
                         }
                         else if (req.CommandType.Equals("Shutdown", StringComparison.OrdinalIgnoreCase))
                         {
                             SystemPowerService.ScheduleForceShutdown(3);
-                            return new CommandResponseDto { Success = true, Message = "[로컬 비상 직접 실행] 3초 후 4-Tier 시스템 강제 종료(/s /f) 시작" };
+                            return new CommandResponseDto { Success = true, Message = "[로컬 비상 직접 실행] 3초 후 4-Tier 시스템 강제 종료(/s /f) 시작", HandshakeLatencyMs = handshakeLatency };
                         }
-                        return new CommandResponseDto { Success = false, Message = $"로컬 직접 실행 오류: {localEx.Message}" };
+                        return new CommandResponseDto { Success = false, Message = $"로컬 직접 실행 오류: {localEx.Message}", HandshakeLatencyMs = handshakeLatency };
                     }
                 }
 
-                return new CommandResponseDto { Success = false, Message = $"Connection Error: {ex.Message} ({ip}:{port})" };
+                return new CommandResponseDto { Success = false, Message = $"Connection Error: {ex.Message} ({ip}:{port})", HandshakeLatencyMs = handshakeLatency };
             }
         }
     }

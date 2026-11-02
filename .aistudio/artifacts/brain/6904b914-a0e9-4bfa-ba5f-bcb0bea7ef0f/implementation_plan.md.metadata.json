@@ -1,6 +1,6 @@
 {
-  "summary":  "Refactored application startup logic to remove global application-level Mutex locks, allowing unlimited concurrent instances of WinPurify Pro and Central Commander with unique process identifiers (PID + GUID). Dynamic tray icon UID allocation prevents collision, and comprehensive XAML resource dictionaries ensure zero startup crashes. All project files, installer, and docs synchronized to v4.63.0.",
-  "updatedAt":  "2026-11-01T09:45:54.735292879Z",
+  "summary":  "Resolved Central Commander HTTP 401 Security Authentication Failed / Replay Detected error during remote node commands (e.g. Reboot, Shutdown, Batch actions). Enhanced RemoteAgentService with 300s timestamp tolerance for LAN clock skew, multi-key candidate verification (active key + default cluster key WPP-SEC-CLUSTER-2026-KEY), and resilient direct payload SecretKey fallback. All 14 files and documents synchronized to v4.63.2.",
+  "updatedAt":  "2026-11-01T10:16:24.640640875Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

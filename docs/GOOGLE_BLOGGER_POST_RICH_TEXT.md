@@ -1,13 +1,13 @@
 # 📢 Google Blogger [작성 모드 (서식 있는 텍스트)] 공식 포스팅 양식
 
 > **용도**: 구글 블로거(Blogger.com) 포스팅 시 **[작성 모드]**에서 그대로 복사하여 붙여넣을 수 있는 서식 있는 마크다운/텍스트 문서입니다.
-> **최신 버전**: v4.63.0  
+> **최신 버전**: v4.63.3  
 > **생성 일자**: 2026-11-01  
 
 ---
 
 # [1] 제목 (Title)
-WinPurify Pro v4.63.0 - 글로벌 애플리케이션 Mutex 제거 및 다중 인스턴스(Multi-Instance) 동시 실행 & Central Commander 무제한 공존 솔루션
+WinPurify Pro v4.63.3 - 원격 관제 인증 핸드셰이크 시계 오차(Clock Skew) 동적 학습 보정 및 HTTP 401 정밀 실패 진단 로깅 구축
 
 ---
 
@@ -17,13 +17,23 @@ WinPurify Pro v4.63.0 - 글로벌 애플리케이션 Mutex 제거 및 다중 인
 
 .NET 런타임 가비지 컬렉션(GC) 지연과 PowerShell 실행 오버헤드를 극복하기 위해 **순수 창작 C++ 네이티브 가속 코어(`PurifyEngineCore.dll`)**를 탑재하여, 기존 C# 관리 코드 대비 최대 15배 빠른 커널 레벨 디렉토리/레지스트리 탐색 속도를 제공합니다.
 
-특히 최신 **v4.63.0**에서는 기존에 동일 앱 중복 실행을 인위적으로 제한하던 글로벌 애플리케이션 레벨의 Mutex 락을 전면 제거하였습니다. 각 프로세스마다 고유한 프로세스 인스턴스 식별자(`AppEnvironment.ProcessInstanceId`)를 부여하여, 사용자가 여러 모니터나 서로 다른 디스크 작업 등을 위해 여러 개의 WinPurify Pro 창을 자유롭게 동시 구동할 수 있으며, Central Commander(중앙 관제 콘솔)와의 무제한 동시 실행 및 트레이 알림 격리를 완벽하게 지원합니다.
+특히 최신 **v4.63.3**에서는 원격 관제 REST API 핸드셰이크 시 클라이언트 IP별 동적 시계 오차 보정(`_clientClockOffsets`) 시스템과 정밀 5대 실패 진단 카테고리(`ClockSkew`, `SignatureMismatch`, `SecretKeyMismatch`, `ReplayAttack`, `CrossSite`) 로깅 체계를 도입하였습니다. HTTP 401 응답 수신 시 서명, 타임스탬프, 오차 초(초) 및 시크릿 키 불일치 사유가 투명하게 로그 및 헤더로 전달되어 실시간 원인 분석이 가능합니다.
 
 ---
 
 # [3] 업데이트 (Latest Features & Highlights)
 
-### ✨ v4.63.0 주요 신규 기능 및 개선 하이라이트
+### ✨ v4.63.3 주요 신규 기능 및 개선 하이라이트
+* **⏱️ 동적 시계 오차 학습 보정 시스템 (`_clientClockOffsets`)**:
+  * 커맨더 클라이언트 IP별 수신 타임스탬프 오차를 추적하여 오차를 동적으로 자동 학습 및 보정.
+  * 사설망 LAN PC 간 지속적인 시계 차이가 존재하더라도 초기 인증 성공 후 무오류 연속 관제 보장.
+* **🔍 HTTP 401 정밀 실패 진단 로깅 및 응답 헤더 연동 (`VerifySecurityTokenWithDetails`)**:
+  * 서명(`SignatureMismatch`), 타임스탬프 오차(`ClockSkew`), 시크릿키(`SecretKeyMismatch`), 재전송 공격(`ReplayAttack`), 외부 요청(`CrossSite`) 5대 카테고리 정밀 구분.
+  * 응답 헤더 `X-WinPurify-NodeTimestamp`, `X-WinPurify-ClockOffset`, `X-WinPurify-AuthCategory` 전송으로 원격 콘솔에서 즉시 원인 파악.
+* **🎨 다크 테마 ComboBox 드롭다운 테마 선택 항목 텍스트 가시성 결함 완벽 해결 (`ThemeComboBoxStyle`)**:
+  * Windows 기본 Aero2 테마의 흰색 팝업 배경(`SystemColors.WindowBrushKey`)과 다크 테마 전역 흰색 폰트(`TextPrimary`)가 겹치던 문제를 전용 템플릿을 통해 다크 카드(#111827) 배경 및 선명한 고대비 폰트로 전면 개선.
+* **🛡️ Central Commander 콤보박스 팝업 동일 고대비 템플릿 연동 (`CommanderMainWindow.xaml`)**:
+  * 중앙 관제 콘솔의 최적화 프로필 및 스케줄러 요일/시간 선택 콤보박스에도 동일한 다크 팝업 템플릿을 적용하여 일관된 사이버-글래스 테마 보장.
 * **⚡ 글로벌 애플리케이션 레벨 Mutex 제거 및 다중 인스턴스(Multi-Instance) 동시 실행 전면 허용**:
   * 단일 인스턴스 강제 종료(`Shutdown(0)`) Mutex 로직을 전면 해제하여 여러 개의 WinPurify Pro 프로세스를 독립적으로 동시 구동 가능.
   * Central Commander 콘솔 역시 독립적으로 동작하며 상호 Mutex 락 간섭 없이 완벽한 병렬 실행 지원.
@@ -80,9 +90,9 @@ WinPurify Pro v4.63.0 - 글로벌 애플리케이션 Mutex 제거 및 다중 인
 
 # [6] 버전 정보 (Version Information)
 
-* **공식 애플리케이션 버전**: `v4.63.0`
-* **어셈블리 버전**: `4.63.0.0`
-* **C++ 네이티브 가속 엔진**: `PurifyEngineCore.dll` (v4.63.0)
+* **공식 애플리케이션 버전**: `v4.63.1`
+* **어셈블리 버전**: `4.63.1.0`
+* **C++ 네이티브 가속 엔진**: `PurifyEngineCore.dll` (v4.63.1)
 * **어셈블리 아키텍처**: 64-bit (x64 Unpacked Multi-File)
 * **릴리스 일자**: 2026년 11월 1일
 
@@ -110,6 +120,10 @@ WinPurify Pro v4.63.0 - 글로벌 애플리케이션 Mutex 제거 및 다중 인
 
 # [9] 전체 업데이트 (Full Release History & Feature Improvements)
 
+* **v4.63.1 (2026-11-01)**: 다크 테마 ComboBox 드롭다운 테마 선택 항목 가시성(흰색 배경 위 흰색 폰트) 결함 수정, 전용 `ThemeComboBoxStyle` 커스텀 템플릿 신설.
+* **v4.63.0 (2026-11-01)**: 글로벌 뮤텍스 락 제거, 고유 프로세스 ID(PID+GUID) 기반 다중 인스턴스 및 Central Commander 동시 실행 전면 허용, 트레이 uID 동적 격리.
+* **v4.62.3 (2026-11-01)**: 시작 시퀀스 UI 비차단 비동기 예열 및 디스패처 워치독 기반 화면 표시(Visible) 절대 보장 체계 도입.
+* **v4.62.2 (2026-11-01)**: 메인 윈도우 XAML InverseBoolConverter 리소스 키 결함 수정 및 App.xaml 전역 사전 등록.
 * **v4.60.0 (2026-11-01)**: Recharts 기반 누적 디스크 회수(GB) & 최적화 효율 지수(%) 텔레메트리 대시보드 탑재, 구글 블로거 포스팅용 공식 문서 생성 파이프라인 완성.
 * **v4.59.0 (2026-11-01)**: Recharts 144개 모듈 실시간 탐색 I/O 스트림 영역 차트, 카테고리 공간 회수 막대 차트 및 정화 상태 도넛 차트 구현.
 * **v4.58.0 (2026-11-01)**: GitHub Actions Node.js 22 LTS 런타임 최신화, .gitignore 로컬 푸시 스크립트 제외 규칙 및 Inno Setup 무소음 방화벽 사전 등록 강화.
