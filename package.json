@@ -1,7 +1,7 @@
 {
   "name": "winpurify-portable",
-  "version": "4.68.3",
-  "description": "WinPurify v4.68.3 - Next-Gen Decoupled Native C++ & C# WPF 115-Module System Optimization Suite.",
+  "version": "4.71.1",
+  "description": "WinPurify Pro v4.71.1 - Clean Handover & Fresh Environment Suite (Auto Previous-User & Session Purge).",
   "author": "AhBiYout",
   "main": "electron-main.js",
   "scripts": {
@@ -59,8 +59,10 @@
       "dist-web/",
       "electron-main.js",
       "electron-remote-center.js",
+      "electron-ipc-shared.js",
       "preload.js",
       "metadata.json",
+      "modules.manifest.json",
       "WinPurify_icon.png",
       "WinPurify_logo.png",
       "PurifyEngineCore.dll"

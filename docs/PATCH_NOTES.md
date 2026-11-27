@@ -2,6 +2,178 @@
 
 ---
 
+## 📌 [v4.71.1] - 2026-11-27 (🔍 전수 자아성찰 및 보안 가드·재부팅 예약·원격 매트릭스·UI 일괄 수정)
+
+### 🛡️ 1. 파일시스템 보호 가드 · 재파스 포인트(Junction) 차단 · 재부팅 예약 정합성 수정 (`FreshHandoverService.cs`, `HandoverPolicyService.cs`, `electron-ipc-shared.js`)
+- **보호 경로 가드 확장 (`IsPathProtected`)**:
+  - C# 및 Electron 소거 엔진에서 `ProgramFiles`, `ProgramFiles(x86)`, `CommonApplicationData`(`C:\ProgramData`) 및 현재 로그인 사용자 루트(`%USERPROFILE%`) 자체에 대한 직·간접 삭제 요청을 추가 차단.
+- **NTFS Junction / 심볼릭 링크(`ReparsePoint`) 탐색·삭제 차단**:
+  - `ForceDeleteDirectory`, `EmptyDirectoryContentsPreservingRoot`, `ScanSimpleAppPathsAsync`가 `FileAttributes.ReparsePoint`를 먼저 판별하여 정션 링크 내부로 재귀 진입하지 않고 링크 자체만 안전하게 처리하도록 보강.
+- **Windows `PendingFileRenameOperations` 상향식(Bottom-Up) 예약 순서 교정**:
+  - 비어 있지 않은 잠금 폴더 전체를 바로 등록해 부팅 시 삭제가 실패하던 문제를 해결하기 위해, 삭제 가능한 일반 파일/폴더를 먼저 소거하고 **잠긴 하위 파일들을 먼저 예약한 뒤 상위 디렉터리를 후순위로 등록**하도록 C# 및 Electron(`removeOrQueueBottomUp`) 양쪽을 수정.
+- **부분 예외(`PathPrefix`) 카운트·용량 재계산 & 회수 통계 보정**:
+  - 경로 예외 규칙으로 일부 경로가 제외될 때 `DetectedCount`와 `EstimatedBytes`를 잔여 경로 기준으로 즉시 재산정하고, 잠금 미해결 오류 시 회수 용량(`reclaimedBytes`)이 과다 계상되지 않도록 수정. `HandoverPolicyService`의 `ArtifactId` 접두어 매칭도 Electron과 동일하게 통일.
+
+### 🌐 2. 원격 제어 무셸 전환 & LAN Fleet 매트릭스 파싱 오류 수정 (`RemoteAgentService.cs`, `HandoverFleetModal.tsx`, `index.tsx`)
+- **원격 브라우저 초기화 무셸(Shell-Free) 실행 (`RemoteAgentService.cs`)**:
+  - `RunHiddenCmd`(`cmd.exe /c`)를 완전 제거하고 `/browser-factory-reset`은 `Process.GetProcessesByName` 직접 종료 및 `FreshHandoverService.ForceDeleteDirectory`로, `/zero-trace-reset`은 `ProcessStartInfo.ArgumentList` 직접 실행으로 전환.
+- **Fleet 검증 매트릭스 파싱 정합성 수정 (`HandoverFleetModal.tsx`, `index.tsx`)**:
+  - C# 에이전트 응답(`RemainingProfiles`, `RemainingSessions`, `Reclaimed`, `Verified`)을 정확히 파싱하도록 정규식을 수정해 잔여 항목이 있을 때 오탐(`검증 통과`)이 표시되던 문제를 해결.
+  - Central Commander의 `FreshHandover` 일괄 명령 시 사용자 편집 `secretKey: clusterKey` 및 `terminateProcessesBeforePurge: true`가 함께 전달되도록 수정.
+
+### ⚡ 3. Electron 스캔 커버리지 확장 & WPF UI 하이라이트 보완 (`electron-ipc-shared.js`, `MainWindow.xaml`, `ValueConverters.cs`, `MainViewModel.Handover.cs`)
+- **Electron 네이티브 스캐너 대상 확장 & 허용 프로세스 선종료**:
+  - Electron `scan-handover`에 `Slack`, `Telegram`, `Zoom`, `OneAuth`, `Adobe OOBE`, `OneDrive`, `.ssh`, `NPKI`, `Recent\AutomaticDestinations`를 추가하고, `execute-handover-purge`에 허용 목록(`SAFE_HANDOVER_PROCESS_SET`) 기반 안전 프로세스 선종료 지원.
+- **WPF 도메인 필터 활성 탭 강조 & 재부팅 예약 건수 배너 표시**:
+  - `ValueConverters.cs`에 `HandoverFilterActiveBg/Fg/BorderConverter`를 추가해 `MainWindow.xaml` 필터 버튼(`전체`, `브라우저`, `앱/개발`, `자격증명`, `개인폴더`) 활성 상태를 명확히 표시하고, 검증 배너에 `HandoverPendingRebootCount`를 노출. `DetectedSessionArtifactsCount`에서 예외 처리된 항목은 제외하도록 통일.
+
+---
+
+## 📌 [v4.71.0] - 2026-11-27 (🚀 클린 인수인계 고도화: 잠금 재부팅 예약 · 인증서 발급 · 예외 관리 · AI/개발도구 탐지 · LAN 일괄 검증 대시보드)
+
+### 🛡️ 1. 클린 인수인계 완결성 강화 · 잠금 파일 재부팅 예약 · 검증 인증서 내보내기 (`HandoverPolicyService.cs`, `FreshHandoverService.cs`, `electron-ipc-shared.js`)
+- **재부팅 시 자동 삭제 예약(`PendingFileRenameOperations`) 및 안전 재부팅**:
+  - Windows 탐색기나 백그라운드 서비스가 점유하여 즉시 삭제되지 않는 잠금 파일/폴더를 `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\PendingFileRenameOperations`에 `\??\<fullPath>` 형태로 안전하게 등록(시스템 보호 경로 및 심볼릭 링크/리파스 포인트 차단 가드 준수).
+  - 정화 완료 배너에서 예약된 경로 목록을 즉시 확인하고, 인라인 확인을 거쳐 안전 재부팅(`shutdown.exe /r /f /t 5` / `SystemPowerService`)을 원클릭 실행 가능.
+- **오프라인 검증 인증서(HTML / JSON) 내보내기**:
+  - 실행 PC명, 실행 계정, 적용 정책, 소거 항목 스냅샷, 회수 용량, 보존 예외 건수, 재부팅 예약 경로 및 2차 재스캔 무결성 판정 결과를 담은 독립형 HTML 인증서 및 감사 JSON 리포트 발급 기능 탑재 (`WebUtility.HtmlEncode` / `escapeHtml` 적용).
+
+### 🔎 2. AI/개발 도구 탐지 확장 · 영구 보존 예외(Whitelist) 관리자 (`HandoverModels.cs`, `handoverData.ts`, `HandoverWorkspace.tsx`)
+- **AI 에디터 및 개발 워크스테이션 인증 캐시 탐지 추가 (`app-ai-dev-workstation`)**:
+  - `Cursor`, `VS Code Auth/Copilot`, `GitHub CLI (hosts.yml)`, `Docker Desktop (.docker)`, `Postman`, `Figma` 등 PC 양도 시 누락되기 쉬운 개발·AI 도구 세션을 WPF 및 Electron 네이티브 스캐너 모두에 통합.
+- **보존 예외 목록(Whitelist Exclusion Manager) 영구 관리**:
+  - `%ProgramData%\WinPurifyPro\handover_exclusions.json` (WPF) 및 Electron `userData/handover-exclusions.json`에 `ArtifactId` / `PathPrefix` 예외 규칙을 영구 저장하며, 스캔·삭제·재검증 전 과정에서 예외 대상을 자동 보호.
+
+### ⚡ 3. 실시간 4단계 진행률 · 필터별 일괄 선택 · 항목 상세/잠금 드로어 UX (`MainViewModel.Handover.cs`, `MainWindow.xaml`, `HandoverWorkspace.tsx`)
+- **실시간 4단계 진행 상태 및 라이브 로그 스트림**:
+  - WPF(`IProgress<HandoverProgressReport>`)와 Electron(`'handover-progress'` IPC 이벤트) 양쪽 모두에서 `[1/4 잠금·예외 검증] -> [2/4 프로필·세션 소거] -> [3/4 재부팅 예약/정리] -> [4/4 2차 재스캔]` 진행률과 처리 대상 로그를 실시간 표시.
+- **카테고리별 일괄 선택/해제 및 상세·잠금 인스펙터**:
+  - 현재 필터(전체/브라우저/앱·AI·메신저/자격증명/개인폴더) 범위 내 `전체 선택` / `선택 해제` 버튼과 행 클릭 시 실제 대상 경로·연관 잠금 프로세스·예외 추가 버튼을 보여주는 상세 패널 추가.
+
+### 🌐 4. LAN 작업실 원격 일괄 인수인계 검증 대시보드 고도화 (`HandoverFleetModal.tsx`, `RemoteAgentService.cs`, `remote-center.html`)
+- **전용 LAN Fleet Handover 모달 (`HandoverFleetModal.tsx`)**:
+  - 대상 LAN PC 다중 선택, 정책(`PreviousUsersAndSessions` / `SessionsOnly` / `FullMachineReset`), 잠금 프로세스 선종료 및 재부팅 예약 옵션을 설정해 `/api/v1/batch/fresh-handover` 배포 후 PC별 검증 매트릭스(`채널`, `회수/소요시간`, `재부팅 예약`, `검증 통과`) 표출.
+- **Central Commander 콘솔 연동 개선 (`remote-center.html`, `RemoteAgentService.cs`)**:
+  - `SchedulePendingReboot` 원격 옵션 및 `PendingReboot:`/`Remaining:` 상세 파싱 결과를 실시간 관제 로그와 매트릭스에 연동.
+
+---
+
+## 📌 [v4.70.1] - 2026-11-27 (🔍 전수 자아성찰 보안·기능 오류 수정 및 /docs 문서 최신화)
+
+### 🔒 1. Clean Handover · Electron IPC · Dev-Server 보안 및 무결성 강화
+- **Win32 Credential Manager P/Invoke 직접 소거 & 무셸(Shell-Free) 실행 (`Services/FreshHandoverService.cs`)**:
+  - `cmd.exe /c cmdkey /delete:"..."` 셸 호출을 `Advapi32.dll` (`CredEnumerateW` / `CredDeleteW` / `CredFree`) 직접 P/Invoke로 교체하여 자격증명 이름 특수문자에 의한 셸 파싱 왜곡 가능성을 원천 차단.
+  - `reg.exe`/`net.exe` 정리 및 CIM 프로필 제거를 `ProcessStartInfo.ArgumentList` 직접 실행과 엄격한 도메인 SID 정규식(`^S-1-5-21-\d+(-\d+)+$`) 검증으로 강화하고, 잠금 프로세스 종료 시 `Process` 핸들을 즉시 `using` 해제하도록 개선.
+  - Step 4 2차 무결성 검증 시 낙관적 카운트(`DetectedCount = 0`) 대신 실제 디스크 및 자격 증명 재스캔을 수행하여 미제거 항목·오류 여부를 정확히 보고.
+- **Electron IPC 경로 가드 & Challenge-Response 강제 (`electron-ipc-shared.js`, `index.tsx`)**:
+  - `execute-handover-purge`에 `os.homedir()`, 드라이브 루트, `SystemRoot`, `ProgramFiles`, `userData`, `defaultuser0` 및 심볼릭 링크(`lstatSync`) 차단을 추가하고, 개인 폴더(`PersonalFolder`)는 폴더 루트를 삭제하지 않고 내용만 비우는 `emptyRootPaths`로 분리.
+  - `scan-handover`가 빈 아티팩트를 반환할 때 더미 목록으로 덮어쓰지 않도록 교정하고, 소거 직후 실제 2차 재스캔 검증과 `FreshHandover` 원격 명령의 Challenge-Response 핸드셰이크를 강제.
+- **웹 개발 서버 경로 격리 & Origin 검증 (`dev-server.js`)**:
+  - 정적 파일 경로 검증에 `rootDir + path.sep` 경계 검사, `decodeURIComponent`/NULL 바이트 차단, 도트파일(`.git`, `.env`) 및 백엔드 소스 노출 차단, `readBody` 1MB 상한 및 `Sec-Fetch-Site: cross-site` 거부를 적용.
+
+### 🖥️ 2. WPF / Commander UI 바인딩 및 원격 프리셋 정합성 수정
+- **사이드바 워크스페이스/카테고리 활성 하이라이트 & 체크박스 교정 (`MainWindow.xaml`, `MainViewModel.cs`, `MainViewModel.Handover.cs`, `Models/HandoverModels.cs`)**:
+  - 워크스페이스 전환 시 두 워크스페이스 버튼과 `전체 모듈` 버튼이 동시에 강조되던 현상을 `IsHandoverWorkspace`/`IsModulesWorkspace` 트리거 및 `ActiveModuleCategoryHighlight`로 해결.
+  - `DetectedUserProfile.IsDeletable` 및 `IsProtected` 바인딩으로 현재 계정/보호 항목 체크박스를 정확히 비활성화하고 `CommandManager.InvalidateRequerySuggested()`로 실행 버튼 활성 상태를 즉시 갱신.
+- **원격 `FreshHandover` DTO & Electron 콘솔 연동 (`Models/RemoteCommanderModels.cs`, `Services/RemoteAgentService.cs`, `remote-center.html`, `sync-version.js`)**:
+  - `BatchCommandRequest`에 `Preset` 별칭 및 `PresetName` 호환 처리를 추가하고 검증 실패 시 `response.Success`가 정확히 반영되도록 수정.
+  - `remote-center.html`에 `✨ 새 환경 인수인계 초기화` 일괄 버튼과 최신 버전 배지(`sync-version.js` 자동 동기화 포함)를 반영.
+
+### 📚 3. `/docs/` 기술 문서 현행화 & 보안 검증 리포트 작성
+- `docs/README.md`, `docs/DOCUMENTATION_INDEX.md`, `docs/SECURITY_AUDIT_REPORT.md`, `docs/WPF_MVVM_ARCHITECTURE_GUIDE.md`, `docs/REMOTE_COMMANDER_SPEC.md`, `docs/CLI_AUTOMATION_GUIDE.md`, `docs/WINDOWS_SERVICE_GUIDE.md`, `docs/UNATTENDED_INSTALLATION_GUIDE.md`, `docs/MODULES_PRECISION_DIAGNOSTICS_REPORT.md`, `docs/WorkLog.md`를 `v4.70.1` 아키텍처에 맞게 전면 갱신하고 `walkthrough.md`에 점검 및 PoC 검증 내역을 기록.
+
+---
+
+## 📌 [v4.70.0] - 2026-11-22 (✨ 앱 정체성 재정의: 이전 사용자·앱·로그인 세션 자동 탐지 및 새 사용자 클린 환경 인수인계 스위트 전면 개편)
+
+### 🧹 1. 핵심 엔진: 전 사용자·다중 프로필 자동 탐지 및 클린 환경 인수인계 (`Models/HandoverModels.cs`, `Services/FreshHandoverService.cs`)
+- **앱 실행 즉시 비파괴 자동 탐지 (Launch Auto-Discovery + Explicit 1-Click Confirmation)**:
+  - 앱 기동과 동시에 `HKLM\...\ProfileList` SID 및 고립된 `C:\Users\*` 디렉터리를 전수 열거하고, 이전 사용자 프로필·앱 데이터·브라우저 세션·OS 자격 증명 잔여물을 비파괴 스캔하여 시각화.
+  - 실제 삭제는 사용자의 **명시적 1-Click 확인 모달** 승인 또는 무인 양도용 CLI 플래그(`--handover-auto`, `--zero-trace`)를 통해서만 실행.
+- **전 사용자 · 다중 브라우저 프로필 · 앱/OS 세션 완전 소거 파이프라인**:
+  - `AccountCredentialPurgeService.cs`에 `EnumerateChromiumProfiles()`를 신설해 `Default`뿐 아니라 `Profile *`, `Guest Profile` 등 모든 Chromium 다중 프로필(Chrome, Edge, Whale, Brave) 및 Firefox 프로필을 누락 없이 소거.
+  - 카카오톡, Discord, Slack, Telegram, Zoom, Adobe/Autodesk, OneDrive, `.ssh`/Git, NPKI/GPKI 공동인증서, Steam/Riot/Epic 런처, Windows Credential Vault, RDP/SMB, JumpLists/RunMRU, 선택형 개인 폴더(`Desktop`, `Documents`, `Downloads`, `Pictures`, `Videos`) 통합 정화.
+  - 삭제 전 파일 잠금 프로세스 선종료, `HKU\<SID>` 레지스트리 하이브 언로드, `DeleteProfileW` + CIM + 강제 디렉터리 소거, **실행 직후 2차 잔여물 재검증 스캔**까지 완결.
+- **시스템 안전 가드 & 자체 보존(`IsPathProtected`)**:
+  - `SYSTEM`, `LocalService`, `NetworkService`, `Public`, `Default`, `Default User`, `All Users`, Windows/Program Files 루트, 현재 실행 중인 `WinPurify Pro` 경로 및 현재 로그인 계정의 SID 등록 말소를 영구 차단.
+
+### 🖥️ 2. WPF / Electron / React 통합 Workspace UX 개편 (`MainWindow.xaml`, `MainViewModel.Handover.cs`, `HandoverWorkspace.tsx`, `index.tsx`)
+- **기본 랜딩 화면을 "새 사용자 환경 초기화 (Clean Handover)"로 전환**:
+  - 좌측 사이드바 최상단 `WORKSPACE` 전환기로 **새 사용자 환경 초기화(기본)** 와 **144개 정밀 최적화 모듈**을 자유롭게 오갈 수 있으며, 기존 카테고리 클릭 시 모듈 뷰로 즉시 전환.
+  - WPF 및 React/Electron 모두 단일 고도 보더(flat 1px border), `Plus Jakarta Sans` + `JetBrains Mono` (`tabular-nums`), 상태별 UI(`Scanning`, `Ready`, `Purging`, `Verified`) 적용 및 Electron IPC(`scan-handover`, `execute-handover-purge`) 실측 연동.
+- **LAN 일괄 인수인계 초기화 배포 (`RemoteAgentService.cs`, `index.tsx`)**:
+  - `/api/v1/batch/fresh-handover` 및 `FreshHandover` 원격 명령 라우팅을 추가하여 Central Commander에서 작업실 LAN PC 전체를 새 사용자용 클린 상태로 원격 초기화 가능.
+
+---
+
+## 📌 [v4.69.2] - 2026-11-22 (🔍 전수 자아성찰 및 C#/WPF·Electron·TypeScript 핵심 오류 일괄 수정)
+
+### 🖥️ 1. WPF / C# ViewModel · 보안 검증기 오류 수정 및 널 안전성 강화
+- **Central Commander 특수 기능 센터 커맨드 누락 수정 (`ViewModels/CommanderViewModel.cs`)**:
+  - `CommanderMainWindow.xaml`의 4개 서브 카테고리 탭(`All`, `Account`, `Browser`, `Forensics`)에 바인딩되어 있으나 ViewModel에 선언/초기화되지 않았던 `SetSpecialCategoryCommand`를 추가하고, 기본 `SpecialOpCategory`를 `"Profile"`에서 `"All"`로 교정하여 모달 진입 시 모든 탭과 카드가 정상 필터링되도록 개선.
+- **WPF 커스텀 모듈 카운트 바인딩 동기화 (`ViewModels/MainViewModel.Optimization.cs`)**:
+  - `LoadTasks()` 실행 시 `SpecialSubCategoryCount*` 프로퍼티 변경 알림을 전파하여 동적 모듈 추가·삭제 시 서브 카테고리 카운트가 즉시 갱신되도록 보완.
+- **Challenge-Response IP 바인딩 검증 강화 (`Services/RemoteAuthValidator.cs`)**:
+  - 발급된 `ChallengeNonce`가 발급 대상 IP(`ClientIp`)와 일치하는지 교차 검증(`challenge_ip_mismatch`)하여 타 호스트에서의 Challenge 재사용을 차단.
+- **원격 명령 라우팅 NullReferenceException 방어 (`Services/RemoteAgentService.cs`, `Services/RemoteCommanderManager.cs`)**:
+  - `req.CommandType.Equals(...)` 직접 호출을 널 안전 `string.Equals(req.CommandType, ..., StringComparison.OrdinalIgnoreCase)`로 전면 교체하여 `commandType: null` 페이로드 수신 시 런타임 예외 차단.
+
+### ⚡ 2. Electron 데스크톱 IPC 아키텍처 통합 및 보안 결함 수정
+- **공용 IPC / 키 볼트 / LAN 탐색 모듈 분리 (`electron-ipc-shared.js`, `electron-main.js`, `electron-remote-center.js`)**:
+  - `electron-main.js` 실행 시 누락되어 있던 11개 클러스터 IPC 핸들러(`discover-nodes`, `fetch-telemetry`, `fetch-challenge`, `pair-node`, `send-batch-command`, `get/save/regenerate-cluster-key`, `reset-node-trust`, `open-log-folder`, `save-logs`)를 공용 모듈 `electron-ipc-shared.js`로 통합 등록하고 `package.json` 패키징 파일 목록에 반영.
+- **`preload.js` 화살표 함수 `arguments[1]` 결함 수정**:
+  - `fetchTelemetry`와 `fetchChallenge` 화살표 함수 내부에서 CommonJS 래퍼의 `arguments[1]`(`require`)을 참조하던 버그를 명시적 `(options, port)` 인자 전달로 수정.
+- **Zero-Config 페어링 DTO 호환 및 DOM XSS/텔레메트리 교정 (`electron-ipc-shared.js`, `remote-center.html`)**:
+  - `pair-node` 요청 본문에 C# `StudioPairRequestDto`와 일치하는 `commanderMachineName` 필드를 기본 포함.
+  - `remote-center.html`에 `escapeHtml()` 적용 및 인라인 `onclick` 문자열 대신 `data-*` 이벤트 위임으로 교체하고 `totalRulesCount` 텔레메트리 필드를 우선 참조하도록 수정.
+
+### ⚛️ 3. React / TypeScript 컴파일 오류 수정 및 실측 Electron 연동 (`index.tsx`, `CommanderSecurityStrip.tsx`, `sync-version.js`)
+- **`tsc` 컴파일 오류 4건 완전 해결 (`index.tsx`)**:
+  - 스캔 대시보드 차트에서 존재하지 않는 `m.checked` 프로퍼티를 참조하던 3개소(`BarChart`, `PieChart`)를 `m.selected`로 교정하여 선택/완료 통계를 복구.
+  - 업데이트 모달의 `onClick={handleCheckGitHubUpdates}`를 `onClick={() => handleCheckGitHubUpdates(true)}`로 수정해 `MouseEvent` 인자 타입 충돌 해소.
+  - `Window.electronAPI` 타입 정의를 `preload.js`와 100% 일치시키고, 사이드바 카테고리 뱃지 카운트를 동적 집계로 전환했으며, `CommanderSecurityStrip`·노드 탐색·텔레메트리 갱신·키 볼트를 실제 `window.electronAPI`와 연동.
+- **버전 동기화 범위 확장 (`sync-version.js`)**:
+  - Electron 관련 5개 파일(`electron-main.js`, `electron-remote-center.js`, `electron-ipc-shared.js`, `preload.js`, `remote-center.html`)까지 `sync-version.js` 자동 버전 동기화 대상에 포함.
+
+---
+
+## 📌 [v4.69.1] - 2026-11-15 (🛠️ validate-xaml.ps1 PowerShell 변수 보간 중괄호(${var}) 표준화 및 파서 안전성 강화)
+
+### 🛠️ PowerShell 문자열 보간 구문 표준화 (`validate-xaml.ps1`)
+- **명시적 중괄호 보간(`${...}`) 전면 적용**:
+  - `validate-xaml.ps1` 내 모든 에러 포맷 및 콘솔 출력 문자열에서 `$curLine`, `$curCol`, `$relPath`, `$rawTag`, `$keyValue`, `$prevLine`, `$closeLine`, `$closeCol`, `$lineCount`, `$totalFilesChecked`, `$totalErrors` 등을 `${var}` 형태로 명시하여 PowerShell 5.1/7.x 인터프리터의 `InvalidVariableReferenceWithDrive` 구문 예외 가능성을 원천 차단.
+
+---
+
+## 📌 [v4.69.0] - 2026-11-15 (🏗️ 소규모 작업실 아키텍처 심층 개편: TLS 9874 + DPAPI 키 금고 + JSON 동적 모듈 + 4중 엔진 추적 강화)
+
+### 🔐 1. 단일 공유기 작업실 맞춤형 Zero-Trust 네트워크 & 암호화 보안 강화
+- **자체 서명 ECDSA P-256 TLS(TCP:9874) + TOFU(Trust On First Use) 인증서 피닝**:
+  - `RemoteTlsServer.cs` 및 `electron-remote-center.js`에 내장 `SslStream`/`https` TLS 1.2/1.3 트랜스포트를 신설하여 평문 HTTP 제어 트래픽 도청을 원천 차단.
+  - 최초 연결 노드의 SHA-256 인증서 지문을 로컬 `trusted_nodes.json` / `trusted-nodes.json`에 고정(TOFU)하고 지문 변경 시 즉시 차단 및 알림 제공.
+  - 방화벽 자동 구성(`FirewallService.cs`)에 TLS 9874 포트 규칙을 통합.
+- **DPAPI / `safeStorage` 기반 클러스터 키 금고 & 평문 비밀키 제거 (`ClusterSecurityVault.cs`, `src/securityVault.ts`)**:
+  - 기존 하드코딩 기본 키(`WinPurifyClusterKey2026`, `WPP-SEC-CLUSTER-2026-KEY`)를 전면 폐기하고 최초 기동 시 256-bit 고엔트로피 랜덤 마스터 키(`WPP-STD-...`)를 생성해 Windows DPAPI(`LocalMachine` 범위) / Electron `safeStorage`에 암호화 보관.
+  - 모든 원격 REST 요청 본문에서 평문 `secretKey` 필드 전송을 100% 제거하고(`RemoteAuthValidator.cs`에서 평문 키 수신 시 `[plaintext_secret_deprecated]` 차단), `GET /api/v1/telemetry`까지 HMAC-SHA256 서명 인증 적용.
+- **6자리 일회용 PIN 기반 작업실 1-Click TLS 페어링 & 하이브리드 LAN 탐색 (`HybridNodeDiscoveryService.cs`)**:
+  - 복잡한 32자리 키 수동 복사 없이 C# Commander·Electron Commander·웹 콘솔에서 6자리 일회용 PIN을 발급/입력해 `POST /api/v1/auth/pair`로 암호화 키를 안전하게 교환.
+  - UDP 9871 멀티 NIC 브로드캐스트와 병행하여, 공유기 브로드캐스트 격리 환경에서도 `/24` 서브넷 TCP `9874`/`9870` 고속 병렬 탐지로 노드를 자동 발견.
+
+### 🧩 2. 모놀리식 코드 분할 및 WPF/Electron/React 모듈 카탈로그 단일화
+- **단일 JSON 매니페스트(`modules.manifest.json` Schema v2.0) 및 런타임 커스텀 모듈**:
+  - C#(`TaskDataSeeder.cs` + `CustomModuleService.cs`)와 React/Electron(`src/modulesData.ts`)이 이중 관리하던 144개 모듈 정의를 루트 `modules.manifest.json`으로 완전 통합.
+  - WPF `MainViewModel.Optimization.cs` 및 React `CustomModuleModal.tsx`를 통해 코드 재컴파일 없이 작업실 전용 커스텀 정화 모듈(`custom-modules.json` / `localStorage`)을 동적으로 추가/삭제 가능.
+- **거대 클래스/파일 분할 리팩토링**:
+  - `ViewModels/MainViewModel.cs`를 `MainViewModel.cs`(상태/커맨드), `MainViewModel.Optimization.cs`(정화/커스텀 모듈/엔진 추적), `MainViewModel.Diagnostics.cs`(스케줄러/HUD/진단/업데이트) partial 구조로 분리.
+  - `RemoteAgentService.cs`에서 인증 검증 로직을 `RemoteAuthValidator.cs`로 분리하고, `index.tsx`에서 `CommanderSecurityStrip.tsx`, `CustomModuleModal.tsx`, `securityVault.ts` 모듈을 분리.
+
+### ⚙️ 3. 하이브리드 4중 엔진 예외 처리·타임아웃 및 실행 추적성 고도화
+- **구조화된 페일오버 추적(`EngineAttemptTrace`) 및 Pre-flight UAC 권한 점검 (`MultiEngineDispatcher.cs`)**:
+  - 기존의 무음 `catch { }` 블록을 제거하고 각 엔진 계층(`NativeCPlusPlus` → `FastCLI` → `PowerShellCore` → `ManagedAPI`)의 시도 결과, 종료 코드, 소요 시간(`ElapsedMs`), 실패 원인을 `EngineAttemptTrace` 및 `LastFailureDiagnosis`에 상세 기록.
+  - 모듈별 동적 타임아웃(`TimeoutSeconds`, DISM 등 장기 작업 120~180s)과 비동기 `OutputDataReceived`/`ErrorDataReceived` 스트림 캡처를 도입해 OS 파이프 데드락 방지.
+
+---
+
 ## 📌 [v4.68.3] - 2026-11-02 (🛠️ validate-xaml.ps1 PowerShell 변수 파서 InvalidVariableReferenceWithDrive 구문 수정)
 
 ### 🛠️ PowerShell 문자열 보간 드라이브 구문 파싱 예외 완전 해결 (`validate-xaml.ps1`)

@@ -21,7 +21,7 @@ if ([string]::IsNullOrWhiteSpace($TargetDir)) {
 
 $resolvedDir = Resolve-Path -Path $TargetDir -ErrorAction SilentlyContinue
 if (-not $resolvedDir) {
-    Write-Host "[ERROR] Target directory not found: $TargetDir" -ForegroundColor Red
+    Write-Host "[ERROR] Target directory not found: ${TargetDir}" -ForegroundColor Red
     exit 1
 }
 
@@ -112,7 +112,7 @@ foreach ($file in $xamlFiles) {
                 if ($hasKey) {
                     # 1. Non-empty key check
                     if ([string]::IsNullOrWhiteSpace($keyValue)) {
-                        $fileErrors += "$relPath($curLine,$curCol): [Invalid Key] Tag '<$rawTag>' defines an empty or whitespace-only Key. ResourceDictionary keys must be non-empty."
+                        $fileErrors += "${relPath}(${curLine},${curCol}): [Invalid Key] Tag '<${rawTag}>' defines an empty or whitespace-only Key. ResourceDictionary keys must be non-empty."
                     }
 
                     # 2. MC3023 Violation Check: Key attribute on non-Dictionary container
@@ -120,15 +120,15 @@ foreach ($file in $xamlFiles) {
                         $parent = $elementStack.Peek()
                         
                         if (-not $parent.IsDictionary) {
-                            $err = "$relPath($curLine,$curCol): error MC3023: Key attribute can only be used on a tag contained in a Dictionary (such as a ResourceDictionary). " +
-                                   "Tag '<$rawTag>' defines Key=`"$keyValue`" but is nested inside non-Dictionary tag '<$($parent.Tag)>' (opened at Line $($parent.Line), Col $($parent.Col)). " +
+                            $err = "${relPath}(${curLine},${curCol}): error MC3023: Key attribute can only be used on a tag contained in a Dictionary (such as a ResourceDictionary). " +
+                                   "Tag '<${rawTag}>' defines Key=`"${keyValue}`" but is nested inside non-Dictionary tag '<$($parent.Tag)>' (opened at Line $($parent.Line), Col $($parent.Col)). " +
                                    "Hint: Check for unclosed preceding tags (e.g., missing </Setter>, </Style>, or </ControlTemplate>) right above this tag."
                             $fileErrors += $err
                         } else {
                             # 3. Duplicate Key Check within current ResourceDictionary scope
                             if ($parent.Keys.ContainsKey($keyValue)) {
                                 $prevLine = $parent.Keys[$keyValue]
-                                $fileErrors += "$relPath($curLine,$curCol): [Duplicate Key] Duplicate Key=`"$keyValue`" detected on '<$rawTag>'. Already defined at Line $prevLine in this dictionary scope. Duplicate keys will cause runtime initialization failure."
+                                $fileErrors += "${relPath}(${curLine},${curCol}): [Duplicate Key] Duplicate Key=`"${keyValue}`" detected on '<${rawTag}>'. Already defined at Line ${prevLine} in this dictionary scope. Duplicate keys will cause runtime initialization failure."
                             } else {
                                 $parent.Keys[$keyValue] = $curLine
                             }
@@ -136,7 +136,7 @@ foreach ($file in $xamlFiles) {
                     } else {
                         # Key on root element without dictionary container
                         if (-not $isDict) {
-                            $fileErrors += "$relPath($curLine,$curCol): error MC3023: Root tag '<$rawTag>' defines Key=`"$keyValue`" outside of any ResourceDictionary."
+                            $fileErrors += "${relPath}(${curLine},${curCol}): error MC3023: Root tag '<${rawTag}>' defines Key=`"${keyValue}`" outside of any ResourceDictionary."
                         }
                     }
                 }
@@ -157,12 +157,12 @@ foreach ($file in $xamlFiles) {
                     if ($top.Tag -ne $xmlReader.Name) {
                         $closeLine = $xmlReader.LineNumber
                         $closeCol = $xmlReader.LinePosition
-                        $fileErrors += "$relPath($closeLine,$closeCol): [Tag Mismatch] Expected closing tag </$($top.Tag)> (opened at Line $($top.Line), Col $($top.Col)), but found </$($xmlReader.Name)>."
+                        $fileErrors += "${relPath}(${closeLine},${closeCol}): [Tag Mismatch] Expected closing tag </$($top.Tag)> (opened at Line $($top.Line), Col $($top.Col)), but found </$($xmlReader.Name)>."
                     }
                 } else {
                     $closeLine = $xmlReader.LineNumber
                     $closeCol = $xmlReader.LinePosition
-                    $fileErrors += "$relPath($closeLine,$closeCol): [Unexpected Close] Closing tag </$($xmlReader.Name)> without matching opening tag."
+                    $fileErrors += "${relPath}(${closeLine},${closeCol}): [Unexpected Close] Closing tag </$($xmlReader.Name)> without matching opening tag."
                 }
             }
         }
@@ -172,24 +172,24 @@ foreach ($file in $xamlFiles) {
         # Check for unclosed tags remaining on the stack
         while ($elementStack.Count -gt 0) {
             $unclosed = $elementStack.Pop()
-            $fileErrors += "$relPath($($unclosed.Line),$($unclosed.Col)): [Unclosed Tag] Tag '<$($unclosed.Tag)>' was opened but never closed before end-of-file."
+            $fileErrors += "${relPath}($($unclosed.Line),$($unclosed.Col)): [Unclosed Tag] Tag '<$($unclosed.Tag)>' was opened but never closed before end-of-file."
         }
         
     } catch [System.Xml.XmlException] {
-        $fileErrors += "$relPath($($_.Exception.LineNumber),$($_.Exception.LinePosition)): [XML Parse Error] $($_.Exception.Message)"
+        $fileErrors += "${relPath}($($_.Exception.LineNumber),$($_.Exception.LinePosition)): [XML Parse Error] $($_.Exception.Message)"
     } catch {
-        $fileErrors += "$relPath(1,1): [System Error] $($_.Exception.Message)"
+        $fileErrors += "${relPath}(1,1): [System Error] $($_.Exception.Message)"
     }
 
     if ($fileErrors.Count -eq 0) {
         $lineCount = ($content -split "`r?`n").Length
-        Write-Host "  [PASS] $relPath ($lineCount lines) - Validated" -ForegroundColor Green
+        Write-Host "  [PASS] ${relPath} (${lineCount} lines) - Validated" -ForegroundColor Green
     } else {
         $totalErrors += $fileErrors.Count
         $failedFiles += $relPath
-        Write-Host "`n  [FAIL] $relPath ($($fileErrors.Count) error(s) detected):" -ForegroundColor Red
+        Write-Host "`n  [FAIL] ${relPath} ($($fileErrors.Count) error(s) detected):" -ForegroundColor Red
         foreach ($err in $fileErrors) {
-            Write-Host "    --> $err" -ForegroundColor Yellow
+            Write-Host "    --> ${err}" -ForegroundColor Yellow
         }
         Write-Host ""
     }
@@ -197,13 +197,13 @@ foreach ($file in $xamlFiles) {
 
 Write-Host "---------------------------------------------------------------------" -ForegroundColor Cyan
 if ($totalErrors -eq 0) {
-    Write-Host "[SUCCESS] All $totalFilesChecked XAML file(s) passed MC3023 ResourceDictionary & XML syntax validation!" -ForegroundColor Green
+    Write-Host "[SUCCESS] All ${totalFilesChecked} XAML file(s) passed MC3023 ResourceDictionary & XML syntax validation!" -ForegroundColor Green
     Write-Host "          Pipeline ready to proceed to MSVC C++ & MSBuild/.NET compilation.`n" -ForegroundColor DarkGreen
     exit 0
 } else {
-    Write-Host "[FATAL] Pre-Build XAML Validation failed with $totalErrors error(s) across $($failedFiles.Count) file(s):" -ForegroundColor Red
+    Write-Host "[FATAL] Pre-Build XAML Validation failed with ${totalErrors} error(s) across $($failedFiles.Count) file(s):" -ForegroundColor Red
     foreach ($f in $failedFiles) {
-        Write-Host "  - $f" -ForegroundColor Yellow
+        Write-Host "  - ${f}" -ForegroundColor Yellow
     }
     Write-Host "`nHALTING BUILD PIPELINE before MSVC/MSBuild starts to prevent wasted compilation time." -ForegroundColor Red
     Write-Host "Please resolve the MC3023 / syntax errors above and re-run the build script.`n" -ForegroundColor Red

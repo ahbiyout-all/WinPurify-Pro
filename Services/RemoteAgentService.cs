@@ -18,9 +18,10 @@ namespace WinPurifyPro.Services
 {
     /// <summary>
     /// 대상 PC에서 실행되는 백그라운드 관리 에이전트 서비스
-    /// - TCP 9870 포트 보안 REST 엔드포인트 수신
-    /// - UDP 9871 포트 자동 브로드캐스트 탐색(Discovery) 응답
-    /// - HMAC-SHA256 디지털 서명 및 타임스탬프 기반 4중 보안 검증
+    /// - TCP 9874 TLS 1.2/1.3 암호화 HTTPS 수신기 (Zero-Config ECDSA 자체 서명 인증서)
+    /// - TCP 9870 호환 REST 엔드포인트 (Challenge/PIN 핸드셰이크)
+    /// - UDP 9871 포트 자동 브로드캐스트 탐색 응답 (TLS 지문/포트 광고 포함)
+    /// - Win32 DPAPI 클러스터 키 금고 + 평문 SecretKey 폴백 전면 차단
     /// </summary>
     public class RemoteAgentService : IDisposable
     {
@@ -28,20 +29,17 @@ namespace WinPurifyPro.Services
 
         public const int DefaultHttpPort = 9870;
         public const int DefaultDiscoveryPort = 9871;
+        public const int DefaultTlsPort = 9874;
 
         private HttpListener? _httpListener;
+        private RemoteTlsServer? _tlsServer;
         private UdpClient? _udpDiscoveryListener;
         private CancellationTokenSource? _cts;
         private bool _isRunning = false;
 
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> _seenNonces = new();
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _clientClockOffsets = new();
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime ExpiresAt, string ClientIp)> _activeChallenges = new();
-        private static DateTime _lastNonceCleanup = DateTime.UtcNow;
-        private static DateTime _lastChallengeCleanup = DateTime.UtcNow;
-        private static readonly object _nonceCleanupLock = new object();
-
         public bool IsRunning => _isRunning;
+        public bool IsTlsActive => _tlsServer?.IsListening == true;
+        public int ActiveTlsPort { get; private set; } = DefaultTlsPort;
 
         private string _clusterSecretKey = string.Empty;
         public string ClusterSecretKey
@@ -50,47 +48,21 @@ namespace WinPurifyPro.Services
             {
                 if (string.IsNullOrEmpty(_clusterSecretKey))
                 {
-                    _clusterSecretKey = LoadOrGenerateClusterKey();
+                    _clusterSecretKey = ClusterSecurityVault.GetOrCreateClusterKey();
                 }
                 return _clusterSecretKey;
             }
-            set => _clusterSecretKey = value;
-        }
-
-        public string AllowedAdminIp { get; set; } = "*"; // "*" 또는 특정 IP (예: 192.168.1.100)
-
-        public const string DefaultClusterKey = "WPP-SEC-CLUSTER-2026-KEY";
-
-        private static string LoadOrGenerateClusterKey()
-        {
-            try
+            set
             {
-                string programDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "WinPurifyPro");
-                string keyFile = Path.Combine(programDataDir, "cluster.key");
-
-                if (File.Exists(keyFile))
+                if (!string.IsNullOrWhiteSpace(value))
                 {
-                    string key = File.ReadAllText(keyFile).Trim();
-                    if (!string.IsNullOrEmpty(key) && key.Length >= 8)
-                    {
-                        return key;
-                    }
+                    _clusterSecretKey = value.Trim();
+                    ClusterSecurityVault.SaveClusterKey(_clusterSecretKey);
                 }
-
-                if (!Directory.Exists(programDataDir))
-                {
-                    Directory.CreateDirectory(programDataDir);
-                }
-
-                // 기본 클러스터 시크릿 키("WPP-SEC-CLUSTER-2026-KEY") 저장 및 전파
-                File.WriteAllText(keyFile, DefaultClusterKey);
-                return DefaultClusterKey;
-            }
-            catch
-            {
-                return DefaultClusterKey; // 파일시스템 접근 제한 시 안전한 폴백
             }
         }
+
+        public string AllowedAdminIp { get; set; } = "*";
 
         public event Action<string>? LogOccurred;
 
@@ -103,7 +75,6 @@ namespace WinPurifyPro.Services
         {
             if (_isRunning) return;
 
-            // 포터블(무설치) 모드에서는 보안 정책상 원격 커맨더 명령 수신 에이전트를 가동하지 않음
             if (AppEnvironment.IsPortable)
             {
                 LogOccurred?.Invoke("[RemoteAgent] 포터블 모드 감지: 보안 정책에 따라 원격 커맨더 명령 수신 에이전트가 가동되지 않습니다 (데스크탑 정식 설치 전용).");
@@ -112,13 +83,29 @@ namespace WinPurifyPro.Services
 
             try
             {
-                _cts = new CancellationTokenSource();
-                
-                // 1. HTTP REST Listener 시작 (3단계 계층적 안전 바인딩)
-                bool httpStarted = false;
-                Exception? lastEx = null;
+                // Initialize DPAPI key & TLS cert up front
+                _ = ClusterSecretKey;
+                int tlsPort = httpPort + 4; // 9870 -> 9874
+                ActiveTlsPort = tlsPort;
 
-                // Tier 1: 모든 IP 인터페이스 수신 (외부 LAN PC 원격 접속 허용)
+                _cts = new CancellationTokenSource();
+
+                // 0. Embedded Zero-Config TLS 1.3 Server (TCP 9874)
+                bool tlsStarted = false;
+                try
+                {
+                    var cert = ClusterSecurityVault.GetOrCreateTlsCertificate();
+                    _tlsServer = new RemoteTlsServer(tlsPort, cert, HandleApiRequestAsync);
+                    _tlsServer.Start(_cts.Token);
+                    tlsStarted = _tlsServer.IsListening;
+                }
+                catch (Exception tlsEx)
+                {
+                    LogOccurred?.Invoke($"[RemoteAgent 경고] TLS 서버 시작 실패 (TCP:{tlsPort}): {tlsEx.Message}");
+                }
+
+                // 1. HTTP Listener (TCP 9870 - legacy discovery / challenge channel)
+                bool httpStarted = false;
                 try
                 {
                     _httpListener = new HttpListener();
@@ -126,14 +113,12 @@ namespace WinPurifyPro.Services
                     _httpListener.Start();
                     httpStarted = true;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    lastEx = ex;
                     try { _httpListener?.Close(); } catch { }
                     _httpListener = null;
                 }
 
-                // Tier 2: 와일드카드 (+) 바인딩 시도
                 if (!httpStarted)
                 {
                     try
@@ -143,15 +128,13 @@ namespace WinPurifyPro.Services
                         _httpListener.Start();
                         httpStarted = true;
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        lastEx = ex;
                         try { _httpListener?.Close(); } catch { }
                         _httpListener = null;
                     }
                 }
 
-                // Tier 3: 루프백 및 전용 LAN IPv4 바인딩 (관리자 권한 없는 일반 환경에서도 수신 보장)
                 if (!httpStarted)
                 {
                     try
@@ -167,32 +150,33 @@ namespace WinPurifyPro.Services
                         _httpListener.Start();
                         httpStarted = true;
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        lastEx = ex;
                         try { _httpListener?.Close(); } catch { }
                         _httpListener = null;
                     }
                 }
 
-                if (!httpStarted || _httpListener == null)
+                if (!httpStarted && !tlsStarted)
                 {
-                    // 동일 PC 내에서 이미 포트가 열려있는 경우 (WinPurifyPro와 Central Commander 동시 실행 환경)
-                    LogOccurred?.Invoke($"[RemoteAgent 동시 실행] 로컬 에이전트 포트(TCP:{httpPort})가 이미 활성화되어 있습니다. 클라이언트 및 관제 채널을 안전하게 공유합니다.");
+                    LogOccurred?.Invoke($"[RemoteAgent 동시 실행] 로컬 에이전트 포트(TCP:{httpPort}/TLS:{tlsPort})가 이미 활성화되어 있습니다.");
                     _isRunning = true;
                     return;
                 }
 
-                Task.Run(() => ProcessHttpRequestsAsync(_cts.Token));
+                if (httpStarted && _httpListener != null)
+                {
+                    _ = Task.Run(() => ProcessHttpRequestsAsync(_cts.Token));
+                }
 
-                // 2. UDP Discovery Listener 시작 (동일 PC 동시 실행을 위해 SO_REUSEADDR 활성화)
+                // 2. UDP Discovery Listener (UDP 9871 with SO_REUSEADDR)
                 try
                 {
                     var udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     udpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     udpSocket.Bind(new IPEndPoint(IPAddress.Any, udpPort));
                     _udpDiscoveryListener = new UdpClient { Client = udpSocket };
-                    Task.Run(() => ProcessUdpDiscoveryAsync(_cts.Token));
+                    _ = Task.Run(() => ProcessUdpDiscoveryAsync(_cts.Token));
                 }
                 catch (Exception ex)
                 {
@@ -200,10 +184,11 @@ namespace WinPurifyPro.Services
                 }
 
                 _isRunning = true;
-                LogOccurred?.Invoke($"[RemoteAgent] 다중 PC 원격 관제 에이전트 가동 (TCP:{httpPort}, UDP:{udpPort})");
+                string thumbShort = ClusterSecurityVault.GetLocalTlsThumbprint();
+                if (thumbShort.Length > 12) thumbShort = thumbShort.Substring(0, 12);
+                LogOccurred?.Invoke($"[RemoteAgent] 보안 원격 에이전트 가동 완료 (TLS:{tlsPort} [{thumbShort}], HTTP:{httpPort}, UDP:{udpPort}, DPAPI 금고 활성)");
 
-                // 방화벽 예외 포트(TCP 9870 및 UDP 9871) 상호 동기화 보장
-                FirewallService.EnsureRemotePortsFirewallRulesAsync(httpPort, udpPort);
+                FirewallService.EnsureRemotePortsFirewallRulesAsync(httpPort, udpPort, tlsPort);
             }
             catch (Exception ex)
             {
@@ -219,6 +204,9 @@ namespace WinPurifyPro.Services
             try
             {
                 _cts?.Cancel();
+                _tlsServer?.Stop();
+                _tlsServer?.Dispose();
+                _tlsServer = null;
                 _httpListener?.Stop();
                 _httpListener?.Close();
                 _udpDiscoveryListener?.Close();
@@ -242,12 +230,13 @@ namespace WinPurifyPro.Services
 
                     if (message.StartsWith("WINPURIFY_DISCOVER_PING"))
                     {
-                        // Discovery Ping 수신 -> 클라이언트 최적 LAN IPv4 주소를 식별하여 정밀 응답 패킷 전송
                         string bestLocalIp = GetBestLocalIPv4Address();
-                        string response = $"WINPURIFY_DISCOVER_PONG|{Environment.MachineName}|{DefaultHttpPort}|{Environment.OSVersion}|ONLINE|{bestLocalIp}";
+                        string thumbprint = ClusterSecurityVault.GetLocalTlsThumbprint();
+                        int advertisedTls = IsTlsActive ? ActiveTlsPort : 0;
+                        string response = $"WINPURIFY_DISCOVER_PONG|{Environment.MachineName}|{DefaultHttpPort}|{Environment.OSVersion}|ONLINE|{bestLocalIp}|{advertisedTls}|{thumbprint}";
                         byte[] respBytes = Encoding.UTF8.GetBytes(response);
                         await _udpDiscoveryListener.SendAsync(respBytes, respBytes.Length, result.RemoteEndPoint);
-                        LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔({result.RemoteEndPoint.Address}) 탐색 응답 (클라이언트 IP: {bestLocalIp})");
+                        LogOccurred?.Invoke($"[RemoteAgent] 콘솔({result.RemoteEndPoint.Address}) 탐색 응답 (IP: {bestLocalIp}, TLS: {advertisedTls})");
                     }
                 }
                 catch (OperationCanceledException) { break; }
@@ -259,12 +248,8 @@ namespace WinPurifyPro.Services
             }
         }
 
-        /// <summary>
-        /// Hyper-V, WSL, VMware, VirtualBox, 루프백 등을 배제하고 실제 LAN 통신이 가능한 최적의 물리 IPv4 주소를 판별합니다.
-        /// </summary>
         public static string GetBestLocalIPv4Address()
         {
-            // 전략 1: OS UDP 라우팅 테이블(소켓 Connect)을 활용한 즉시 게이트웨이 바인딩 IPv4 획득 (패킷 미전송, 0ms)
             try
             {
                 using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -275,16 +260,12 @@ namespace WinPurifyPro.Services
                     if (!IPAddress.IsLoopback(ip) && ip.AddressFamily == AddressFamily.InterNetwork)
                     {
                         string ipStr = ip.ToString();
-                        if (!ipStr.StartsWith("169.254.")) // APIPA 자동 할당 주소 배제
-                        {
-                            return ipStr;
-                        }
+                        if (!ipStr.StartsWith("169.254.")) return ipStr;
                     }
                 }
             }
             catch { }
 
-            // 전략 2: 활성 네트워크 어댑터(이더넷 / Wi-Fi) 가중치 정밀 분석
             try
             {
                 var interfaces = NetworkInterface.GetAllNetworkInterfaces()
@@ -302,15 +283,11 @@ namespace WinPurifyPro.Services
                         if (uni.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(uni.Address))
                         {
                             string addrStr = uni.Address.ToString();
-                            if (!addrStr.StartsWith("169.254."))
-                            {
-                                if (hasGateway) return addrStr;
-                            }
+                            if (!addrStr.StartsWith("169.254.") && hasGateway) return addrStr;
                         }
                     }
                 }
 
-                // 게이트웨이가 명시되지 않았더라도 유효한 LAN 사설/공인 IPv4 탐색
                 foreach (var adapter in interfaces)
                 {
                     var ipProps = adapter.GetIPProperties();
@@ -332,8 +309,6 @@ namespace WinPurifyPro.Services
         private static int GetAdapterPriority(NetworkInterface nic)
         {
             string desc = (nic.Description + " " + nic.Name).ToLowerInvariant();
-
-            // 가상 어댑터 (WSL, Hyper-V, VMware, VirtualBox, Npcap, VPN 등) 우선순위 대폭 감점
             if (desc.Contains("virtual") || desc.Contains("hyper-v") || desc.Contains("vethernet") ||
                 desc.Contains("wsl") || desc.Contains("vmware") || desc.Contains("virtualbox") ||
                 desc.Contains("npcap") || desc.Contains("tap") || desc.Contains("vpn") ||
@@ -341,19 +316,8 @@ namespace WinPurifyPro.Services
             {
                 return 10;
             }
-
-            // 물리 유선 이더넷 최우선
-            if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
-            {
-                return 100;
-            }
-
-            // 물리 무선 Wi-Fi
-            if (nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
-            {
-                return 90;
-            }
-
+            if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet) return 100;
+            if (nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211) return 90;
             return 50;
         }
 
@@ -381,7 +345,6 @@ namespace WinPurifyPro.Services
             var req = context.Request;
             var resp = context.Response;
 
-            // CORS 및 브라우저 드라이브바이(Drive-by) 방어 헤더 설정
             string? origin = req.Headers["Origin"];
             if (!string.IsNullOrEmpty(origin) && (origin.Contains("localhost") || origin.Contains("127.0.0.1")))
             {
@@ -399,360 +362,194 @@ namespace WinPurifyPro.Services
                 return;
             }
 
-            // IP 화이트리스트 검사 (IPv6 Mapped 주소 정규화)
             IPAddress clientAddr = req.RemoteEndPoint.Address;
             if (clientAddr.IsIPv4MappedToIPv6) clientAddr = clientAddr.MapToIPv4();
             string clientIp = clientAddr.ToString();
+
+            string path = req.Url?.AbsolutePath.TrimEnd('/').ToLowerInvariant() ?? "";
+            string body = string.Empty;
+            if (req.HasEntityBody)
+            {
+                using var reader = new StreamReader(req.InputStream, req.ContentEncoding ?? Encoding.UTF8);
+                body = await reader.ReadToEndAsync();
+            }
+
+            var dispatchResp = await HandleApiRequestAsync(req.HttpMethod, path, req.Headers, body, clientIp, isTls: false);
+
+            resp.StatusCode = dispatchResp.StatusCode;
+            foreach (var kv in dispatchResp.ExtraHeaders)
+            {
+                resp.Headers.Add(kv.Key, kv.Value);
+            }
+
+            byte[] bytes = Encoding.UTF8.GetBytes(dispatchResp.JsonBody);
+            resp.ContentType = "application/json; charset=utf-8";
+            resp.ContentLength64 = bytes.Length;
+            await resp.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+            resp.Close();
+        }
+
+        public async Task<ApiDispatchResponse> HandleApiRequestAsync(
+            string httpMethod,
+            string path,
+            NameValueCollection headers,
+            string body,
+            string clientIp,
+            bool isTls)
+        {
+            var resp = new ApiDispatchResponse();
 
             if (AllowedAdminIp != "*" && AllowedAdminIp != clientIp && clientIp != "127.0.0.1" && clientIp != "::1")
             {
                 LogOccurred?.Invoke($"[RemoteAgent 보안 차단] 비인가 IP 접속 시도: {clientIp}");
                 resp.StatusCode = 403;
-                await WriteJsonAsync(resp, new { error = "Unauthorized IP Address" });
-                return;
+                resp.JsonBody = JsonSerializer.Serialize(new { error = "Unauthorized IP Address" });
+                return resp;
             }
 
-            // 포터블 모드인 경우 원격 커맨더 명령 수신 차단
             if (AppEnvironment.IsPortable)
             {
                 LogOccurred?.Invoke($"[RemoteAgent 보안 정책 차단] 포터블 모드는 원격 커맨더 명령을 수신하지 않습니다. (Client: {clientIp})");
                 resp.StatusCode = 403;
-                await WriteJsonAsync(resp, new CommandResponseDto
+                resp.JsonBody = JsonSerializer.Serialize(new CommandResponseDto
                 {
                     Success = false,
                     Message = "포터블 실행 파일은 원격 커맨더 명령을 수신하지 않습니다. (Windows 서비스 정식 설치 환경 전용)"
                 });
-                return;
+                return resp;
             }
 
             try
             {
-                string path = req.Url?.AbsolutePath.TrimEnd('/').ToLowerInvariant() ?? "";
-
-                if (req.HttpMethod == "GET" && path == "/api/v1/telemetry")
+                if (httpMethod == "GET" && path == "/api/v1/telemetry")
                 {
-                    // 텔레메트리 조회 (실시간 CPU, RAM, 최적화 점수)
+                    string? secFetchSite = headers["Sec-Fetch-Site"];
+                    var (isAuth, errPoint, reason) = RemoteAuthValidator.VerifyTelemetryRequest(
+                        headers, secFetchSite, httpMethod, path, clientIp, ClusterSecretKey);
+
+                    if (!isAuth)
+                    {
+                        resp.StatusCode = 401;
+                        resp.ExtraHeaders["X-WinPurify-AuthCategory"] = "TelemetryAuthRequired";
+                        resp.ExtraHeaders["X-WinPurify-Auth-Error-Point"] = errPoint;
+                        resp.JsonBody = JsonSerializer.Serialize(new
+                        {
+                            success = false,
+                            error = reason,
+                            errorPoint = errPoint,
+                            tlsPort = ActiveTlsPort,
+                            tlsThumbprint = ClusterSecurityVault.GetLocalTlsThumbprint()
+                        });
+                        return resp;
+                    }
+
                     var telemetry = CollectCurrentTelemetry();
                     resp.StatusCode = 200;
-                    await WriteJsonAsync(resp, telemetry);
+                    resp.JsonBody = JsonSerializer.Serialize(telemetry);
+                    return resp;
                 }
-                else if ((req.HttpMethod == "GET" || req.HttpMethod == "POST") && path == "/api/v1/auth/challenge")
+
+                if ((httpMethod == "GET" || httpMethod == "POST") && path == "/api/v1/auth/challenge")
                 {
-                    // 암호화 챌린지 Nonce 발급 (Challenge-Response Handshake)
-                    string challengeNonce = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
-                    _activeChallenges[challengeNonce] = (DateTime.UtcNow.AddSeconds(60), clientIp);
-                    CleanupExpiredChallenges();
-                    LogOccurred?.Invoke($"[RemoteAgent Challenge] 암호화 Challenge Nonce 발급: {challengeNonce.Substring(0, 8)}... (Client: {clientIp}, TTL: 60s)");
+                    var challenge = RemoteAuthValidator.IssueChallenge(clientIp);
+                    LogOccurred?.Invoke($"[RemoteAgent Challenge] Challenge Nonce 발급 (Client: {clientIp}, TLS: {isTls})");
                     resp.StatusCode = 200;
-                    await WriteJsonAsync(resp, new AuthChallengeResponseDto
+                    resp.JsonBody = JsonSerializer.Serialize(challenge);
+                    return resp;
+                }
+
+                if (httpMethod == "POST" && path == "/api/v1/auth/pair")
+                {
+                    // Zero-Config 6-Digit PIN Studio Pairing (Only over TLS or localhost to protect key exchange)
+                    if (!isTls && clientIp != "127.0.0.1" && clientIp != "::1")
+                    {
+                        resp.StatusCode = 403;
+                        resp.JsonBody = JsonSerializer.Serialize(new StudioPairResponseDto
+                        {
+                            Success = false,
+                            Message = "페어링 키 교환은 암호화된 TLS 1.3 채널(TCP:9874)을 통해서만 허용됩니다."
+                        });
+                        return resp;
+                    }
+
+                    var pairReq = JsonSerializer.Deserialize<StudioPairRequestDto>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (pairReq == null || !ClusterSecurityVault.VerifyAndConsumePairingPin(pairReq.PairingPin))
+                    {
+                        LogOccurred?.Invoke($"[RemoteAgent 페어링 거부] 잘못되었거나 만료된 6자리 PIN ({clientIp})");
+                        resp.StatusCode = 401;
+                        resp.JsonBody = JsonSerializer.Serialize(new StudioPairResponseDto
+                        {
+                            Success = false,
+                            Message = "페어링 PIN이 일치하지 않거나 만료되었습니다."
+                        });
+                        return resp;
+                    }
+
+                    LogOccurred?.Invoke($"[RemoteAgent 페어링 성공] '{pairReq.CommanderMachineName}' ({clientIp})에 DPAPI 클러스터 키 안전 동기화 완료");
+                    resp.StatusCode = 200;
+                    resp.JsonBody = JsonSerializer.Serialize(new StudioPairResponseDto
                     {
                         Success = true,
-                        ChallengeNonce = challengeNonce,
-                        ExpiresInSeconds = 60,
-                        ServerTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                        Message = "Challenge nonce issued successfully"
+                        Message = "작업실 Zero-Config TLS 페어링 및 클러스터 키 동기화 성공",
+                        ClusterKey = ClusterSecretKey,
+                        TlsThumbprint = ClusterSecurityVault.GetLocalTlsThumbprint(),
+                        TlsPort = ActiveTlsPort
                     });
+                    return resp;
                 }
-                else if (req.HttpMethod == "POST" && path.StartsWith("/api/v1/batch/"))
-                {
-                    // 일괄 명령 수행 (RAM 정리, 복원지점, 프리셋 배포 등)
-                    using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
-                    string body = await reader.ReadToEndAsync();
 
-                    var batchReq = JsonSerializer.Deserialize<BatchCommandRequest>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    
-                    // HMAC 서명, Nonce Replay 방어, 시계 오차(Clock Skew) 보정 및 정밀 진단 4D 검증
-                    var authResult = VerifySecurityTokenWithDetails(batchReq, body, req.Headers, req, clientIp);
+                if (httpMethod == "POST" && path.StartsWith("/api/v1/batch/"))
+                {
+                    var batchReq = string.IsNullOrWhiteSpace(body)
+                        ? null
+                        : JsonSerializer.Deserialize<BatchCommandRequest>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    var authResult = RemoteAuthValidator.VerifySecurityToken(
+                        batchReq,
+                        body,
+                        headers,
+                        headers["Sec-Fetch-Site"],
+                        clientIp,
+                        ClusterSecretKey,
+                        msg => LogOccurred?.Invoke(msg));
+
                     if (!authResult.IsValid)
                     {
                         LogOccurred?.Invoke($"[RemoteAgent 보안 401 거부] ({clientIp}) -> [{authResult.ErrorPoint}] ({authResult.FailureCategory}): {authResult.FailureReason}");
                         resp.StatusCode = 401;
-                        resp.Headers.Add("X-WinPurify-NodeTimestamp", authResult.NodeTimestamp.ToString());
-                        resp.Headers.Add("X-WinPurify-ClockOffset", authResult.ClockOffsetSeconds.ToString());
-                        resp.Headers.Add("X-WinPurify-AuthCategory", authResult.FailureCategory);
-                        resp.Headers.Add("X-WinPurify-Auth-Error-Point", authResult.ErrorPoint);
-                        resp.Headers.Add("X-WinPurify-Error-Point", authResult.ErrorPoint);
+                        resp.ExtraHeaders["X-WinPurify-NodeTimestamp"] = authResult.NodeTimestamp.ToString();
+                        resp.ExtraHeaders["X-WinPurify-ClockOffset"] = authResult.ClockOffsetSeconds.ToString();
+                        resp.ExtraHeaders["X-WinPurify-AuthCategory"] = authResult.FailureCategory;
+                        resp.ExtraHeaders["X-WinPurify-Auth-Error-Point"] = authResult.ErrorPoint;
+                        resp.ExtraHeaders["X-WinPurify-Error-Point"] = authResult.ErrorPoint;
 
-                        await WriteJsonAsync(resp, new CommandResponseDto
+                        resp.JsonBody = JsonSerializer.Serialize(new CommandResponseDto
                         {
                             Success = false,
                             Message = $"[{authResult.ErrorPoint}] {authResult.FailureReason}",
                             ExecutionDetails = authResult.ExecutionDetails,
-                            ExecutionTimeMs = 0
+                            ExecutionTimeMs = 0,
+                            TransportProtocol = isTls ? "TLS 1.3/HTTPS" : "HTTP (Legacy)"
                         });
-                        return;
+                        return resp;
                     }
 
                     var result = await ExecuteBatchCommandAsync(path, batchReq!, clientIp);
+                    result.TransportProtocol = isTls ? "TLS 1.3/HTTPS" : "HTTP (Legacy)";
                     resp.StatusCode = 200;
-                    await WriteJsonAsync(resp, result);
+                    resp.JsonBody = JsonSerializer.Serialize(result);
+                    return resp;
                 }
-                else
-                {
-                    resp.StatusCode = 404;
-                    await WriteJsonAsync(resp, new { error = "Not Found" });
-                }
+
+                resp.StatusCode = 404;
+                resp.JsonBody = JsonSerializer.Serialize(new { error = "Not Found" });
+                return resp;
             }
             catch (Exception ex)
             {
                 resp.StatusCode = 500;
-                await WriteJsonAsync(resp, new { error = ex.Message });
-            }
-        }
-
-        public class AuthValidationResult
-        {
-            public bool IsValid { get; set; }
-            public string FailureCategory { get; set; } = "Unknown";
-            public string ErrorPoint { get; set; } = "unknown_error";
-            public string FailureReason { get; set; } = string.Empty;
-            public string ExecutionDetails { get; set; } = string.Empty;
-            public long NodeTimestamp { get; set; }
-            public long SenderTimestamp { get; set; }
-            public long ClockOffsetSeconds { get; set; }
-        }
-
-        private AuthValidationResult VerifySecurityTokenWithDetails(BatchCommandRequest? req, string rawBody, NameValueCollection headers, HttpListenerRequest rawReq, string clientIp)
-        {
-            long currentTs = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var result = new AuthValidationResult
-            {
-                NodeTimestamp = currentTs
-            };
-
-            // 0. 악성 웹사이트로부터의 Cross-Origin 브라우저 Drive-by 요청 원천 차단
-            string? secFetchSite = rawReq.Headers["Sec-Fetch-Site"];
-            if (!string.IsNullOrEmpty(secFetchSite) && secFetchSite.Equals("cross-site", StringComparison.OrdinalIgnoreCase))
-            {
-                result.IsValid = false;
-                result.FailureCategory = "CrossSite";
-                result.ErrorPoint = "cross_site_blocked";
-                result.FailureReason = "Security Blocked: Cross-Site Drive-by Browser Request Rejected";
-                result.ExecutionDetails = "Browser Sec-Fetch-Site header indicates cross-site origin.";
-                LogOccurred?.Invoke($"[RemoteAgent 보안 차단] Cross-Site 요청 거부 ({clientIp})");
-                return result;
-            }
-
-            if (req == null)
-            {
-                result.IsValid = false;
-                result.FailureCategory = "InvalidPayload";
-                result.ErrorPoint = "invalid_payload";
-                result.FailureReason = "Security Authentication Failed: Invalid or Empty JSON Request Body Payload";
-                result.ExecutionDetails = "Deserialized BatchCommandRequest was null.";
-                LogOccurred?.Invoke($"[RemoteAgent 보안 차단] 빈 요청 페이로드 ({clientIp})");
-                return result;
-            }
-
-            // 1. 검증 대상 시크릿 키 후보군 구성 (현재 설정 키, 표준 기본 클러스터 키, 레거시 키)
-            var validKeys = new List<string>();
-            if (!string.IsNullOrWhiteSpace(ClusterSecretKey)) validKeys.Add(ClusterSecretKey.Trim());
-            if (!validKeys.Contains(DefaultClusterKey)) validKeys.Add(DefaultClusterKey);
-            if (!validKeys.Contains("WinPurifyClusterKey2026")) validKeys.Add("WinPurifyClusterKey2026");
-
-            // 1.5. Challenge-Response 서버 핸드셰이크 검증 (시계 오차 zero, 서버 발급 일회용 Nonce 서명)
-            string? challengeNonce = headers["X-WinPurify-Challenge-Nonce"];
-            if (string.IsNullOrWhiteSpace(challengeNonce)) challengeNonce = req.ChallengeNonce;
-
-            string? challengeSig = headers["X-WinPurify-Challenge-Signature"];
-            if (string.IsNullOrWhiteSpace(challengeSig)) challengeSig = req.ChallengeSignature;
-            if (string.IsNullOrWhiteSpace(challengeSig)) challengeSig = headers["X-WinPurify-Signature"];
-
-            if (!string.IsNullOrWhiteSpace(challengeNonce))
-            {
-                if (!_activeChallenges.TryRemove(challengeNonce, out var challengeInfo))
-                {
-                    result.IsValid = false;
-                    result.FailureCategory = "ChallengeInvalidOrConsumed";
-                    result.ErrorPoint = "challenge_consumed";
-                    result.FailureReason = $"Security Authentication Failed: Challenge Nonce '{challengeNonce}' is invalid or already consumed.";
-                    result.ExecutionDetails = $"ChallengeNonce: {challengeNonce} | Status: Expired or Replayed";
-                    LogOccurred?.Invoke($"[RemoteAgent 보안 401] [challenge_consumed] {clientIp} -> Challenge Nonce '{challengeNonce}' 검증 실패");
-                    return result;
-                }
-
-                if (DateTime.UtcNow > challengeInfo.ExpiresAt)
-                {
-                    result.IsValid = false;
-                    result.FailureCategory = "ChallengeExpired";
-                    result.ErrorPoint = "challenge_expired";
-                    result.FailureReason = $"Security Authentication Failed: Challenge Nonce '{challengeNonce}' has expired (TTL: 60s).";
-                    result.ExecutionDetails = $"ChallengeNonce: {challengeNonce} | Status: Expired";
-                    LogOccurred?.Invoke($"[RemoteAgent 보안 401] [challenge_expired] {clientIp} -> Challenge Nonce '{challengeNonce}' 만료됨");
-                    return result;
-                }
-
-                // Challenge signature 검증 (Payload 서명 후보군 테스트)
-                bool isChallengeSigValid = false;
-                string cmdType = req.CommandType ?? string.Empty;
-
-                foreach (var key in validKeys)
-                {
-                    string candidate1 = ComputeHmacSha256($"{challengeNonce}:{cmdType}:{rawBody}", key);
-                    string candidate2 = ComputeHmacSha256($"{challengeNonce}:{rawBody}", key);
-                    string candidate3 = ComputeHmacSha256(challengeNonce, key);
-
-                    if (string.Equals(challengeSig, candidate1, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(challengeSig, candidate2, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(challengeSig, candidate3, StringComparison.OrdinalIgnoreCase))
-                    {
-                        isChallengeSigValid = true;
-                        result.IsValid = true;
-                        result.FailureCategory = "None";
-                        result.ErrorPoint = "none";
-                        LogOccurred?.Invoke($"[RemoteAgent 보안 Challenge-Response 성공] 서버 Nonce 기반 암호화 핸드셰이크 서명 검증 성공 (Client: {clientIp}, Command: {cmdType})");
-                        return result;
-                    }
-                }
-
-                if (!isChallengeSigValid)
-                {
-                    result.IsValid = false;
-                    result.FailureCategory = "ChallengeSignatureMismatch";
-                    result.ErrorPoint = "challenge_signature_mismatch";
-                    result.FailureReason = $"Security Authentication Failed: Challenge Signature Mismatch for Nonce '{challengeNonce}'.";
-                    result.ExecutionDetails = $"ChallengeSignatureMismatch: Nonce={challengeNonce} | ReceivedSignature={challengeSig}";
-                    LogOccurred?.Invoke($"[RemoteAgent 보안 401] [challenge_signature_mismatch] {clientIp} -> Nonce '{challengeNonce}' 서명 불일치");
-                    return result;
-                }
-            }
-
-            // 2. Nonce Replay 공격 검증 (중복 Nonce 재전송 차단)
-            string? headerSig = headers["X-WinPurify-Signature"];
-            string? headerTime = headers["X-WinPurify-Timestamp"];
-            string? headerNonce = headers["X-WinPurify-Nonce"];
-
-            if (!string.IsNullOrEmpty(headerNonce) && headerNonce.Length >= 6)
-            {
-                if (!_seenNonces.TryAdd(headerNonce, DateTime.UtcNow))
-                {
-                    result.IsValid = false;
-                    result.FailureCategory = "ReplayAttack";
-                    result.ErrorPoint = "nonce_replayed";
-                    result.FailureReason = $"Security Authentication Failed: Replay Attack Detected. Duplicate Nonce '{headerNonce}' was already processed.";
-                    result.ExecutionDetails = $"Nonce: {headerNonce} | Duplicate Replay Blocked";
-                    LogOccurred?.Invoke($"[RemoteAgent 보안 401] [nonce_replayed] {clientIp} -> Nonce '{headerNonce}' 중복 감지");
-                    return result;
-                }
-                CleanupExpiredNonces();
-            }
-
-            // 3. HMAC-SHA256 디지털 서명 및 시계 오차(Clock Skew) 검증
-            bool hasSignatureHeaders = !string.IsNullOrEmpty(headerSig) && !string.IsNullOrEmpty(headerTime);
-            bool isSigValid = false;
-
-            if (hasSignatureHeaders && long.TryParse(headerTime, out long senderTs))
-            {
-                result.SenderTimestamp = senderTs;
-                long rawOffset = currentTs - senderTs;
-                result.ClockOffsetSeconds = rawOffset;
-
-                // 클라이언트별 학습된 시계 오차 보정치 조회
-                _clientClockOffsets.TryGetValue(clientIp, out long learnedOffset);
-                long adjustedSenderTs = senderTs + learnedOffset;
-                long timeDiff = Math.Abs(currentTs - adjustedSenderTs);
-
-                // 300초(5분) 허용 범위 검증
-                if (timeDiff <= 300)
-                {
-                    foreach (var key in validKeys)
-                    {
-                        string expectedSig = ComputeHmacSha256(rawBody, key);
-                        if (string.Equals(headerSig, expectedSig, StringComparison.OrdinalIgnoreCase))
-                        {
-                            isSigValid = true;
-                            _clientClockOffsets[clientIp] = rawOffset; // 동적 시계 오차 보정치 자동 학습
-                            result.IsValid = true;
-                            result.FailureCategory = "None";
-                            result.ErrorPoint = "none";
-                            LogOccurred?.Invoke($"[RemoteAgent 보안 인증] HMAC 서명 검증 성공 (Client: {clientIp}, Skew: {rawOffset}s)");
-                            return result;
-                        }
-                    }
-                }
-            }
-
-            // 4. 요청 페이로드 내 SecretKey 직접 검증 (HMAC 실패 또는 시계 차 발생 시 안전한 폴백)
-            bool isSecretKeyValid = false;
-            if (!string.IsNullOrWhiteSpace(req.SecretKey))
-            {
-                string reqKey = req.SecretKey.Trim();
-                foreach (var key in validKeys)
-                {
-                    if (string.Equals(reqKey, key, StringComparison.Ordinal))
-                    {
-                        isSecretKeyValid = true;
-                        if (hasSignatureHeaders && result.SenderTimestamp > 0)
-                        {
-                            long newOffset = currentTs - result.SenderTimestamp;
-                            _clientClockOffsets[clientIp] = newOffset;
-                            result.ClockOffsetSeconds = newOffset;
-                            LogOccurred?.Invoke($"[RemoteAgent 보안 시계 보정] SecretKey 매칭 기반 시계 오차({newOffset}s) 동적 학습 완료 (Client: {clientIp})");
-                        }
-
-                        result.IsValid = true;
-                        result.FailureCategory = "None";
-                        result.ErrorPoint = "none";
-                        LogOccurred?.Invoke($"[RemoteAgent 보안 인증] SecretKey 직접 매칭 성공 (Client: {clientIp})");
-                        return result;
-                    }
-                }
-            }
-
-            // 5. 인증 실패 시 세부 실패 카테고리 판별 및 정밀 진단 메시지 생성
-            result.IsValid = false;
-
-            if (hasSignatureHeaders)
-            {
-                long rawOffset = Math.Abs(currentTs - result.SenderTimestamp);
-                if (rawOffset > 300 && !isSigValid && !isSecretKeyValid)
-                {
-                    result.FailureCategory = "ClockSkew";
-                    result.ErrorPoint = "timestamp_expired";
-                    result.FailureReason = $"Security Authentication Failed: Clock Skew Exceeded / Timestamp Expired. Sender Timestamp ({result.SenderTimestamp}) differs from Node Timestamp ({currentTs}) by {rawOffset}s (Max allowed tolerance: 300s).";
-                    result.ExecutionDetails = $"TimestampExpired: Diff={rawOffset}s | NodeTime={currentTs} | SenderTime={result.SenderTimestamp} | MaxTolerance=300s";
-                }
-                else
-                {
-                    result.FailureCategory = "SignatureMismatch";
-                    result.ErrorPoint = "signature_mismatch";
-                    result.FailureReason = $"Security Authentication Failed: HMAC-SHA256 Signature Mismatch. Header signature '{headerSig}' does not match computed signature for payload.";
-                    result.ExecutionDetails = $"SignatureMismatch: ReceivedSignature={headerSig} | ValidKeysTested={validKeys.Count}";
-                }
-            }
-            else if (!string.IsNullOrWhiteSpace(req.SecretKey))
-            {
-                result.FailureCategory = "SecretKeyMismatch";
-                result.ErrorPoint = "secret_key_mismatch";
-                result.FailureReason = "Security Authentication Failed: Payload SecretKey does not match ClusterSecretKey.";
-                result.ExecutionDetails = "SecretKeyMismatch: Request payload SecretKey failed validation against all cluster keys.";
-            }
-            else
-            {
-                result.FailureCategory = "MissingAuth";
-                result.ErrorPoint = "missing_auth";
-                result.FailureReason = "Security Authentication Failed: No valid HMAC signature headers or matching SecretKey provided.";
-                result.ExecutionDetails = "MissingAuth: Request missing X-WinPurify-Signature headers and payload SecretKey was empty.";
-            }
-
-            return result;
-        }
-
-        private static void CleanupExpiredNonces()
-        {
-            if (DateTime.UtcNow - _lastNonceCleanup < TimeSpan.FromSeconds(30)) return;
-
-            lock (_nonceCleanupLock)
-            {
-                if (DateTime.UtcNow - _lastNonceCleanup < TimeSpan.FromSeconds(30)) return;
-                _lastNonceCleanup = DateTime.UtcNow;
-
-                var expiredTime = DateTime.UtcNow.AddSeconds(-120);
-                var expiredKeys = _seenNonces.Where(kvp => kvp.Value < expiredTime).Select(kvp => kvp.Key).ToList();
-                foreach (var k in expiredKeys)
-                {
-                    _seenNonces.TryRemove(k, out _);
-                }
+                resp.JsonBody = JsonSerializer.Serialize(new { error = ex.Message });
+                return resp;
             }
         }
 
@@ -765,8 +562,12 @@ namespace WinPurifyPro.Services
                 ClientIp = GetBestLocalIPv4Address(),
                 IsNativeCoreActive = NativeEngineService.IsNativeCoreAvailable(),
                 AppliedRulesCount = 118,
-                TotalRulesCount = 144,
-                OptimizationScore = 95
+                TotalRulesCount = CustomModuleService.LoadAllModules().Count,
+                OptimizationScore = 95,
+                TlsPort = ActiveTlsPort,
+                TlsSupported = IsTlsActive,
+                TlsThumbprint = ClusterSecurityVault.GetLocalTlsThumbprint(),
+                SecurityMode = IsTlsActive ? "TLS 1.3 + HMAC-SHA256" : "HMAC-SHA256 (HTTP)"
             };
 
             try
@@ -789,7 +590,7 @@ namespace WinPurifyPro.Services
                     dto.RamUsagePercent = mem.usagePercent;
                     dto.RamUsageText = $"{mem.usedGb:F1} / {mem.totalGb:F1} GB";
                     dto.DiskFreeText = $"{SystemDiagnosticsService.GetSystemDriveFreeSpaceGb():F1} GB Free";
-                    dto.CpuUsagePercent = 12.0; // 기본 유휴 상태
+                    dto.CpuUsagePercent = 12.0;
                 }
             }
             catch { }
@@ -821,6 +622,7 @@ namespace WinPurifyPro.Services
                 else if (path.EndsWith("/profile-sync")) cmdType = "ProfileSync";
                 else if (path.EndsWith("/browser-factory-reset")) cmdType = "BrowserFactoryReset";
                 else if (path.EndsWith("/forensics-wipe")) cmdType = "ForensicsWipe";
+                else if (path.EndsWith("/fresh-handover")) cmdType = "FreshHandover";
                 else if (path.EndsWith("/shutdown")) cmdType = "Shutdown";
                 else cmdType = "RemoteCommand";
             }
@@ -846,6 +648,7 @@ namespace WinPurifyPro.Services
                 "Shutdown" => "원격 시스템 안전 종료",
                 "Rollback" => "최신 세이프포인트 원격 롤백 복원",
                 "ZeroTraceReset" => "Zero-Trace 보안 정화 & 실행 흔적 초기화",
+                "FreshHandover" => $"새 사용자 클린 환경 인수인계 초기화 ({req.PresetName ?? req.Preset ?? "PreviousUsersAndSessions"})",
                 "AccountPurge" or "ZeroTraceAccountPurge" or "AccountSessionPurge" => "통합 계정 & 세션 토큰 정화 (Zero-Trace)",
                 "ProfileSync" or "DefaultProfileReplication" => "Windows 기본 프로필(Default) 덮어쓰기 복제 배포",
                 "BrowserFactoryReset" => $"브라우저 공장 초기화 ({req.BrowserTarget ?? "All"})",
@@ -866,7 +669,7 @@ namespace WinPurifyPro.Services
 
             try
             {
-                if (path.EndsWith("/ram-clean") || req.CommandType.Equals("RamTrim", StringComparison.OrdinalIgnoreCase))
+                if (path.EndsWith("/ram-clean") || string.Equals(req.CommandType, "RamTrim", StringComparison.OrdinalIgnoreCase))
                 {
                     int res = NativeEngineService.CompressPhysicalRAM();
                     sw.Stop();
@@ -875,7 +678,7 @@ namespace WinPurifyPro.Services
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
                     LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: RAM 압축/정화 실행 완료 ({sw.ElapsedMilliseconds}ms)");
                 }
-                else if (path.EndsWith("/restore-point") || req.CommandType.Equals("CreateRestorePoint", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/restore-point") || string.Equals(req.CommandType, "CreateRestorePoint", StringComparison.OrdinalIgnoreCase))
                 {
                     string desc = !string.IsNullOrWhiteSpace(req.PresetName)
                         ? $"WinPurify Pro Remote ({req.PresetName})"
@@ -888,16 +691,15 @@ namespace WinPurifyPro.Services
                     response.ExecutionTimeMs = resElapsed > 0 ? resElapsed : sw.ElapsedMilliseconds;
                     LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 시스템 복원 지점 생성 결과 - {resMessage} ({response.ExecutionTimeMs}ms)");
                 }
-                else if (path.EndsWith("/quick-maintenance") || req.CommandType.Equals("QuickMaintenance", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/quick-maintenance") || string.Equals(req.CommandType, "QuickMaintenance", StringComparison.OrdinalIgnoreCase))
                 {
                     if (req.QuickType == 0)
                     {
-                        // 통합 고속 유지보수 (휴지통 비우기 + DNS 캐시 플러시 + 임시 파일 청소)
                         int r1 = NativeEngineService.ExecuteQuickMaintenance(1);
                         int r2 = NativeEngineService.ExecuteQuickMaintenance(2);
                         int r3 = NativeEngineService.ExecuteQuickMaintenance(3);
                         sw.Stop();
-                        response.Message = $"통합 고속 정화 완료 (휴지통/DNS/Temp 일괄 실행됨)";
+                        response.Message = "통합 고속 정화 완료 (휴지통/DNS/Temp 일괄 실행됨)";
                         response.ExecutionDetails = $"RecycleBin: {r1}, DNS: {r2}, Temp: {r3}";
                         response.ExecutionTimeMs = sw.ElapsedMilliseconds;
                     }
@@ -911,26 +713,26 @@ namespace WinPurifyPro.Services
                     }
                     LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 고속 유지보수 실행 (Type: {req.QuickType})");
                 }
-                else if (path.EndsWith("/dns-flush") || req.CommandType.Equals("FlushDns", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/dns-flush") || string.Equals(req.CommandType, "FlushDns", StringComparison.OrdinalIgnoreCase))
                 {
                     int res = NativeEngineService.ExecuteQuickMaintenance(2);
                     sw.Stop();
-                    response.Message = $"DNS 캐시 플러시 및 네트워크 소켓 갱신 완료";
+                    response.Message = "DNS 캐시 플러시 및 네트워크 소켓 갱신 완료";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: DNS 캐시 플러시 완료");
+                    LogOccurred?.Invoke("[RemoteAgent] 중앙 관제 콘솔 명령: DNS 캐시 플러시 완료");
                 }
-                else if (path.EndsWith("/game-boost") || req.CommandType.Equals("GameBoost", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/game-boost") || string.Equals(req.CommandType, "GameBoost", StringComparison.OrdinalIgnoreCase))
                 {
                     int pCount = NativeEngineService.TrySetKernelGameBoost(true);
-                    NativeEngineService.TryOptimizeNetwork(1); // Low-Latency Gaming TCP Tuning
+                    NativeEngineService.TryOptimizeNetwork(1);
                     NativeEngineService.ExecuteQuickMaintenance(2);
                     int ramCount = NativeEngineService.CompressPhysicalRAM();
                     sw.Stop();
                     response.Message = $"초저지연 e스포츠 게이밍 가속 모드 적용 완료 (커널 MMCSS/우선순위: {pCount}개, TCP 소켓 튜닝, RAM 압축: {ramCount}개)";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 게이밍 부스트 모드 적용 완료");
+                    LogOccurred?.Invoke("[RemoteAgent] 중앙 관제 콘솔 명령: 게이밍 부스트 모드 적용 완료");
                 }
-                else if (path.EndsWith("/apply-preset") || req.CommandType.Equals("ApplyPreset", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/apply-preset") || string.Equals(req.CommandType, "ApplyPreset", StringComparison.OrdinalIgnoreCase))
                 {
                     string preset = req.PresetName ?? "Safe";
                     int executedCount = 0;
@@ -943,11 +745,11 @@ namespace WinPurifyPro.Services
                     }
                     else
                     {
-                        NativeEngineService.ExecuteQuickMaintenance(3); // Temp clean
-                        NativeEngineService.ExecuteQuickMaintenance(2); // DNS flush
+                        NativeEngineService.ExecuteQuickMaintenance(3);
+                        NativeEngineService.ExecuteQuickMaintenance(2);
                         if (preset.Equals("Deep", StringComparison.OrdinalIgnoreCase))
                         {
-                            NativeEngineService.ExecuteQuickMaintenance(1); // Recycle bin
+                            NativeEngineService.ExecuteQuickMaintenance(1);
                             NativeEngineService.CompressPhysicalRAM();
                             executedCount = 42;
                         }
@@ -961,7 +763,7 @@ namespace WinPurifyPro.Services
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
                     LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: [{preset}] 프리셋 최적화 적용 완료");
                 }
-                else if (path.EndsWith("/schedule") || req.CommandType.Equals("ConfigureSchedule", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/schedule") || string.Equals(req.CommandType, "ConfigureSchedule", StringComparison.OrdinalIgnoreCase))
                 {
                     string freq = req.ScheduleFrequency ?? "WEEKLY";
                     int day = req.ScheduleDay;
@@ -997,70 +799,53 @@ namespace WinPurifyPro.Services
                         _ => $"매주 {dayStr} {hour:D2}:{minute:D2}"
                     };
 
-                    if (registered)
-                    {
-                        response.Success = true;
-                        response.Message = $"자동 스케줄러 등록 완료 ({triggerStr}, 프로필: {profile}, RAM압축: {(trimRam ? "ON" : "OFF")})";
-                        LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 원격 자동 스케줄러 등록 성공 ({triggerStr})");
-                    }
-                    else
-                    {
-                        response.Success = false;
-                        response.Message = $"스케줄러 작업 스케줄(schtasks) 등록 실패 (관리자 권한 필요)";
-                        LogOccurred?.Invoke($"[RemoteAgent 경고] 원격 자동 스케줄러 등록 작업 실패");
-                    }
+                    response.Success = registered;
+                    response.Message = registered
+                        ? $"자동 스케줄러 등록 완료 ({triggerStr}, 프로필: {profile}, RAM압축: {(trimRam ? "ON" : "OFF")})"
+                        : "스케줄러 작업 스케줄(schtasks) 등록 실패 (관리자 권한 필요)";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
                 }
-                else if (path.EndsWith("/unschedule") || req.CommandType.Equals("UnregisterSchedule", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/unschedule") || string.Equals(req.CommandType, "UnregisterSchedule", StringComparison.OrdinalIgnoreCase))
                 {
                     bool unregistered = await AutoSchedulerService.UnregisterScheduledTaskAsync();
                     sw.Stop();
                     response.Success = unregistered;
                     response.Message = unregistered ? "자동 스케줄러 등록 해제 완료" : "스케줄러 작업 삭제 실패 또는 등록된 작업 없음";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 자동 스케줄러 해제 완료");
                 }
-                else if (path.EndsWith("/diagnostics") || req.CommandType.Equals("Diagnostics", StringComparison.OrdinalIgnoreCase) || req.CommandType.Equals("Benchmark", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/diagnostics") || string.Equals(req.CommandType, "Diagnostics", StringComparison.OrdinalIgnoreCase) || string.Equals(req.CommandType, "Benchmark", StringComparison.OrdinalIgnoreCase))
                 {
                     var mem = SystemDiagnosticsService.GetSystemMemoryInfo();
                     double diskFree = SystemDiagnosticsService.GetSystemDriveFreeSpaceGb();
                     bool isNative = NativeEngineService.IsNativeCoreAvailable();
                     sw.Stop();
                     response.Message = $"자가진단 완료 - RAM: {mem.usedGb:F1}/{mem.totalGb:F1}GB ({mem.usagePercent:F0}%), Disk: {diskFree:F1}GB 여유, C++ Native: {(isNative ? "Active" : "Fallback")}";
-                    response.ExecutionDetails = $"OS: {Environment.OSVersion}, Cores: {Environment.ProcessorCount}, NativeCore: {isNative}";
+                    response.ExecutionDetails = $"OS: {Environment.OSVersion}, Cores: {Environment.ProcessorCount}, NativeCore: {isNative}, TLS: {IsTlsActive}";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 노드 자가진단 완료");
                 }
-                else if (path.EndsWith("/reboot") || req.CommandType.Equals("Reboot", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/reboot") || string.Equals(req.CommandType, "Reboot", StringComparison.OrdinalIgnoreCase))
                 {
                     sw.Stop();
                     response.Message = "원격 시스템 강제 재부팅이 예약되었습니다 (3초 후 /r /f 안전 재시작).";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent 긴급] 중앙 관제 콘솔 명령: 3초 후 4-Tier 시스템 강제 재부팅(/r /f) 시작");
-
-                    // 4-Tier Failover System Reboot Engine 실행 (Win32 Native API + System32 shutdown.exe + PowerShell CIM + cmd.exe runas)
                     SystemPowerService.ScheduleForceReboot(3, msg => LogOccurred?.Invoke(msg));
                 }
-                else if (path.EndsWith("/shutdown") || req.CommandType.Equals("Shutdown", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/shutdown") || string.Equals(req.CommandType, "Shutdown", StringComparison.OrdinalIgnoreCase))
                 {
                     sw.Stop();
                     response.Message = "원격 시스템 강제 종료가 예약되었습니다 (3초 후 /s /f 전원 차단).";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent 긴급] 중앙 관제 콘솔 명령: 3초 후 4-Tier 시스템 강제 종료(/s /f) 시작");
-
-                    // 4-Tier Failover System Shutdown Engine 실행 (Win32 Native API + System32 shutdown.exe + PowerShell CIM + cmd.exe runas)
                     SystemPowerService.ScheduleForceShutdown(3, msg => LogOccurred?.Invoke(msg));
                 }
-                else if (path.EndsWith("/rollback") || req.CommandType.Equals("Rollback", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/rollback") || string.Equals(req.CommandType, "Rollback", StringComparison.OrdinalIgnoreCase))
                 {
                     var (rbSuccess, rbMessage) = await LiveSafepointService.RollbackLatestSafepointAsync();
                     sw.Stop();
                     response.Success = rbSuccess;
                     response.Message = rbMessage;
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 세이프포인트 롤백 복원 완료 - {rbMessage}");
                 }
-                else if (path.EndsWith("/account-purge") || req.CommandType.Equals("AccountPurge", StringComparison.OrdinalIgnoreCase) || req.CommandType.Equals("ZeroTraceAccountPurge", StringComparison.OrdinalIgnoreCase) || req.CommandType.Equals("AccountSessionPurge", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/account-purge") || string.Equals(req.CommandType, "AccountPurge", StringComparison.OrdinalIgnoreCase) || string.Equals(req.CommandType, "ZeroTraceAccountPurge", StringComparison.OrdinalIgnoreCase) || string.Equals(req.CommandType, "AccountSessionPurge", StringComparison.OrdinalIgnoreCase))
                 {
                     var targets = AccountCredentialPurgeService.CreateDefaultTargets();
                     string preset = req.AccountPurgePreset ?? req.PresetName ?? "workplace";
@@ -1082,40 +867,64 @@ namespace WinPurifyPro.Services
                     response.Message = $"통합 계정 & 세션 토큰 정화 완료 ({purgedCount}개 타깃 로그아웃 및 토큰 파쇄, 시나리오: {preset})";
                     response.ExecutionDetails = $"Scenario: {preset}, PurgedTargets: {purgedCount}, PreTerminate: {terminate}";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 통합 계정 & 세션 토큰 원격 정화 완료 ({purgedCount}개 카테고리, {sw.ElapsedMilliseconds}ms)");
                 }
-                else if (path.EndsWith("/zero-trace-reset") || req.CommandType.Equals("ZeroTraceReset", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/zero-trace-reset") || string.Equals(req.CommandType, "ZeroTraceReset", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Zero-Trace 완전 초기화 (휴지통 비우기, DNS 캐시 플러시, Temp 파일 청소, RAM 압축)
-                    int r1 = NativeEngineService.ExecuteQuickMaintenance(1); // Recycle bin
-                    int r2 = NativeEngineService.ExecuteQuickMaintenance(2); // DNS flush
-                    int r3 = NativeEngineService.ExecuteQuickMaintenance(3); // Temp clean
+                    int r1 = NativeEngineService.ExecuteQuickMaintenance(1);
+                    int r2 = NativeEngineService.ExecuteQuickMaintenance(2);
+                    int r3 = NativeEngineService.ExecuteQuickMaintenance(3);
                     int r4 = NativeEngineService.CompressPhysicalRAM();
-                    
-                    // Windows 최근 문서, 실행 기록 및 클립보드 초기화 시도
+
                     try
                     {
-                        var psi = new ProcessStartInfo
+                        var psi = new ProcessStartInfo("powershell.exe")
                         {
-                            FileName = "powershell.exe",
-                            Arguments = "-NoProfile -Command \"Clear-History; [System.Windows.Forms.Clipboard]::Clear() -ErrorAction SilentlyContinue\"",
                             UseShellExecute = false,
                             CreateNoWindow = true
                         };
+                        psi.ArgumentList.Add("-NoProfile");
+                        psi.ArgumentList.Add("-NonInteractive");
+                        psi.ArgumentList.Add("-Command");
+                        psi.ArgumentList.Add("Clear-History; Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue; [System.Windows.Forms.Clipboard]::Clear()");
                         using var p = Process.Start(psi);
                         p?.WaitForExit(2000);
                     }
                     catch { }
 
                     sw.Stop();
-                    response.Message = $"Zero-Trace 안티포렌식 완전 초기화 완료 (임시파일/휴지통/DNS/메모리/히스토리 전면 소거)";
+                    response.Message = "Zero-Trace 안티포렌식 완전 초기화 완료 (임시파일/휴지통/DNS/메모리/히스토리 전면 소거)";
                     response.ExecutionDetails = $"Recycle: {r1}, DNS: {r2}, Temp: {r3}, RAM Trim: {r4}";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: Zero-Trace 완전 초기화 실행 완료 ({sw.ElapsedMilliseconds}ms)");
                 }
-                else if (path.EndsWith("/profile-sync") || req.CommandType.Equals("ProfileSync", StringComparison.OrdinalIgnoreCase) || req.CommandType.Equals("DefaultProfileReplication", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/fresh-handover") || string.Equals(req.CommandType, "FreshHandover", StringComparison.OrdinalIgnoreCase))
                 {
-                    // 1. 순정 기본 프로필 자동 백업 및 템플릿 복제 실행 (C:\Users\Default - 최소 권한 ACL 적용)
+                    string requestedPreset = req.PresetName ?? req.Preset ?? "PreviousUsersAndSessions";
+                    var preset = HandoverPresetMode.PreviousUsersAndSessions;
+                    if (string.Equals(requestedPreset, "SessionsOnly", StringComparison.OrdinalIgnoreCase))
+                        preset = HandoverPresetMode.SessionsOnly;
+                    else if (string.Equals(requestedPreset, "FullMachineReset", StringComparison.OrdinalIgnoreCase))
+                        preset = HandoverPresetMode.FullMachineReset;
+
+                    var profiles = await FreshHandoverService.ScanUserProfilesAsync(msg => LogOccurred?.Invoke(msg));
+                    var artifacts = await FreshHandoverService.ScanSessionArtifactsAsync(profiles, msg => LogOccurred?.Invoke(msg));
+                    FreshHandoverService.ApplyHandoverPreset(profiles, artifacts, preset);
+                    var summary = await FreshHandoverService.ExecuteHandoverPurgeAsync(
+                        profiles,
+                        artifacts,
+                        terminateProcessesBeforePurge: req.TerminateProcessesBeforePurge,
+                        createSafepoint: true,
+                        logger: msg => LogOccurred?.Invoke(msg),
+                        schedulePendingReboot: req.SchedulePendingReboot,
+                        presetUsed: preset.ToString());
+
+                    sw.Stop();
+                    response.Success = summary.IsCleanHandoverVerified || summary.HasPendingReboot;
+                    response.Message = summary.SummaryMessage;
+                    response.ExecutionDetails = $"Preset: {preset}, PurgedProfiles: {summary.PurgedProfilesCount}, PurgedSessions: {summary.PurgedSessionsCount}, PendingReboot: {summary.PendingRebootCount}, RemainingProfiles: {summary.RemainingPreviousProfiles}, RemainingSessions: {summary.RemainingActiveSessions}, Reclaimed: {summary.FormattedReclaimedSize}, Verified: {summary.IsCleanHandoverVerified}";
+                    response.ExecutionTimeMs = sw.ElapsedMilliseconds;
+                }
+                else if (path.EndsWith("/profile-sync") || string.Equals(req.CommandType, "ProfileSync", StringComparison.OrdinalIgnoreCase) || string.Equals(req.CommandType, "DefaultProfileReplication", StringComparison.OrdinalIgnoreCase))
+                {
                     string script = @"cmd /c ""if not exist ""C:\Users\Default_Backup_WinPurify"" (robocopy ""C:\Users\Default"" ""C:\Users\Default_Backup_WinPurify"" /E /ZB /R:1 /W:1 2>nul & copy /y ""C:\Users\Default\NTUSER.DAT"" ""C:\Users\Default_Backup_WinPurify\NTUSER.DAT"" 2>nul) & reg save HKCU ""%TEMP%\winpurify_ntuser.dat"" /y & attrib -h -s -r ""C:\Users\Default\NTUSER.DAT"" 2>nul & copy /y ""%TEMP%\winpurify_ntuser.dat"" ""C:\Users\Default\NTUSER.DAT"" & attrib +h +s ""C:\Users\Default\NTUSER.DAT"" & del /f /q ""%TEMP%\winpurify_ntuser.dat"" 2>nul & robocopy ""%APPDATA%\Microsoft\Windows\Themes"" ""C:\Users\Default\AppData\Roaming\Microsoft\Windows\Themes"" /E /ZB /R:1 /W:1 2>nul & icacls ""C:\Users\Default"" /grant ""SYSTEM:(OI)(CI)F"" /grant ""BUILTIN\Administrators:(OI)(CI)F"" /grant ""BUILTIN\Users:(OI)(CI)RX"" /inheritance:e /T /C /Q 2>nul & icacls ""C:\Users\Default\NTUSER.DAT"" /grant ""SYSTEM:F"" /grant ""BUILTIN\Administrators:F"" /grant ""BUILTIN\Users:R"" /inheritance:e /C /Q 2>nul""";
                     var psi = new ProcessStartInfo
                     {
@@ -1127,12 +936,11 @@ namespace WinPurifyPro.Services
                     using var p = Process.Start(psi);
                     p?.WaitForExit(20000);
                     sw.Stop();
-                    response.Message = $"Windows 기본 프로필(Default) 복제 및 권한 상속 완료 (신규 생성 계정에 현재 테마/작업표시줄/레지스트리 자동 배포, 원본 자동 백업됨)";
-                    response.ExecutionDetails = "Backup: C:\\Users\\Default_Backup_WinPurify, Hive: NTUSER.DAT, ACL: SYSTEM/Admins Full, Users RX";
+                    response.Message = "Windows 기본 프로필(Default) 복제 및 권한 상속 완료";
+                    response.ExecutionDetails = "Backup: C:\\Users\\Default_Backup_WinPurify, Hive: NTUSER.DAT";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: Windows 기본 프로필(Default) 복제 완료 ({sw.ElapsedMilliseconds}ms)");
                 }
-                else if (path.EndsWith("/browser-factory-reset") || req.CommandType.Equals("BrowserFactoryReset", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/browser-factory-reset") || string.Equals(req.CommandType, "BrowserFactoryReset", StringComparison.OrdinalIgnoreCase))
                 {
                     string rawTarget = (req.BrowserTarget ?? "all").Trim().ToLowerInvariant();
                     var allowedTargets = new HashSet<string> { "all", "chrome", "edge", "whale", "firefox" };
@@ -1140,46 +948,65 @@ namespace WinPurifyPro.Services
 
                     var killedList = new List<string>();
                     var cleanedList = new List<string>();
+                    var lockedRemaining = new List<string>();
+                    string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    string roamingAppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+                    static void KillNamedProcessSafe(string procName)
+                    {
+                        try
+                        {
+                            foreach (var proc in Process.GetProcessesByName(procName))
+                            {
+                                using (proc)
+                                {
+                                    try { proc.Kill(true); proc.WaitForExit(1500); } catch { }
+                                }
+                            }
+                        }
+                        catch { }
+                    }
 
                     if (target == "all" || target == "chrome")
                     {
-                        RunHiddenCmd("taskkill /f /im chrome.exe 2>nul & rd /s /q \"%LocalAppData%\\Google\\Chrome\\User Data\"");
+                        KillNamedProcessSafe("chrome");
+                        FreshHandoverService.ForceDeleteDirectory(Path.Combine(localAppData, "Google", "Chrome", "User Data"), true, lockedRemaining);
                         killedList.Add("Chrome");
                         cleanedList.Add("Google\\Chrome\\User Data");
                     }
                     if (target == "all" || target == "edge")
                     {
-                        RunHiddenCmd("taskkill /f /im msedge.exe 2>nul & rd /s /q \"%LocalAppData%\\Microsoft\\Edge\\User Data\"");
+                        KillNamedProcessSafe("msedge");
+                        FreshHandoverService.ForceDeleteDirectory(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"), true, lockedRemaining);
                         killedList.Add("Edge");
                         cleanedList.Add("Microsoft\\Edge\\User Data");
                     }
                     if (target == "all" || target == "whale")
                     {
-                        RunHiddenCmd("taskkill /f /im whale.exe 2>nul & rd /s /q \"%LocalAppData%\\Naver\\Naver Whale\\User Data\"");
+                        KillNamedProcessSafe("whale");
+                        FreshHandoverService.ForceDeleteDirectory(Path.Combine(localAppData, "Naver", "Naver Whale", "User Data"), true, lockedRemaining);
                         killedList.Add("Whale");
                         cleanedList.Add("Naver\\Naver Whale\\User Data");
                     }
                     if (target == "all" || target == "firefox")
                     {
-                        RunHiddenCmd("taskkill /f /im firefox.exe 2>nul & rd /s /q \"%AppData%\\Mozilla\\Firefox\\Profiles\" & rd /s /q \"%LocalAppData%\\Mozilla\\Firefox\\Profiles\"");
+                        KillNamedProcessSafe("firefox");
+                        FreshHandoverService.ForceDeleteDirectory(Path.Combine(roamingAppData, "Mozilla", "Firefox", "Profiles"), true, lockedRemaining);
+                        FreshHandoverService.ForceDeleteDirectory(Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles"), true, lockedRemaining);
                         killedList.Add("Firefox");
                         cleanedList.Add("Mozilla\\Firefox\\Profiles");
                     }
 
                     sw.Stop();
-                    response.Message = $"브라우저 공장 초기화 완료 ({string.Join(", ", killedList)} 프로세스 종료 및 프로필 완전 소거)";
-                    response.ExecutionDetails = $"Targets: {string.Join(", ", cleanedList)}";
+                    response.Message = $"브라우저 공장 초기화 완료 ({string.Join(", ", killedList)})";
+                    response.ExecutionDetails = $"Targets: {string.Join(", ", cleanedList)}, RemainingLocked: {lockedRemaining.Count}";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 브라우저 공장 초기화 완료 ({string.Join(", ", killedList)}, {sw.ElapsedMilliseconds}ms)");
                 }
-                else if (path.EndsWith("/forensics-wipe") || req.CommandType.Equals("ForensicsWipe", StringComparison.OrdinalIgnoreCase))
+                else if (path.EndsWith("/forensics-wipe") || string.Equals(req.CommandType, "ForensicsWipe", StringComparison.OrdinalIgnoreCase))
                 {
                     string rawDrive = req.ForensicsTargetDrive ?? "C:";
                     string drive = rawDrive.Trim().ToUpperInvariant();
-                    if (!System.Text.RegularExpressions.Regex.IsMatch(drive, @"^[A-Z]:$"))
-                    {
-                        drive = "C:";
-                    }
+                    if (!System.Text.RegularExpressions.Regex.IsMatch(drive, @"^[A-Z]:$")) drive = "C:";
 
                     _ = Task.Run(() =>
                     {
@@ -1204,31 +1031,8 @@ namespace WinPurifyPro.Services
 
                     sw.Stop();
                     response.Message = $"디스크 {drive} 포렌식 빈 공간 난수 파쇄(cipher /w) 백그라운드 실행 시작됨";
-                    response.ExecutionDetails = $"TargetDrive: {drive}, Method: 0x00 / 0xFF / Random 3-Pass Zero Wipe";
+                    response.ExecutionDetails = $"TargetDrive: {drive}";
                     response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent] 중앙 관제 콘솔 명령: 디스크 {drive} 포렌식 빈 공간 파쇄 시작됨");
-                }
-                else if (path.EndsWith("/shutdown") || req.CommandType.Equals("Shutdown", StringComparison.OrdinalIgnoreCase))
-                {
-                    sw.Stop();
-                    response.Message = "원격 시스템 종료가 예약되었습니다 (30초 후 안전 종료).";
-                    response.ExecutionTimeMs = sw.ElapsedMilliseconds;
-                    LogOccurred?.Invoke($"[RemoteAgent 경고] 중앙 관제 콘솔 명령: 30초 후 시스템 종료 시작");
-                    _ = Task.Run(async () =>
-                    {
-                        await Task.Delay(1000);
-                        try
-                        {
-                            Process.Start(new ProcessStartInfo
-                            {
-                                FileName = "shutdown.exe",
-                                Arguments = "/s /t 30 /c \"WinPurify Pro Central Commander: 원격 시스템 종료가 예약되었습니다.\"",
-                                UseShellExecute = false,
-                                CreateNoWindow = true
-                            });
-                        }
-                        catch { }
-                    });
                 }
                 else
                 {
@@ -1245,7 +1049,6 @@ namespace WinPurifyPro.Services
                 response.ExecutionTimeMs = sw.ElapsedMilliseconds;
             }
 
-            // 원격 명령 완료 알림 및 감사 기록 보존
             execArgs.Status = response.Success ? "Success" : "Failed";
             execArgs.ResultMessage = response.Message;
             execArgs.ElapsedMs = sw.ElapsedMilliseconds;
@@ -1282,52 +1085,9 @@ namespace WinPurifyPro.Services
             return Convert.ToHexString(hash);
         }
 
-        private static void RunHiddenCmd(string command)
-        {
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c \"{command}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using var p = Process.Start(psi);
-                p?.WaitForExit(10000);
-            }
-            catch { }
-        }
-
         public void Dispose()
         {
             StopAgent();
-        }
-
-        private static void CleanupExpiredChallenges()
-        {
-            if (DateTime.UtcNow - _lastChallengeCleanup < TimeSpan.FromSeconds(30)) return;
-
-            lock (_nonceCleanupLock)
-            {
-                if (DateTime.UtcNow - _lastChallengeCleanup < TimeSpan.FromSeconds(30)) return;
-                _lastChallengeCleanup = DateTime.UtcNow;
-
-                var expiredKeys = _activeChallenges.Where(kvp => DateTime.UtcNow > kvp.Value.ExpiresAt).Select(kvp => kvp.Key).ToList();
-                foreach (var k in expiredKeys)
-                {
-                    _activeChallenges.TryRemove(k, out _);
-                }
-            }
-        }
-
-        private static async Task WriteJsonAsync(HttpListenerResponse response, object data)
-        {
-            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(data, new JsonSerializerOptions { WriteIndented = false });
-            response.ContentType = "application/json; charset=utf-8";
-            response.ContentLength64 = bytes.Length;
-            await response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
-            response.Close();
         }
     }
 

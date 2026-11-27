@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -41,6 +42,16 @@ namespace WinPurifyPro.Models
         Skipped
     }
 
+    public class EngineAttemptTrace
+    {
+        public string EngineName { get; set; } = string.Empty;
+        public bool Succeeded { get; set; }
+        public int ExitCode { get; set; }
+        public long DurationMs { get; set; }
+        public string OutputSummary { get; set; } = string.Empty;
+        public string ErrorDetail { get; set; } = string.Empty;
+    }
+
     public class OptimizationTask : INotifyPropertyChanged
     {
         public int SequenceNumber { get; set; } = 0;
@@ -54,6 +65,9 @@ namespace WinPurifyPro.Models
         public string PowerShellCommand { get; set; } = string.Empty;
         public string FastCliCommand { get; set; } = string.Empty;
         public int NativeActionType { get; set; } = 0; // 0: None, 1: RecycleBin, 2: DnsFlush, 3: TempPurge, 4: RamTrim
+        public int TimeoutSeconds { get; set; } = 15;
+        public bool RequiresAdmin { get; set; } = false;
+        public bool IsCustomModule { get; set; } = false;
 
         private bool _isSelected;
         public bool IsSelected
@@ -100,6 +114,13 @@ namespace WinPurifyPro.Models
         {
             get => _statusMessage;
             set { if (_statusMessage != value) { _statusMessage = value; OnPropertyChanged(); } }
+        }
+
+        private string _lastFailureDiagnosis = string.Empty;
+        public string LastFailureDiagnosis
+        {
+            get => _lastFailureDiagnosis;
+            set { if (_lastFailureDiagnosis != value) { _lastFailureDiagnosis = value; OnPropertyChanged(); } }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

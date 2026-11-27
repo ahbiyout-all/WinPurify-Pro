@@ -1,117 +1,98 @@
-# WinPurify Pro - C# WPF MVVM 아키텍처 및 빌드 가이드 (WPF MVVM Architecture Guide)
+# WinPurify Pro - C# WPF MVVM 아키텍처 및 빌드 가이드 (`v4.71.1`)
 
-본 문서는 **WinPurify Pro (v3.1.0)**의 C# WPF 기반 MVVM(Model-View-ViewModel) 엔터프라이즈 아키텍처 설계와 컴파일, 배포 방법을 상세히 설명합니다.
+본 문서는 **WinPurify Pro (`v4.71.1` — Clean Handover & Fresh Environment Suite)**의 C# .NET 10.0 WPF Partial MVVM 아키텍처, 서비스 계층, 단일 진실 원천 JSON 카탈로그(`modules.manifest.json`) 및 컴파일/패키징 방법을 상세히 설명합니다.
 
 ---
 
-## 🏛️ 1. 아키텍처 개요 (Architecture Overview)
-
-WinPurify Pro는 단일 모놀리식 구조에서 **관심사 분리(Separation of Concerns)**와 **높은 유지보수성**을 갖춘 계층형 MVVM 패턴으로 리팩토링되었습니다.
+## 🏛️ 1. 솔루션 및 파일 구조 (Verified Repository Layout)
 
 ```
 WinPurifyPro/
-├── WinPurifyPro.sln                      # Visual Studio 2022 / 2026 솔루션 파일
-├── WinPurifyPro.csproj                   # .NET 10.0-Windows (.NET 8.0 호환) WPF 프로젝트 명세
-├── App.xaml / App.xaml.cs                # 전역 애플리케이션 수명주기 및 리소스
-├── app.manifest                          # UAC 관리자 권한 승격 매니페스트
+├── WinPurifyPro.sln                      # Visual Studio 솔루션 파일
+├── WinPurifyPro.csproj                   # .NET 10.0-Windows 메인 WPF 앱 명세
+├── WinPurifyCommander.csproj             # .NET 10.0-Windows 독립 Central Commander 앱 명세
+├── modules.manifest.json                 # 144개 모듈 단일 진실 원천(Single Source of Truth)
+├── App.xaml / App.xaml.cs                # 전역 예외 처리, CLI 라우팅(--handover-auto, --schedule-run, --service)
+├── MainWindow.xaml / MainWindow.xaml.cs  # Clean Handover 기본 워크스페이스 & 144모듈/트레이/모달 UI
+├── CommanderMainWindow.xaml              # 중앙 관제 전용 WPF 대시보드
+├── app.manifest                          # UAC requireAdministrator 승격 매니페스트
 │
-├── 📂 Models/                            # [Model Layer] 순수 데이터 및 도메인 엔터티
-│   ├── OptimizationTask.cs               # 최적화 작업 항목 (ID, 위험도, PowerShell 커맨드)
-│   ├── TaskCategory.cs                   # 카테고리 정의 (보안, 성능, 레지스트리 등)
-│   ├── LogEntry.cs                       # 콘솔 로그 및 심각도(Severity) 모델
-│   ├── Safepoint.cs                      # 시스템 스냅샷/복원 지점 엔터티
-│   └── SystemStatusMetrics.cs            # CPU, RAM, Disk 모니터링 수치
+├── 📂 Models/                            # [Model Layer] 도메인 모델 및 DTO
+│   ├── HandoverModels.cs                 # DetectedUserProfile, DetectedSessionArtifact, HandoverVerificationSummary
+│   ├── OptimizationTask.cs               # OptimizationTask, TaskCategory, RiskLevel, SafepointRecord
+│   └── RemoteCommanderModels.cs          # NodeTelemetryDto, BatchCommandRequest, StudioPair*Dto, AuthChallengeResponseDto
 │
-├── 📂 ViewModels/                        # [ViewModel Layer] UI 상태 및 명령 오케스트레이션
-│   ├── ViewModelBase.cs                  # INotifyPropertyChanged & UI Dispatcher 동기화 베이스
-│   ├── RelayCommand.cs                   # ICommand 동기 명령 래퍼 (제네릭 지원)
-│   ├── AsyncRelayCommand.cs              # 비동기 Task 실행 및 IsExecuting 상태 추적 래퍼
-│   ├── TaskItemViewModel.cs              # 개별 작업 선택 상태 및 동적 색상 브러시 속성
-│   ├── CategoryViewModel.cs              # 카테고리별 컬렉션 및 선택 카운터 집계
-│   ├── SafepointViewModel.cs             # 복원 지점 UI 뷰모델
-│   └── MainViewModel.cs                  # 메인 윈도우 마스터 오케스트레이션 뷰모델
+├── 📂 ViewModels/                        # [ViewModel Layer] Partial ViewModel 분할 구조
+│   ├── IMainViewModel.cs                 # 메인 뷰모델 계약 인터페이스
+│   ├── RelayCommand.cs                   # ICommand 구현체
+│   ├── MainViewModel.cs                  # 핵심 상태, 테마, 로그, 트레이, 커맨더 이벤트 바인딩
+│   ├── MainViewModel.Handover.cs         # Clean Handover 워크스페이스 스캔·프리셋·소거·검증 오케스트레이션
+│   ├── MainViewModel.Optimization.cs     # 144개/커스텀 모듈 스캔·필터링·실행·세이프포인트 롤백
+│   ├── MainViewModel.Diagnostics.cs      # 자가 진단, 하드웨어 텔레메트리, GitHub 실시간 업데이트
+│   └── CommanderViewModel.cs             # Central Commander 다중 PC 플릿 관제 뷰모델
 │
-├── 📂 Views/                             # [View Layer] XAML 기반 프레젠테이션 계층
-│   ├── MainWindow.xaml                   # 데이터 바인딩 기반 고성능 벡터 UI
-│   └── MainWindow.xaml.cs                # DataContext 바인딩 및 윈도우 수명주기 제어 Code-Behind
+├── 📂 Services/                          # [Service Layer] OS·네트워크·보안·스케줄러 엔진
+│   ├── FreshHandoverService.cs           # 이전 사용자 SID/폴더·다중 브라우저·AI/개발도구·자격증명 탐지/소거/2차 검증
+│   ├── HandoverPolicyService.cs          # Whitelist 예외 영구 저장, PendingFileRenameOperations 예약, HTML/JSON 인증서 생성
+│   ├── AccountCredentialPurgeService.cs  # Win32 CredEnumerateW/CredDeleteW & 15종 계정/세션 정화 엔진
+│   ├── MultiEngineDispatcher.cs          # 4중 Failover (Native C++ → Fast CLI → Embedded PS → Fallback)
+│   ├── NativeEngineService.cs            # PurifyEngineCore.dll P/Invoke 브리지 (RAM Trim, 파일 잠금 해제 등)
+│   ├── RobocopyScannerService.cs         # Stutter-Free 비동기 폴더 용량 스캐너
+│   ├── LiveSafepointService.cs           # 정화 직전 .reg 스냅샷 생성 및 1-Click 복구
+│   ├── CustomModuleService.cs            # modules.manifest.json 로더 및 사용자 동적 모듈 저장소
+│   ├── ClusterSecurityVault.cs           # Win32 DPAPI 클러스터 키 금고, ECDSA P-256 TLS 인증서, 6자리 PIN
+│   ├── RemoteTlsServer.cs                # 내장 SslStream TLS 1.2/1.3 수신기 (TCP:9874)
+│   ├── RemoteAgentService.cs             # TLS 9874 / HTTP 9870 / UDP 9871 원격 에이전트 & 배치 디스패처
+│   ├── RemoteAuthValidator.cs            # HMAC-SHA256, 1회용 Nonce, Challenge IP 바인딩, 평문 Secret 거부
+│   ├── HybridNodeDiscoveryService.cs     # 멀티 NIC UDP 브로드캐스트 + /24 서브넷 TCP 병렬 탐색
+│   ├── RemoteCommanderManager.cs         # Commander HTTPS(TOFU) / HTTP 클라이언트 관리자
+│   ├── RemoteExecutionAuditService.cs    # 원격 실행 감사 이력 영구 저장
+│   ├── FirewallService.cs                # Windows 방화벽 TCP 9874/9870 · UDP 9871 자동 규칙 구성
+│   ├── AutoSchedulerService.cs           # schtasks 기반 Startup/Interval/Daily/Weekly 무음 유지보수
+│   ├── SystemTrayService.cs              # Win32 Shell_NotifyIconW 트레이 아이콘 & 실시간 진행률 툴팁
+│   ├── SystemDiagnosticsService.cs       # CPU/RAM/Disk 실시간 메트릭 수집
+│   ├── SystemPowerService.cs             # 4-Tier 강제 재부팅/종료 Failover
+│   ├── WindowsServiceHost.cs             # WinPurifyAgentService (Session 0) 호스트 및 SCM 설치/삭제
+│   ├── SingleInstanceService.cs          # 앱/커맨더 독립 뮤텍스 관리
+│   ├── GitHubUpdateService.cs            # GitHub Releases 실시간 버전 조회 및 자동 업데이트
+│   ├── ProfilePresetManager.cs           # Safe/Deep/Gaming/Privacy/ZeroTrace 프리셋 관리자
+│   ├── SelfDiagnosticTester.cs           # 시스템/모듈 무결성 자가 진단
+│   ├── LoggerService.cs                  # 로컬 디스크 감사 로그 저장
+│   └── AppEnvironment.cs                 # 포터블/서비스/버전 실행 환경 판별
 │
-├── 📂 Services/                          # [Service Layer] 비즈니스 로직 & OS 엔진
-│   ├── ISystemPurifyService.cs           # 시스템 정제 서비스 인터페이스
-│   ├── SystemPurifyService.cs            # Base64 인코딩 PowerShell 비동기 실행 엔진
-│   ├── ISystemMetricsService.cs          # 실시간 하드웨어 메트릭 수집 인터페이스
-│   ├── SystemMetricsService.cs           # WorkingSet / Disk 모니터링 구현체
-│   ├── ITaskSeedService.cs               # 작업 시드 데이터 프로바이더 인터페이스
-│   └── TaskSeedService.cs                # 60+개 최적화 룰셋 데이터 생성기
+├── 📂 Converters/                        # [Converters] XAML 데이터 바인딩 변환기
+│   └── ValueConverters.cs                # RiskToBrush, CategoryToActive*, HandoverFilterActive*, BoolToVis, InvBool 등
 │
-├── 📂 Converters/                        # [Converters] XAML 데이터 바인딩 값 변환기
-│   └── ValueConverters.cs                # ProgressToWidth, RiskToBrush, BoolToVisibility
-│
-└── PurifyEngine.cs                       # C++ 네이티브 DLL (PurifyEngineCore.dll) P/Invoke 브리지
+└── NativeEngine/                         # C++17 네이티브 가속 소스 (PurifyEngineCore.dll)
 ```
 
 ---
 
-## 🧩 2. 계층별 세부 설계 (Layer Details)
+## 🧩 2. 핵심 설계 원칙 (Key Architecture Patterns)
 
-### 1. Model 계층 (`/Models`)
-- UI나 프레임워크에 의존하지 않는 순수 POCO(Plain Old CLR Object) 클래스로 구성.
-- `OptimizationTask`: 최적화 대상의 고유 ID, 영문/한글 설명, 위험도 수준(`Safe`, `Deep`, `Risky`), 예상 확보 용량 및 실행할 PowerShell 명령어를 캡슐화.
-- `LogEntry`: 타임스탬프, 심각도(`Info`, `Success`, `Warning`, `Error`, `Command`), 카테고리를 관리하며 UI 브러시 색상을 매핑.
-
-### 2. ViewModel 계층 (`/ViewModels`)
-- `ViewModelBase`: 모든 뷰모델의 기반 클래스로, `SetProperty<T>`를 통한 간결한 프로퍼티 변경 알림과 `RunOnUIThread(Action)`를 통한 스레드 안전 UI 업데이트를 제공.
-- `AsyncRelayCommand`: 비동기 작업(`async/await`) 실행 중 버튼 중복 클릭을 방지(`IsExecuting`)하며, 작업 완료 시 커맨드 실행 가능 상태(`CanExecute`)를 자동 갱신.
-- `MainViewModel`: 전체 최적화 시퀀스 실행, 프로그레스 백분율 계산, 실시간 콘솔 스트림 로깅, 언어 전환(한국어/영어), 다크/라이트 테마 변경을 총괄.
-
-### 3. Service 계층 (`/Services`)
-- UI와 분리된 비즈니스 로직 계층으로, 단위 테스트(Unit Test) 및 목(Mock) 객체 교체가 용이한 인터페이스 기반 설계.
-- `SystemPurifyService`:
-  - PowerShell 인젝션 방지를 위한 `-EncodedCommand (Unicode Base64)` 실행 방식 적용.
-  - `CancellationToken`을 통한 사용자 강제 중단(Cancel) 지원 및 활성 프로세스 트리 즉시 종료(`Process.Kill(true)`).
-  - 윈도우 시스템 복원 지점(`Checkpoint-Computer`) 자동 생성.
-
-### 4. Native Interop 계층 (`PurifyEngine.cs`)
-- C++ 고성능 코어 라이브러리(`PurifyEngineCore.dll`)와의 `[DllImport]` 인터페이스:
-  - `CompressPhysicalRAM()`: 네이티브 Working Set Trimming 및 메모리 압축.
-  - `DeepScanDirectoryW()`: 커널 레벨 디렉터리 고속 분석.
+1. **Partial ViewModel 분할 패턴**:
+   - 비대해지기 쉬운 `MainViewModel`을 핵심 상태(`MainViewModel.cs`), 클린 인수인계(`MainViewModel.Handover.cs`), 모듈 실행(`MainViewModel.Optimization.cs`), 진단·업데이트(`MainViewModel.Diagnostics.cs`) 4개 파일로 분리하여 유지보수성과 XAML 바인딩 일관성을 확보했습니다.
+2. **Clean Handover 기본 워크스페이스 & 비파괴 자동 스캔 (`v4.71.1` 강화)**:
+   - `MainViewModel` 생성 시 UI가 먼저 렌더링된 직후 백그라운드에서 `FreshHandoverService.ScanUserProfilesAsync()` 및 `ScanSessionArtifactsAsync()`를 비파괴 실행합니다.
+   - 실제 삭제는 사용자의 1-Click 확인 모달 승인 후에만 진행되며, `Advapi32.dll` P/Invoke(`CredEnumerateW`/`CredDeleteW`) 및 `userenv.dll`(`DeleteProfileW`)를 직접 호출합니다. 또한 `IsReparsePointPath` 검사로 심볼릭 링크·정션을 따라 외부 폴더가 삭제되는 것을 차단하고, 사용 중인 항목은 **하위 파일 → 상위 디렉터리 순(Bottom-Up)**으로 `PendingFileRenameOperations`에 예약한 뒤 Step 4에서 **실제 디스크/자격증명 2차 검증 재스캔**을 수행합니다.
+3. **단일 진실 원천 (`modules.manifest.json`)**:
+   - 144개 표준·특수 모듈 정의를 JSON 매니페스트로 통합하고 `CustomModuleService.cs`와 프론트엔드 TypeScript가 동일 소스를 참조합니다.
 
 ---
 
 ## 💻 3. 빌드 및 배포 방법 (Build & Publish)
 
-### A. Visual Studio 2022 / 2026에서 빌드
-1. `WinPurifyPro.sln` 파일을 실행합니다.
-2. 솔루션 구성(Configuration)을 `Release` | `x64` 또는 `Any CPU`로 설정합니다.
-3. `F5` 키(디버깅 시작) 또는 `Ctrl + F5`(디버깅하지 않고 시작)를 누릅니다.
-
-### B. .NET CLI 명령어를 통한 빌드
+### A. 프론트엔드 자산 컴파일 & XAML 구조 검증 (Linux/Windows 공통)
 ```bash
-# 1. 의존성 복원 및 일반 빌드
+npm run build           # sync-version.js + esbuild + Tailwind CSS -> dist-web/
+npm run validate:xaml   # MainWindow.xaml / CommanderMainWindow.xaml / App.xaml 정적 무결성 검증
+```
+
+### B. .NET 10 WPF 빌드 (Windows)
+```powershell
 dotnet build WinPurifyPro.csproj -c Release
-
-# 2. 독립 실행형(Single-File Portable) EXE 단일 파일 배포
-dotnet publish WinPurifyPro.csproj \
-  -c Release \
-  -r win-x64 \
-  --self-contained true \
-  -p:PublishSingleFile=true \
-  -p:PublishReadyToRun=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true \
-  -o ./publish/
+dotnet build WinPurifyCommander.csproj -c Release
 ```
 
-### C. 제공된 배치 스크립트 활용
-루트 디렉터리의 `build.bat`을 실행하면 환경 감지부터 C++ DLL 컴파일, WPF 프로젝트 빌드, 단일 실행 파일 패키징까지 원클릭으로 자동 진행됩니다.
-
-```cmd
-build.bat
-```
-
----
-
-## 🔒 4. 보안 및 권한 설정 (UAC & Security)
-
-WinPurify Pro는 레지스트리 수정, 윈도우 서비스 제어, 임시 시스템 캐시 삭제를 수행하므로 관리자 권한이 필수적입니다.
-
-- `app.manifest` 내에 `<requestedExecutionLevel level="requireAdministrator" uiAccess="false" />`가 구성되어 있어 프로그램 실행 시 자동으로 UAC 승인 대화상자가 표시됩니다.
-- 실행 중인 프로세스가 관리자 권한이 아닌 경우 `ISystemPurifyService.IsAdministrator()`가 감지하여 UI에 경고 배지를 표시하고 권한 상승 재실행을 유도합니다.
+### C. 원클릭 통합 빌드 스크립트 (`build.bat` / `build.ps1`)
+루트 디렉터리의 `build.bat` 또는 `build.ps1`을 실행하면 `node sync-version.js` 버전 동기화, C++ Native DLL 빌드, WPF Slim/Self-Contained 단일 실행 파일 및 Inno Setup 설치 프로그램 패키징이 자동 실행됩니다.

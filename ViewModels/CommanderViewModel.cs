@@ -29,7 +29,7 @@ namespace WinPurifyPro.ViewModels
             set { if (_isExecutingBatch != value) { _isExecutingBatch = value; OnPropertyChanged(); } }
         }
 
-        private string _clusterSecretKey = "WinPurifyClusterKey2026";
+        private string _clusterSecretKey = ClusterSecurityVault.GetOrCreateClusterKey();
         public string ClusterSecretKey
         {
             get => _clusterSecretKey;
@@ -40,9 +40,24 @@ namespace WinPurifyPro.ViewModels
                     _clusterSecretKey = value;
                     RemoteCommanderManager.Instance.ClusterSecretKey = value;
                     RemoteAgentService.Instance.ClusterSecretKey = value;
+                    ClusterSecurityVault.SaveClusterKey(value);
                     OnPropertyChanged();
                 }
             }
+        }
+
+        private string _activePairingPin = "------";
+        public string ActivePairingPin
+        {
+            get => _activePairingPin;
+            set { if (_activePairingPin != value) { _activePairingPin = value; OnPropertyChanged(); } }
+        }
+
+        private string _remotePairingPinInput = string.Empty;
+        public string RemotePairingPinInput
+        {
+            get => _remotePairingPinInput;
+            set { if (_remotePairingPinInput != value) { _remotePairingPinInput = value; OnPropertyChanged(); } }
         }
 
         private bool _isAgentServerRunning;
@@ -73,8 +88,8 @@ namespace WinPurifyPro.ViewModels
                     return "🔒 포터블: 명령 수신 차단됨";
                 }
                 return IsAgentServerRunning
-                    ? "📡 윈도우 서비스 에이전트: ON (TCP:9870)"
-                    : "📡 윈도우 서비스 에이전트: OFF (시작)";
+                    ? "🔒 보안 에이전트: ON (TLS:9874)"
+                    : "📡 보안 에이전트: OFF (시작)";
             }
         }
 
@@ -86,7 +101,7 @@ namespace WinPurifyPro.ViewModels
                 return IsAgentServerRunning ? "#059669" : "#475569";
             }
         }
-        public string CommanderVersion => $"WinPurify Pro Central Commander Engine v4.66.0 (Enterprise Fleet)";
+        public string CommanderVersion => $"WinPurify Pro Central Commander Engine v{AppEnvironment.AppVersion} (TLS 1.3 Studio Fleet)";
 
         private string _commanderStatus = "원격 관제 준비 완료 (Ready)";
         public string CommanderStatus
@@ -198,7 +213,7 @@ namespace WinPurifyPro.ViewModels
             set { if (_isSpecialOpsModalOpen != value) { _isSpecialOpsModalOpen = value; OnPropertyChanged(); } }
         }
 
-        private string _specialOpCategory = "Profile"; // "Profile", "Browser", "Forensics"
+        private string _specialOpCategory = "All"; // "All", "Account", "Browser", "Forensics"
         public string SpecialOpCategory
         {
             get => _specialOpCategory;
@@ -250,6 +265,7 @@ namespace WinPurifyPro.ViewModels
         public ICommand BatchAccountPurgeCommand { get; }
         public ICommand OpenSpecialOpsModalCommand { get; }
         public ICommand CloseSpecialOpsModalCommand { get; }
+        public ICommand SetSpecialCategoryCommand { get; }
         public ICommand BatchSyncDefaultProfileCommand { get; }
         public ICommand BatchBrowserFactoryResetCommand { get; }
         public ICommand BatchForensicsWipeCommand { get; }
@@ -278,6 +294,9 @@ namespace WinPurifyPro.ViewModels
         public ICommand SingleNodeRebootCommand { get; }
         public ICommand SingleNodeShutdownCommand { get; }
         public ICommand RemoveNodeCommand { get; }
+        public ICommand GenerateLocalPairingPinCommand { get; }
+        public ICommand PairRemoteNodeCommand { get; }
+        public ICommand ResetNodeTrustCommand { get; }
 
         // File Logging & Auto-Save Management (작업 log 기록 및 컴퓨터 자동 저장)
         private bool _autoSaveLogs = true;
@@ -330,6 +349,13 @@ namespace WinPurifyPro.ViewModels
                 IsSpecialOpsModalOpen = true;
             });
             CloseSpecialOpsModalCommand = new RelayCommand(_ => IsSpecialOpsModalOpen = false);
+            SetSpecialCategoryCommand = new RelayCommand(param =>
+            {
+                if (param is string cat && !string.IsNullOrWhiteSpace(cat))
+                {
+                    SpecialOpCategory = cat;
+                }
+            });
             BatchSyncDefaultProfileCommand = new RelayCommand(async _ => await ExecuteBatchSyncDefaultProfileAsync(), _ => !IsExecutingBatch && SelectedNodesCount > 0);
             BatchBrowserFactoryResetCommand = new RelayCommand(async _ => await ExecuteBatchBrowserFactoryResetAsync(), _ => !IsExecutingBatch && SelectedNodesCount > 0);
             BatchForensicsWipeCommand = new RelayCommand(async _ => await ExecuteBatchForensicsWipeAsync(), _ => !IsExecutingBatch && SelectedNodesCount > 0);
@@ -366,6 +392,46 @@ namespace WinPurifyPro.ViewModels
                     RemoteNodes.Remove(n);
                     NotifyCounts();
                     AddCommanderLog($"[Node 제거] {n.Name} ({n.IpAddress}) 관제 대시보드에서 제외됨");
+                }
+            });
+
+            GenerateLocalPairingPinCommand = new RelayCommand(_ =>
+            {
+                var (pin, ttl) = ClusterSecurityVault.GeneratePairingPin(120);
+                ActivePairingPin = pin;
+                CommanderStatus = $"작업실 페어링 PIN 발급됨: {pin} ({ttl}초 유효)";
+                AddCommanderLog($"[Zero-Config 페어링] 일회용 6자리 PIN 발급 완료: {pin} (유효시간 {ttl}초, TLS 채널 전용)");
+            });
+
+            PairRemoteNodeCommand = new RelayCommand(async param =>
+            {
+                if (param is RemoteNodeItem node && !string.IsNullOrWhiteSpace(RemotePairingPinInput))
+                {
+                    var res = await RemoteCommanderManager.Instance.PairWithNodeAsync(node.IpAddress, node.TlsPort, RemotePairingPinInput);
+                    if (res.Success)
+                    {
+                        ClusterSecretKey = res.ClusterKey;
+                        node.TlsThumbprint = res.TlsThumbprint;
+                        node.TlsEnabled = true;
+                        RemotePairingPinInput = string.Empty;
+                        CommanderStatus = $"[{node.Name}] TLS 페어링 및 키 동기화 완료";
+                        AddCommanderLog($"[페어링 성공] {node.Name} ({node.IpAddress}:{node.TlsPort}) TOFU 인증서 지문 고정 완료");
+                    }
+                    else
+                    {
+                        CommanderStatus = $"페어링 실패: {res.Message}";
+                        AddCommanderLog($"[페어링 오류] {node.Name} -> {res.Message}");
+                    }
+                }
+            });
+
+            ResetNodeTrustCommand = new RelayCommand(param =>
+            {
+                if (param is RemoteNodeItem node)
+                {
+                    ClusterSecurityVault.ResetPinnedNodeCertificate(node.IpAddress, node.TlsPort);
+                    node.TlsThumbprint = string.Empty;
+                    AddCommanderLog($"[TOFU 초기화] {node.Name} ({node.IpAddress}:{node.TlsPort}) 고정 인증서 지문이 초기화되었습니다.");
                 }
             });
 
@@ -444,6 +510,9 @@ namespace WinPurifyPro.ViewModels
                     Name = $"{Environment.MachineName} (로컬 호스트)",
                     IpAddress = "127.0.0.1",
                     Port = RemoteAgentService.DefaultHttpPort,
+                    TlsPort = RemoteAgentService.DefaultTlsPort,
+                    TlsEnabled = telemetry.TlsSupported,
+                    TlsThumbprint = telemetry.TlsThumbprint,
                     GroupName = "관리자 콘솔 PC",
                     IsOnline = true,
                     CpuUsage = telemetry.CpuUsagePercent,
@@ -453,7 +522,7 @@ namespace WinPurifyPro.ViewModels
                     OptimizationScore = telemetry.OptimizationScore,
                     AppliedRules = telemetry.AppliedRulesCount,
                     TotalRules = telemetry.TotalRulesCount,
-                    LastSeen = IsPortableMode ? "포터블 로컬 (명령 수신 비활성화)" : "로컬 실행 중",
+                    LastSeen = IsPortableMode ? "포터블 로컬 (명령 수신 비활성화)" : "TLS 보안 실행 중",
                     IsSelected = true
                 });
 
@@ -518,8 +587,8 @@ namespace WinPurifyPro.ViewModels
         {
             if (IsScanning) return;
             IsScanning = true;
-            CommanderStatus = "네트워크 상의 WinPurify Pro 에이전트 노드 자동 탐색 중...";
-            AddCommanderLog("[Discovery] UDP 9871 브로드캐스트로 LAN 클러스터 노드 스캔 개시...");
+            CommanderStatus = "하이브리드 작업실 노드 탐색 중 (UDP 9871 + /24 서브넷 프로브)...";
+            AddCommanderLog("[Discovery] UDP 9871 브로드캐스트 + 로컬 /24 서브넷 병렬 TCP:9874/9870 하이브리드 스캔 개시...");
 
             try
             {
@@ -529,12 +598,12 @@ namespace WinPurifyPro.ViewModels
                     if (!RemoteNodes.Any(n => n.IpAddress == node.IpAddress && n.Port == node.Port))
                     {
                         RemoteNodes.Add(node);
-                        AddCommanderLog($"[Discovery 발견] 새 노드 연결: {node.Name} ({node.IpAddress}:{node.Port})");
+                        AddCommanderLog($"[Discovery 발견] 새 노드 연결: {node.Name} ({node.IpAddress}:{node.TlsPort}, {node.SecurityBadge})");
                     }
                 }
 
                 await RefreshAllTelemetryAsync();
-                CommanderStatus = $"노드 탐색 완료 (총 {RemoteNodes.Count}대 등록됨)";
+                CommanderStatus = $"하이브리드 탐색 완료 (총 {RemoteNodes.Count}대 등록됨)";
             }
             catch (Exception ex)
             {
@@ -551,11 +620,14 @@ namespace WinPurifyPro.ViewModels
         {
             foreach (var node in RemoteNodes.ToList())
             {
-                var tel = await RemoteCommanderManager.Instance.FetchTelemetryAsync(node.IpAddress, node.Port);
+                var tel = await RemoteCommanderManager.Instance.FetchTelemetryAsync(node.IpAddress, node.Port, node.TlsPort);
                 if (tel != null)
                 {
                     node.IsOnline = true;
-                    // 원격 에이전트가 보고한 실제 LAN IPv4가 유효하면 루프백 또는 가상 IP를 실제 물리 IP로 자동 보정
+                    node.TlsEnabled = tel.TlsSupported;
+                    if (tel.TlsPort > 0) node.TlsPort = tel.TlsPort;
+                    if (!string.IsNullOrWhiteSpace(tel.TlsThumbprint)) node.TlsThumbprint = tel.TlsThumbprint;
+
                     if (!string.IsNullOrWhiteSpace(tel.ClientIp) && !tel.ClientIp.StartsWith("127.") && !tel.ClientIp.StartsWith("169.254."))
                     {
                         if (node.IpAddress.StartsWith("127.") || node.IpAddress.StartsWith("::1"))
@@ -571,7 +643,7 @@ namespace WinPurifyPro.ViewModels
                     node.OptimizationScore = tel.OptimizationScore;
                     node.AppliedRules = tel.AppliedRulesCount;
                     node.TotalRules = tel.TotalRulesCount;
-                    node.LastSeen = "방금 동기화됨";
+                    node.LastSeen = tel.TlsSupported ? "TLS 동기화됨" : "레거시 HTTP 동기화";
                 }
                 else
                 {

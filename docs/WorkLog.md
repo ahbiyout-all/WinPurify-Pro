@@ -2,13 +2,51 @@
 
 > **프로젝트**: WinPurify Pro (Remix WinPurify3-windowform-net)  
 > **총괄 개발자**: AhBiYout (WinPurify Pro)  
-> **현재 공식 버전**: `v4.62.0`  
+> **현재 공식 버전**: `v4.71.1`  
 > **공식 저장소**: [https://github.com/AhBiYout-all/WinPurifyPro](https://github.com/AhBiYout-all/WinPurifyPro)  
 > **공식 블로그**: [https://ahbiyoutvibe.blogspot.com/](https://ahbiyoutvibe.blogspot.com/)  
 
 ---
 
 ## 📅 작업 내역 요약 (Recent Milestones)
+
+### [2026-11-27] v4.71.1 전수 자아성찰(Self-Reflection) 및 보안·재부팅 예약·원격 매트릭스·UI 수정
+1. **보호 경로 & Junction 차단 & 재부팅 예약 순서 교정 (`FreshHandoverService.cs`, `HandoverPolicyService.cs`, `electron-ipc-shared.js`)**:
+   - `ProgramFiles`, `ProgramFiles(x86)`, `CommonApplicationData`, 현재 `UserProfile` 루트 보호를 추가하고 NTFS `ReparsePoint` 재귀 진입을 차단.
+   - `PendingFileRenameOperations` 등록 시 잠금 하위 파일을 먼저 예약하고 상위 디렉터리를 후순위 예약하는 상향식(Bottom-Up) 소거로 교정.
+   - 부분 예외(`PathPrefix`) 적용 시 `DetectedCount`/`EstimatedBytes` 재계산 및 오류 시 회수 용량 과다 계상 방지.
+2. **원격 제어 무셸 전환 & Fleet 검증 매트릭스 수정 (`RemoteAgentService.cs`, `HandoverFleetModal.tsx`, `index.tsx`)**:
+   - `/browser-factory-reset`에서 `RunHiddenCmd`를 제거해 직접 프로세스 종료 + 안전 디렉터리 소거로 전환.
+   - `HandoverFleetModal`의 `RemainingProfiles`/`RemainingSessions`/`Reclaimed`/`Verified` 파싱 정규식 교정 및 Commander `clusterKey` 전달 누락 수정.
+3. **Electron 스캐너 확장 & WPF UI 보완 (`electron-ipc-shared.js`, `ValueConverters.cs`, `MainWindow.xaml`, `MainViewModel.Handover.cs`)**:
+   - Slack/Telegram/Zoom/Adobe OOBE/OneDrive/.ssh/NPKI/JumpLists 스캔 및 안전 프로세스 허용 목록 선종료 추가, WPF 필터 활성 버튼 하이라이트 및 예약 건수 표시 반영.
+
+### [2026-11-27] v4.71.0 Clean Handover 4대 기능 고도화 (WPF & React/Electron 통합 구현)
+1. **클린 인수인계 완결성 · 잠금 파일 재부팅 예약 · 인증서 발급 (`HandoverPolicyService.cs`, `FreshHandoverService.cs`, `electron-ipc-shared.js`, `HandoverWorkspace.tsx`)**:
+   - 잠긴 파일/폴더를 `HKLM\...\Session Manager\PendingFileRenameOperations`에 등록하고, 정화 배너에서 예약 목록 확인·안전 재부팅 실행·HTML/JSON 오프라인 인증서 내보내기 구현.
+2. **AI/개발도구 탐지 확장 · 영구 보존 예외(Whitelist) 관리자**:
+   - `Cursor`, `VS Code Auth/Copilot`, `GitHub CLI`, `Docker Desktop`, `Postman`, `Figma` 세션을 탐지 대상으로 추가하고 `ArtifactId`/`PathPrefix` 예외 규칙 영구 저장(`handover_exclusions.json` / `handover-exclusions.json`) 구현.
+3. **실시간 4단계 진행률 · 필터별 일괄 선택 · 상세/잠금 드로어 UX**:
+   - WPF(`IProgress`) 및 Electron(`handover-progress`) 실시간 4단계 진행 바, 필터 범위 `전체 선택/선택 해제` 및 경로·잠금 프로세스 힌트 상세 패널 구축.
+4. **LAN 작업실 일괄 인수인계 검증 매트릭스 (`HandoverFleetModal.tsx`, `RemoteAgentService.cs`, `remote-center.html`)**:
+   - 다중 PC 대상 일괄 배포 모달과 PC별 검증 상태(`검증 통과`/`재부팅 대기`) 매트릭스 및 `remote-center.html` 프리셋 선택기 구현.
+
+### [2026-11-27] v4.70.1 전수 자아성찰(Self-Reflection) 및 보안·기능·문서 일괄 수정
+1. **보안 및 무결성 강화 (`FreshHandoverService.cs`, `electron-ipc-shared.js`, `dev-server.js`)**:
+   - Windows 자격증명 삭제를 `cmdkey` 셸 호출에서 Win32 `Advapi32.dll` (`CredEnumerateW`/`CredDeleteW`) 직접 P/Invoke로 전환하고, `reg.exe`/`net.exe`/CIM 정리를 `ArgumentList` 무셸 실행 및 엄격한 SID 정규식 검증으로 강화.
+   - `FreshHandoverService` Step 4 2차 검증에서 실제 디스크/자격증명 재스캔을 수행하도록 교정하고 `Process` 핸들 누수 및 부분 실패 상태 보고를 정확히 반영.
+   - Electron `execute-handover-purge`에 `os.homedir()`, 드라이브 루트, `SystemRoot`, `userData`, `defaultuser0` 및 심볼릭 링크 차단 가드와 개인 폴더 보존 비우기(`emptyRootPaths`)를 추가하고 `FreshHandover` 원격 명령에 Challenge-Response 핸드셰이크를 강제.
+   - `dev-server.js` 정적 경로 경계 확인(`+ path.sep`), 도트파일/소스 차단, 1MB 페이로드 상한 및 `cross-site` 차단 적용.
+2. **WPF / Electron / Commander UI 연동 교정 (`MainWindow.xaml`, `MainViewModel.Handover.cs`, `RemoteAgentService.cs`, `index.tsx`, `remote-center.html`)**:
+   - 사이드바 워크스페이스/카테고리 활성 하이라이트 충돌 해결, 보호 프로필/항목 체크박스 비활성화 바인딩, `FreshHandover` DTO(`presetName`/`preset`) 일관화 및 `remote-center.html` 일괄 초기화 버튼 추가.
+3. **`/docs/` 문서 현행화 & 검증 기록 (`walkthrough.md`)**:
+   - `README.md`, `SECURITY_AUDIT_REPORT.md`, `WPF_MVVM_ARCHITECTURE_GUIDE.md`, `REMOTE_COMMANDER_SPEC.md`, `CLI_AUTOMATION_GUIDE.md`, `WINDOWS_SERVICE_GUIDE.md`, `UNATTENDED_INSTALLATION_GUIDE.md`, `MODULES_PRECISION_DIAGNOSTICS_REPORT.md`를 `v4.70.1` 기준으로 전면 동기화.
+
+### [2026-11-22] v4.70.0 Clean Handover & Fresh Environment Suite 전면 개편
+1. **앱 정체성 재확립**: 실행 즉시 이전 사용자 프로필(`ProfileList` SID + 고립 폴더), 다중 브라우저 프로필, 앱/메신저 세션, OS 자격 증명을 비파괴 자동 탐지하여 새 사용자에게 깨끗한 PC 환경을 제공하는 워크스페이스를 기본 화면으로 구축.
+
+### [2026-11-15 ~ 11-22] v4.69.0 ~ v4.69.2 TLS 9874 · DPAPI 금고 · JSON 단일 카탈로그 · XAML 검증 정비
+1. ECDSA P-256 TLS(9874) + TOFU 피닝 + DPAPI/`safeStorage` 키 금고 + 6자리 PIN 페어링 + `modules.manifest.json` 단일화 + `validate-xaml.ps1` 보간 구문(`${var}`) 교정.
 
 ### [2026-11-01] v4.62.0 Central Commander & WinPurify Pro 한 PC 동시 실행(Coexistence) 전면 지원
 1. **사용자 요청 사항 완벽 반영**: "커맨더와 WinPurifyPro가 한 pc에서 동시에 실행 되게 하고 싶다."

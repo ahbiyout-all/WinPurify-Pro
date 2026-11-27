@@ -1,10 +1,10 @@
 # 🩺 WinPurify Pro - 카테고리별 143/144개 전수 모듈 정밀 진단 보고서
 # (Category & Full Modules Precision Diagnostics & Audit Report)
 
-> **진단 일자**: 2026-10-05  
-> **진단 버전**: v4.48.0  
-> **진단 대상**: WinPurify Pro 코어 엔진, `TaskDataSeeder.cs`, `src/modulesData.ts`, `PurifyEngineCore.dll`, `index.tsx`, `MainWindow.xaml`  
-> **총 진단 모듈**: **144개 전수 모듈 (143개 표준 최적화 모듈 + 1개 특수 포렌식 와이핑 모듈)**  
+> **진단 일자**: 2026-11-27  
+> **진단 버전**: `v4.71.1`  
+> **진단 대상**: WinPurify Pro 코어 엔진, `modules.manifest.json`, `CustomModuleService.cs`, `FreshHandoverService.cs`, `src/modulesData.ts`, `PurifyEngineCore.dll`, `index.tsx`, `MainWindow.xaml`  
+> **총 진단 모듈**: **144개 기본 모듈 (143개 표준 최적화 모듈 + 1개 특수 포렌식 와이핑 모듈) + 사용자 동적 JSON 모듈 + Clean Handover 다중 프로필 엔진**  
 > **개발 및 보안 총괄**: WinPurify Pro (총괄 아키텍트: AhBiYout)  
 
 ---
@@ -141,21 +141,21 @@ WinPurify Pro의 핵심 최적화 및 시스템 정화 파이프라인은 **총 
 
 ---
 
-## 🛠️ 4. 이번 점검을 통해 즉시 교정 및 최적화된 사항
+## 🛠️ 4. `v4.69.0` ~ `v4.71.1` 아키텍처 개선 및 정합성 검증 내역
 
-1. **WPF UI 카테고리 내비게이션 표기 최신화 (`MainWindow.xaml`)**:
-   - 기존의 과거 133개 모듈 표기(`전체 모듈 (133개)`)를 **`전체 모듈 (144개 / 143 표준)`**으로 완전 갱신.
-2. **C# 자가 진단 무결성 테스터 정합성 보정 (`Services/SelfDiagnosticTester.cs`)**:
-   - `tasks.Count >= 133` 하드코딩 기준을 **`tasks.Count >= 143` (144개 전수 모듈 데이터셋 무결성 검증, 8개 전체 카테고리 매핑)**으로 업그레이드.
-3. **C# 데이터 시더 섹션 주석 일치화 (`TaskDataSeeder.cs`)**:
-   - 구버전 모듈 수(Privacy 20, Browser 15, Storage 25)로 잘못 기재되어 있던 주석을 실제 구현 수치(Privacy 27, Browser 21, Storage 29)로 전면 일치화.
-4. **Fast CLI 실행 명령어 보강**:
-   - 레지스트리 및 이벤트 로그 모듈 중 Fast CLI가 비어있던 항목에 대해 `reg.exe` 및 `wevtutil.exe` 고속 커맨드 연동 보강.
+1. **단일 진실 원천(`modules.manifest.json`) 및 동적 모듈 확장**:
+   - C# 백엔드(`CustomModuleService.cs`)와 TypeScript 프론트엔드(`src/modulesData.ts`)가 `modules.manifest.json` 144개 카탈로그를 공유하도록 단일화하고, 사용자 커스텀 모듈(`custom_modules.json`) 추가·삭제 시 사이드바 카운트와 필터가 즉시 동기화됩니다.
+2. **Clean Handover 다중 사용자·다중 브라우저 프로필 및 19종+ 아티팩트 (`FreshHandoverService.cs`, `electron-ipc-shared.js`)**:
+   - 기존 `Default` 프로필 중심 검사에서 확장하여 모든 Windows 사용자(`ProfileList` SID + 고립 폴더) 및 `Profile *`, `Guest Profile` 등 Chromium/Firefox 다중 프로필, AI 코딩 도구·클라우드·메신저·개발 환경까지 탐지·소거하고 Step 4에서 실제 재스캔 검증을 수행합니다.
+   - `v4.71.1`에서 `ProgramFiles`/`ProgramData`/현재 사용자 루트 보호, NTFS 정션/심볼릭 링크 안전 언링크, 허용된 프로세스 사전 종료(`taskkill.exe`), **하위 파일 우선 Bottom-Up `PendingFileRenameOperations` 예약** 및 WPF·Electron 간 탐지/화이트리스트 일치를 완성했습니다.
+3. **WPF / React 워크스페이스 UI 분리 및 정합성 보정 (`MainWindow.xaml`, `MainViewModel.Handover.cs`)**:
+   - 기본 화면을 **새 사용자 환경 초기화(Clean Handover)**로 분리하고 **144개 정밀 최적화 모듈**과 명확히 구분된 사이드바 활성화 표시, 도메인 필터 활성 스타일(`HandoverFilterActive*`), 재부팅 예약 건수 배지 및 검증 배너 상태를 일치시켰습니다.
+4. **4중 실행 파이프라인 추적 강화 (`MultiEngineDispatcher.cs`)**:
+   - Native C++ DLL ➡️ Fast CLI ➡️ Embedded PowerShell ➡️ Fallback 전 단계의 소요 시간, ExitCode 및 실행 출력을 감사 로그로 기록합니다.
 
 ---
 
-## 🏁 5. 종합 결론 및 배포 권고
+## 🏁 5. 종합 결론
 
-WinPurify Pro의 **8개 카테고리 144개(143개 표준 + 1개 포렌식 특수) 모듈**은 모든 코드베이스(C# WPF, C++ Native DLL, TypeScript Web Dashboard)에서 **단 하나의 결함이나 불일치 없이 100% 완벽한 정합성과 안전성**을 입증하였습니다.
+WinPurify Pro(`v4.71.1`)의 **8개 카테고리 144개 모듈** 및 **Clean Handover 다중 사용자·세션 초기화 엔진**은 C# WPF, Native C++ DLL, Electron IPC 및 TypeScript UI 전반에서 일관된 정합성과 안전 가드를 갖추고 동작합니다.
 
-관리자와 일반 사용자 모두 안심하고 시스템 전수 진단 및 원클릭 최적화를 수행할 수 있습니다.

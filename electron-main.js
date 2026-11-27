@@ -1,12 +1,12 @@
 /**
  * WinPurify Pro - Main Desktop Packaged App (Electron)
- * Version: v4.67.0
+ * Version: v4.71.1
  */
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const { createVaultAndIpcHelpers } = require('./electron-ipc-shared');
 
 let mainWindow = null;
 let commanderWindow = null;
@@ -24,7 +24,7 @@ function createCommanderWindow() {
   const iconPath = path.join(__dirname, 'WinPurify_icon.png');
 
   commanderWindow = new BrowserWindow({
-    title: 'WinPurify Pro - Master Central Commander Console v4.67.0',
+    title: 'WinPurify Pro - Master Central Commander Console v4.71.1',
     width: 1320,
     height: 860,
     minWidth: 1060,
@@ -59,7 +59,7 @@ function createMainWindow() {
   const iconPath = path.join(__dirname, 'WinPurify_icon.png');
 
   mainWindow = new BrowserWindow({
-    title: 'WinPurify Pro v4.67.0 - Enterprise System Optimization Suite',
+    title: 'WinPurify Pro v4.71.1 - Clean Handover & Fresh Environment Suite',
     width: 1360,
     height: 890,
     minWidth: 1080,
@@ -109,8 +109,12 @@ ipcMain.on('window-close', (event) => {
 // IPC Handler to launch Master Commander directly as an independent desktop window
 ipcMain.handle('launch-commander', () => {
   createCommanderWindow();
-  return { success: true, mode: 'standalone_desktop' };
+  return { success: true, mode: 'standalone_desktop', message: '독립 데스크톱 창으로 구동되었습니다.' };
 });
+
+// Register shared Cluster Security Vault, Discovery, Pairing, Telemetry & Command IPC Handlers
+const { registerClusterIpcHandlers } = createVaultAndIpcHelpers({ app, shell, safeStorage });
+registerClusterIpcHandlers(ipcMain);
 
 app.whenReady().then(() => {
   if (isCommanderMode) {

@@ -381,27 +381,33 @@ namespace WinPurifyPro.Services
                             break;
 
                         case "edge":
-                            var edgeDefault = Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default");
-                            if (Directory.Exists(edgeDefault))
+                            var edgeProfiles = EnumerateChromiumProfiles(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"));
+                            if (edgeProfiles.Count > 0)
                             {
                                 int edgeFiles = 0;
-                                if (File.Exists(Path.Combine(edgeDefault, "Login Data"))) edgeFiles++;
-                                if (File.Exists(Path.Combine(edgeDefault, "Network", "Cookies"))) edgeFiles++;
-                                if (Directory.Exists(Path.Combine(edgeDefault, "Sessions"))) edgeFiles++;
-                                if (edgeFiles > 0) details.Add($"세션/쿠키/LoginData {edgeFiles}개 항목");
+                                foreach (var profDir in edgeProfiles)
+                                {
+                                    if (File.Exists(Path.Combine(profDir, "Login Data"))) edgeFiles++;
+                                    if (File.Exists(Path.Combine(profDir, "Network", "Cookies"))) edgeFiles++;
+                                    if (Directory.Exists(Path.Combine(profDir, "Sessions"))) edgeFiles++;
+                                }
+                                if (edgeFiles > 0) details.Add($"{edgeProfiles.Count}개 프로필 세션/쿠키/LoginData {edgeFiles}건");
                                 detectedCount = edgeFiles;
                             }
                             break;
 
                         case "chrome":
-                            var chromeDefault = Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default");
-                            if (Directory.Exists(chromeDefault))
+                            var chromeProfiles = EnumerateChromiumProfiles(Path.Combine(localAppData, "Google", "Chrome", "User Data"));
+                            if (chromeProfiles.Count > 0)
                             {
                                 int chromeFiles = 0;
-                                if (File.Exists(Path.Combine(chromeDefault, "Login Data"))) chromeFiles++;
-                                if (File.Exists(Path.Combine(chromeDefault, "Network", "Cookies"))) chromeFiles++;
-                                if (Directory.Exists(Path.Combine(chromeDefault, "Sessions"))) chromeFiles++;
-                                if (chromeFiles > 0) details.Add($"세션/쿠키/LoginData {chromeFiles}개 항목");
+                                foreach (var profDir in chromeProfiles)
+                                {
+                                    if (File.Exists(Path.Combine(profDir, "Login Data"))) chromeFiles++;
+                                    if (File.Exists(Path.Combine(profDir, "Network", "Cookies"))) chromeFiles++;
+                                    if (Directory.Exists(Path.Combine(profDir, "Sessions"))) chromeFiles++;
+                                }
+                                if (chromeFiles > 0) details.Add($"{chromeProfiles.Count}개 프로필 세션/쿠키/LoginData {chromeFiles}건");
                                 detectedCount = chromeFiles;
                             }
                             break;
@@ -610,29 +616,35 @@ namespace WinPurifyPro.Services
 
                             case "edge":
                                 NativeEngineService.TryPurifyAppSession(4);
-                                var edgeDefault = Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default");
-                                SafeDeleteFile(Path.Combine(edgeDefault, "Network", "Cookies"));
-                                SafeDeleteFile(Path.Combine(edgeDefault, "Network", "Cookies-journal"));
-                                SafeDeleteFile(Path.Combine(edgeDefault, "Login Data"));
-                                SafeDeleteFile(Path.Combine(edgeDefault, "Login Data-journal"));
-                                SafeDeleteFile(Path.Combine(edgeDefault, "Login Data For Account"));
-                                SafeDeleteFile(Path.Combine(edgeDefault, "Web Data"));
-                                SafeDeleteFile(Path.Combine(edgeDefault, "Token Service"));
-                                SafeDeleteDirectory(Path.Combine(edgeDefault, "Sessions"));
+                                foreach (var edgeProf in EnumerateChromiumProfiles(Path.Combine(localAppData, "Microsoft", "Edge", "User Data")))
+                                {
+                                    SafeDeleteFile(Path.Combine(edgeProf, "Network", "Cookies"));
+                                    SafeDeleteFile(Path.Combine(edgeProf, "Network", "Cookies-journal"));
+                                    SafeDeleteFile(Path.Combine(edgeProf, "Login Data"));
+                                    SafeDeleteFile(Path.Combine(edgeProf, "Login Data-journal"));
+                                    SafeDeleteFile(Path.Combine(edgeProf, "Login Data For Account"));
+                                    SafeDeleteFile(Path.Combine(edgeProf, "Web Data"));
+                                    SafeDeleteFile(Path.Combine(edgeProf, "Token Service"));
+                                    SafeDeleteDirectory(Path.Combine(edgeProf, "Sessions"));
+                                    SafeDeleteDirectory(Path.Combine(edgeProf, "Session Storage"));
+                                }
                                 totalPurged++;
                                 break;
 
                             case "chrome":
                                 NativeEngineService.TryPurifyAppSession(5);
-                                var chromeDefault = Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default");
-                                SafeDeleteFile(Path.Combine(chromeDefault, "Network", "Cookies"));
-                                SafeDeleteFile(Path.Combine(chromeDefault, "Network", "Cookies-journal"));
-                                SafeDeleteFile(Path.Combine(chromeDefault, "Login Data"));
-                                SafeDeleteFile(Path.Combine(chromeDefault, "Login Data-journal"));
-                                SafeDeleteFile(Path.Combine(chromeDefault, "Login Data For Account"));
-                                SafeDeleteFile(Path.Combine(chromeDefault, "Web Data"));
-                                SafeDeleteDirectory(Path.Combine(chromeDefault, "Accounts"));
-                                SafeDeleteDirectory(Path.Combine(chromeDefault, "Sessions"));
+                                foreach (var chromeProf in EnumerateChromiumProfiles(Path.Combine(localAppData, "Google", "Chrome", "User Data")))
+                                {
+                                    SafeDeleteFile(Path.Combine(chromeProf, "Network", "Cookies"));
+                                    SafeDeleteFile(Path.Combine(chromeProf, "Network", "Cookies-journal"));
+                                    SafeDeleteFile(Path.Combine(chromeProf, "Login Data"));
+                                    SafeDeleteFile(Path.Combine(chromeProf, "Login Data-journal"));
+                                    SafeDeleteFile(Path.Combine(chromeProf, "Login Data For Account"));
+                                    SafeDeleteFile(Path.Combine(chromeProf, "Web Data"));
+                                    SafeDeleteDirectory(Path.Combine(chromeProf, "Accounts"));
+                                    SafeDeleteDirectory(Path.Combine(chromeProf, "Sessions"));
+                                    SafeDeleteDirectory(Path.Combine(chromeProf, "Session Storage"));
+                                }
                                 totalPurged++;
                                 break;
 
@@ -884,6 +896,25 @@ namespace WinPurifyPro.Services
                 }
             }
             catch { }
+        }
+
+        private static List<string> EnumerateChromiumProfiles(string userDataRoot)
+        {
+            var list = new List<string>();
+            try
+            {
+                if (!Directory.Exists(userDataRoot)) return list;
+                string def = Path.Combine(userDataRoot, "Default");
+                if (Directory.Exists(def)) list.Add(def);
+                foreach (var dir in Directory.GetDirectories(userDataRoot, "Profile *"))
+                {
+                    list.Add(dir);
+                }
+                string guest = Path.Combine(userDataRoot, "Guest Profile");
+                if (Directory.Exists(guest)) list.Add(guest);
+            }
+            catch { }
+            return list;
         }
 
         private static void SafeExecuteCli(string arguments)

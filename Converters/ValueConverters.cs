@@ -95,13 +95,32 @@ namespace WinPurifyPro.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (value is bool b && b) ? Visibility.Visible : Visibility.Collapsed;
+            bool invert = string.Equals(parameter?.ToString(), "Invert", StringComparison.OrdinalIgnoreCase);
+            bool b = value is bool flag && flag;
+            if (invert) b = !b;
+            return b ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return value is Visibility v && v == Visibility.Visible;
+            bool vis = value is Visibility v && v == Visibility.Visible;
+            bool invert = string.Equals(parameter?.ToString(), "Invert", StringComparison.OrdinalIgnoreCase);
+            return invert ? !vis : vis;
         }
+    }
+
+    public class StringEqualityToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string current = value?.ToString() ?? string.Empty;
+            string target = parameter?.ToString() ?? string.Empty;
+            return string.Equals(current, target, StringComparison.OrdinalIgnoreCase)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
 
     public class EqualityToBooleanConverter : IValueConverter
@@ -370,6 +389,48 @@ namespace WinPurifyPro.Converters
             string target = parameter?.ToString() ?? "All";
             if (string.Equals(current, "All", StringComparison.OrdinalIgnoreCase)) return Visibility.Visible;
             return string.Equals(current, target, StringComparison.OrdinalIgnoreCase) ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    }
+
+    public class HandoverFilterActiveBgConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string current = value?.ToString() ?? "All";
+            string target = parameter?.ToString() ?? "All";
+            return string.Equals(current, target, StringComparison.OrdinalIgnoreCase)
+                ? new SolidColorBrush(Color.FromRgb(14, 116, 144)) // Cyan-700
+                : new SolidColorBrush(Color.FromRgb(15, 23, 42));  // Slate-900
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    }
+
+    public class HandoverFilterActiveFgConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string current = value?.ToString() ?? "All";
+            string target = parameter?.ToString() ?? "All";
+            return string.Equals(current, target, StringComparison.OrdinalIgnoreCase)
+                ? new SolidColorBrush(Color.FromRgb(255, 255, 255))
+                : new SolidColorBrush(Color.FromRgb(148, 163, 184));
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    }
+
+    public class HandoverFilterActiveBorderConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string current = value?.ToString() ?? "All";
+            string target = parameter?.ToString() ?? "All";
+            return string.Equals(current, target, StringComparison.OrdinalIgnoreCase)
+                ? new SolidColorBrush(Color.FromRgb(56, 189, 248))  // Sky-400
+                : new SolidColorBrush(Color.FromRgb(51, 65, 85));   // Slate-700
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();

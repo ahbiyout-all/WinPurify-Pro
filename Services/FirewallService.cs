@@ -67,20 +67,24 @@ namespace WinPurifyPro.Services
         }
 
         /// <summary>
-        /// 원격 관제 통신을 위한 포트 기반(TCP 9870 HTTP REST 및 UDP 9871 Discovery) 방화벽 인바운드/아웃바운드 규칙을 등록합니다.
+        /// 원격 관제 통신을 위한 포트 기반(TCP 9870 REST, TCP 9874 TLS 1.3 및 UDP 9871 Discovery) 방화벽 인바운드/아웃바운드 규칙을 등록합니다.
         /// (인스톨러 기본 체크 '원격포트 열기' 옵션과 100% 동기화)
         /// </summary>
-        public static void EnsureRemotePortsFirewallRulesAsync(int tcpPort = 9870, int udpPort = 9871)
+        public static void EnsureRemotePortsFirewallRulesAsync(int tcpPort = 9870, int udpPort = 9871, int tlsPort = 9874)
         {
             Task.Run(() =>
             {
                 try
                 {
-                    // 1. TCP REST API 엔드포인트 규칙
-                    RegisterPortRule("WinPurify Remote Port TCP " + tcpPort, "in", "TCP", tcpPort, $"WinPurify Pro 원격 관제 HTTP REST 수신 포트(TCP {tcpPort})");
-                    RegisterPortRule("WinPurify Remote Port TCP " + tcpPort + " Outbound", "out", "TCP", tcpPort, $"WinPurify Pro 원격 관제 HTTP REST 응답 포트(TCP {tcpPort} Outbound)");
+                    // 1. TCP REST API 엔드포인트 규칙 (Legacy/Challenge fallback)
+                    RegisterPortRule("WinPurify Remote Port TCP " + tcpPort, "in", "TCP", tcpPort, $"WinPurify Pro 원격 관제 REST 수신 포트(TCP {tcpPort})");
+                    RegisterPortRule("WinPurify Remote Port TCP " + tcpPort + " Outbound", "out", "TCP", tcpPort, $"WinPurify Pro 원격 관제 REST 응답 포트(TCP {tcpPort} Outbound)");
 
-                    // 2. UDP Discovery 브로드캐스트 규칙
+                    // 2. TCP TLS 1.3 암호화 HTTPS 엔드포인트 규칙
+                    RegisterPortRule("WinPurify Remote TLS TCP " + tlsPort, "in", "TCP", tlsPort, $"WinPurify Pro 암호화 TLS 1.3 원격 관제 포트(TCP {tlsPort})");
+                    RegisterPortRule("WinPurify Remote TLS TCP " + tlsPort + " Outbound", "out", "TCP", tlsPort, $"WinPurify Pro 암호화 TLS 1.3 원격 관제 응답 포트(TCP {tlsPort} Outbound)");
+
+                    // 3. UDP Discovery 브로드캐스트 규칙
                     RegisterPortRule("WinPurify Remote Discovery UDP " + udpPort, "in", "UDP", udpPort, $"WinPurify Pro 원격 자동 탐색 브로드캐스트 포트(UDP {udpPort})");
                     RegisterPortRule("WinPurify Remote Discovery UDP " + udpPort + " Outbound", "out", "UDP", udpPort, $"WinPurify Pro 원격 자동 탐색 브로드캐스트 송신 포트(UDP {udpPort} Outbound)");
                 }
@@ -94,7 +98,7 @@ namespace WinPurifyPro.Services
         /// <summary>
         /// 원격 관제 통신 전용 포트 방화벽 규칙을 삭제합니다.
         /// </summary>
-        public static void RemoveRemotePortsFirewallRulesAsync(int tcpPort = 9870, int udpPort = 9871)
+        public static void RemoveRemotePortsFirewallRulesAsync(int tcpPort = 9870, int udpPort = 9871, int tlsPort = 9874)
         {
             Task.Run(() =>
             {
@@ -102,6 +106,8 @@ namespace WinPurifyPro.Services
                 {
                     RunNetsh($"advfirewall firewall delete rule name=\"WinPurify Remote Port TCP {tcpPort}\"");
                     RunNetsh($"advfirewall firewall delete rule name=\"WinPurify Remote Port TCP {tcpPort} Outbound\"");
+                    RunNetsh($"advfirewall firewall delete rule name=\"WinPurify Remote TLS TCP {tlsPort}\"");
+                    RunNetsh($"advfirewall firewall delete rule name=\"WinPurify Remote TLS TCP {tlsPort} Outbound\"");
                     RunNetsh($"advfirewall firewall delete rule name=\"WinPurify Remote Discovery UDP {udpPort}\"");
                     RunNetsh($"advfirewall firewall delete rule name=\"WinPurify Remote Discovery UDP {udpPort} Outbound\"");
                 }

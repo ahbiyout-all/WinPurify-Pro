@@ -78,8 +78,9 @@ if (-not $NoService) {
 
 ## 🛡️ Firewall & Network Configuration for Central Commander
 
-WinPurify Pro automatically provisions inbound and outbound Windows Firewall rules during setup. For corporate network administrators configuring hardware firewalls or domain GPOs:
+WinPurify Pro automatically provisions inbound Windows Firewall rules via `FirewallService.cs` during service startup. For corporate network administrators configuring hardware firewalls or domain GPOs:
 
-- **TCP Port 9870**: REST API & Command Receiver (Inbound on Client PC)
-- **UDP Port 9871**: LAN Auto-Discovery Broadcast & Beacon
-- **Security**: HMAC-SHA256 Token Authentication & TLS Encryption
+- **TCP Port 9874**: Primary TLS 1.2/1.3 HTTPS API, Telemetry & 6-Digit PIN Pairing (Inbound on Client PC)
+- **TCP Port 9870**: Legacy HTTP Discovery / Challenge Compatibility Channel
+- **UDP Port 9871**: LAN Auto-Discovery Broadcast & Beacon (complemented by `/24` TCP discovery)
+- **Security**: ECDSA P-256 TLS + TOFU Pinning, Win32 DPAPI Key Vault, HMAC-SHA256 + 1-Time Nonce & Challenge IP Binding

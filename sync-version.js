@@ -249,6 +249,34 @@ function syncVersion() {
     }
   }
 
+  // 10. Sync Electron Main, Remote Center, Shared IPC, Preload & remote-center.html
+  const electronTextTargets = [
+    'electron-main.js',
+    'electron-remote-center.js',
+    'electron-ipc-shared.js',
+    'preload.js',
+    'remote-center.html'
+  ];
+  for (const relFile of electronTextTargets) {
+    const absFile = path.resolve(__dirname, relFile);
+    if (fs.existsSync(absFile)) {
+      try {
+        let content = fs.readFileSync(absFile, 'utf8');
+        content = content
+          .replace(/WinPurify Pro v\d+\.\d+(\.\d+)?/g, `WinPurify Pro v${semverStr}`)
+          .replace(/Console v\d+\.\d+(\.\d+)?/g, `Console v${semverStr}`)
+          .replace(/Master Desktop Engine v\d+\.\d+(\.\d+)?/g, `Master Desktop Engine v${semverStr}`)
+          .replace(/<span class="badge badge-purple">v\d+\.\d+(\.\d+)?<\/span>/g, `<span class="badge badge-purple">v${semverStr}</span>`)
+          .replace(/Version: v\d+\.\d+(\.\d+)?/g, `Version: v${semverStr}`)
+          .replace(/version:\s*['"]\d+\.\d+(\.\d+)?['"]/g, `version: '${semverStr}'`);
+        fs.writeFileSync(absFile, content, 'utf8');
+        console.log(`[Version Sync] Updated ${relFile} -> v${semverStr}`);
+      } catch(e) {
+        console.error(`[Version Sync Error] Failed updating ${relFile}:`, e.message);
+      }
+    }
+  }
+
   return semverStr;
 }
 

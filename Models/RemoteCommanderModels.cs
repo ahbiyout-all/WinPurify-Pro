@@ -18,36 +18,58 @@ namespace WinPurifyPro.Models
         public bool IsNativeCoreActive { get; set; }
         public string LastCleanTime { get; set; } = "미실행";
         public string AgentStatus { get; set; } = "Online";
+        public int TlsPort { get; set; } = 9874;
+        public bool TlsSupported { get; set; } = true;
+        public string TlsThumbprint { get; set; } = string.Empty;
+        public string SecurityMode { get; set; } = "TLS+HMAC-SHA256";
         public long Timestamp { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     }
 
     public class BatchCommandRequest
     {
-        public string CommandType { get; set; } = string.Empty; // "RamTrim", "CreateRestorePoint", "QuickMaintenance", "ApplyPreset", "GameBoost", "FlushDns", "Diagnostics", "Rollback", "ZeroTraceReset", "AccountPurge", "ProfileSync", "BrowserFactoryReset", "ForensicsWipe", "Reboot", "Shutdown"
-        public string? PresetName { get; set; } // "Safe", "Deep", "Gaming", "Privacy", "ZeroTrace"
-        public int QuickType { get; set; } // 0: All(통합 고속 정화), 1: RecycleBin(휴지통), 2: DnsFlush(DNS 플러시), 3: TempPurge(임시파일)
-        public string? AccountPurgePreset { get; set; } = "workplace"; // "workplace", "full", "public", "developer"
+        public string CommandType { get; set; } = string.Empty;
+        public string? PresetName { get; set; }
+        public string? Preset { get; set; }
+        public int QuickType { get; set; }
+        public string? AccountPurgePreset { get; set; } = "workplace";
         public bool TerminateProcessesBeforePurge { get; set; } = true;
+        public bool SchedulePendingReboot { get; set; } = true;
         public List<string>? TargetAccountIds { get; set; }
-        public string? BrowserTarget { get; set; } = "all"; // "all", "chrome", "edge", "whale", "firefox"
-        public string? ForensicsTargetDrive { get; set; } = "C:"; // e.g. "C:"
+        public string? BrowserTarget { get; set; } = "all";
+        public string? ForensicsTargetDrive { get; set; } = "C:";
         public bool BackupExistingDefaultProfile { get; set; } = true;
-        public string? ScheduleFrequency { get; set; } = "WEEKLY"; // "WEEKLY", "DAILY", "STARTUP", "INTERVAL"
+        public string? ScheduleFrequency { get; set; } = "WEEKLY";
         public int ScheduleIntervalHours { get; set; } = 4;
         public int ScheduleStartupDelayMinutes { get; set; } = 1;
         public string? ScheduleCustomModules { get; set; }
         public bool ScheduleCreateSafepoint { get; set; } = true;
-        public int ScheduleDay { get; set; } = 0; // 0=Sun, 1=Mon, ..., 6=Sat
+        public int ScheduleDay { get; set; } = 0;
         public int ScheduleHour { get; set; } = 3;
         public int ScheduleMinute { get; set; } = 0;
         public string? ScheduleProfile { get; set; } = "Safe";
         public bool ScheduleAutoTrimRam { get; set; } = true;
+        // NOTE: Plaintext SecretKey transmission is deprecated & rejected; kept empty for DTO schema compatibility
         public string SecretKey { get; set; } = string.Empty;
         public long Timestamp { get; set; }
         public string Nonce { get; set; } = string.Empty;
         public string Signature { get; set; } = string.Empty;
         public string? ChallengeNonce { get; set; }
         public string? ChallengeSignature { get; set; }
+    }
+
+    public class StudioPairRequestDto
+    {
+        public string PairingPin { get; set; } = string.Empty;
+        public string CommanderMachineName { get; set; } = Environment.MachineName;
+    }
+
+    public class StudioPairResponseDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string ClusterKey { get; set; } = string.Empty;
+        public string TlsThumbprint { get; set; } = string.Empty;
+        public int TlsPort { get; set; } = 9874;
     }
 
     public class AuthChallengeResponseDto
@@ -68,6 +90,7 @@ namespace WinPurifyPro.Models
         public string? AuthErrorPoint { get; set; }
         public string? AuthCategory { get; set; }
         public long HandshakeLatencyMs { get; set; }
+        public string? TransportProtocol { get; set; }
     }
 
     public class RemoteNodeItem : System.ComponentModel.INotifyPropertyChanged
@@ -87,6 +110,27 @@ namespace WinPurifyPro.Models
 
         private int _port = 9870;
         public int Port { get => _port; set { _port = value; OnPropertyChanged(); } }
+
+        private int _tlsPort = 9874;
+        public int TlsPort { get => _tlsPort; set { _tlsPort = value; OnPropertyChanged(); } }
+
+        private bool _tlsEnabled = true;
+        public bool TlsEnabled
+        {
+            get => _tlsEnabled;
+            set { _tlsEnabled = value; OnPropertyChanged(); OnPropertyChanged(nameof(SecurityBadge)); }
+        }
+
+        private string _tlsThumbprint = string.Empty;
+        public string TlsThumbprint
+        {
+            get => _tlsThumbprint;
+            set { _tlsThumbprint = value; OnPropertyChanged(); OnPropertyChanged(nameof(SecurityBadge)); }
+        }
+
+        public string SecurityBadge => TlsEnabled
+            ? (string.IsNullOrEmpty(TlsThumbprint) ? "🔒 TLS 1.3 (TOFU)" : $"🔒 TLS ({TlsThumbprint.Substring(0, Math.Min(8, TlsThumbprint.Length))})")
+            : "⚠️ 평문 레거시";
 
         private string _groupName = "기본 그룹";
         public string GroupName { get => _groupName; set { _groupName = value; OnPropertyChanged(); } }

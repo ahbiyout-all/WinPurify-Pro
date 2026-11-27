@@ -6,12 +6,12 @@ cd /d "%~dp0"
 :: ---------------------------------------------------------------------
 :: 0. Detect Application Version from docs/PATCH_NOTES.md or sync-version.js
 :: ---------------------------------------------------------------------
-set "APP_VERSION=4.68.3"
+set "APP_VERSION=4.71.1"
 if exist "sync-version.js" (
     where node.exe >nul 2>&1
     if not errorlevel 1 (
         for /f "delims=" %%v in ('node sync-version.js') do (
-            if not "%%v"=="" set "APP_VERSION=4.68.3"
+            if not "%%v"=="" set "APP_VERSION=4.71.1"
         )
     )
 )
@@ -20,7 +20,7 @@ if not defined APP_VERSION (
     if exist "docs\PATCH_NOTES.md" (
         for /f "tokens=2 delims=[]" %%a in ('findstr /r /c:"\[v[0-9]" docs\PATCH_NOTES.md') do (
             set "RAW_VER=%%a"
-            set "APP_VERSION=4.68.3"
+            set "APP_VERSION=4.71.1"
             goto :FOUND_VER
         )
     )

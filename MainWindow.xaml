@@ -28,6 +28,7 @@
         <conv:InverseBooleanConverter x:Key="InverseBoolConverter" />
         <conv:InverseBooleanConverter x:Key="InverseBooleanConverter" />
         <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:StringEqualityToVisibilityConverter x:Key="StrEqToVis" />
         <conv:EqualityToBooleanConverter x:Key="EqToBool" />
         <conv:CategoryToActiveBackgroundConverter x:Key="CatActiveBg" />
         <conv:CategoryToActiveForegroundConverter x:Key="CatActiveFg" />
@@ -37,6 +38,9 @@
         <conv:SpecialSubCategoryToActiveForegroundConverter x:Key="SpecialSubCatFg" />
         <conv:SpecialSubCategoryToActiveBorderBrushConverter x:Key="SpecialSubCatBorder" />
         <conv:BoolToStatusColorConverter x:Key="BoolToStatusColorConverter" />
+        <conv:HandoverFilterActiveBgConverter x:Key="HandoverFilterBg" />
+        <conv:HandoverFilterActiveFgConverter x:Key="HandoverFilterFg" />
+        <conv:HandoverFilterActiveBorderConverter x:Key="HandoverFilterBorder" />
 
         <Style x:Key="CategoryNavButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
@@ -398,55 +402,86 @@
                     </Button>
                 </StackPanel>
 
-                <!-- Category Filters -->
+                <!-- Category Filters & Workspace Switcher -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock Text="CATEGORIES" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="6,0,0,6" />
+                        <TextBlock Text="WORKSPACE" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" Margin="6,0,0,6" />
+                        <Button Content="✨ 새 사용자 환경 초기화 (기본)" Command="{Binding SwitchWorkspaceCommand}" CommandParameter="Handover"
+                                ToolTip="앱 기동 시 이전 Windows 사용자 프로필, 앱/브라우저 다중 로그인 세션, 개인 폴더 및 자격 증명을 자동 탐지해 새 사용자용 클린 PC로 초기화합니다.">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource CategoryNavButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsHandoverWorkspace}" Value="True">
+                                            <Setter Property="Background" Value="#0C4A6E" />
+                                            <Setter Property="Foreground" Value="#E0F2FE" />
+                                            <Setter Property="BorderBrush" Value="#0284C7" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="⚡ 144개 정밀 최적화 모듈" Command="{Binding SwitchWorkspaceCommand}" CommandParameter="Modules"
+                                Margin="0,0,0,10"
+                                ToolTip="144개(143개 표준 + 특수 기능) 정밀 시스템 정화 모듈 및 커스텀 모듈을 선택 실행합니다.">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource CategoryNavButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsModulesWorkspace}" Value="True">
+                                            <Setter Property="Background" Value="#1E3A8A" />
+                                            <Setter Property="Foreground" Value="#93C5FD" />
+                                            <Setter Property="BorderBrush" Value="#3B82F6" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <TextBlock Text="MODULE CATEGORIES" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="6,4,0,6" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="⚡ 전체 모듈 (144개 / 143 표준)" Command="{Binding FilterCategoryCommand}"
                                 ToolTip="시스템 144개(143개 표준 최적화 + 12개 특수 기능) 제로트레이스 및 심층 정화 모듈 전체를 한눈에 확인하고 제어합니다."
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter=All}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter=All}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter=All}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter=All}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter=All}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter=All}" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="🛡️ 개인정보 보호 (27)" Command="{Binding FilterCategoryCommand}" CommandParameter="{x:Static models:TaskCategory.Privacy}"
                                 ToolTip="Windows 자격증명, RDP/USB 포렌식 이력, 텔레메트리, BAM/DAM 등 27개 모듈"
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Privacy}}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Privacy}}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Privacy}}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Privacy}}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Privacy}}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Privacy}}" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="🌐 브라우저 최적화 (21)" Command="{Binding FilterCategoryCommand}" CommandParameter="{x:Static models:TaskCategory.Browser}"
                                 ToolTip="웹 브라우저 및 메신저(카카오톡/Discord/Teams/Slack) 세션 토큰 등 21개 모듈"
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Browser}}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Browser}}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Browser}}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Browser}}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Browser}}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Browser}}" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="🔒 보안 센터 (10)" Command="{Binding FilterCategoryCommand}" CommandParameter="{x:Static models:TaskCategory.Security}"
                                 ToolTip="Windows Defender 검사 히스토리, 방화벽 로그, 격리소 파편 소거 등 10개 모듈"
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Security}}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Security}}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Security}}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Security}}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Security}}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Security}}" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="⚙️ 레지스트리 (15)" Command="{Binding FilterCategoryCommand}" CommandParameter="{x:Static models:TaskCategory.Registry}"
                                 ToolTip="MUI 인터페이스 캐시, 무효 CLSID 클래스, 고립된 앱 연계 레지스트리 정리 15개 모듈"
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Registry}}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Registry}}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Registry}}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Registry}}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Registry}}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Registry}}" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="🔄 업데이트 관리 (15)" Command="{Binding FilterCategoryCommand}" CommandParameter="{x:Static models:TaskCategory.Update}"
                                 ToolTip="설치 완료된 Windows Update 다운로드 잔여물 및 전송 최적화 캐시 정리 15개 모듈"
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Update}}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Update}}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Update}}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Update}}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Update}}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Update}}" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="🚀 시스템 가속 (15)" Command="{Binding FilterCategoryCommand}" CommandParameter="{x:Static models:TaskCategory.System}"
                                 ToolTip="DNS 리졸버 캐시 플러시, DirectX 셰이더 캐시 정리, 시스템 반응속도 향상 15개 모듈"
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.System}}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.System}}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.System}}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.System}}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.System}}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.System}}" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="💾 저장공간 정리 (29)" Command="{Binding FilterCategoryCommand}" CommandParameter="{x:Static models:TaskCategory.Storage}"
                                 ToolTip="Windows/사용자 Temp 폴더, 전 드라이브 휴지통, 메모리 덤프(MEMORY.DMP), hiberfil, WinSxS 등 29개 모듈"
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Storage}}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Storage}}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Storage}}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Storage}}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Storage}}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Storage}}" />
                         <Button Style="{StaticResource CategoryNavButton}" Content="🛑 특수 기능 (12)" Command="{Binding FilterCategoryCommand}" CommandParameter="{x:Static models:TaskCategory.Special}"
                                 ToolTip="통합 계정 정화 센터(Microsoft/Adobe/AutoCAD/Edge/Chrome/자격증명 일괄 로그아웃), 브라우저 공장 초기화(Chrome/Edge/Whale/Firefox), Windows 기본 프로필(Default) 덮어쓰기 복제, 디스크 포렌식 와이핑(Cipher) 등 자동 선택 제외 특수/고급 기능 12개 모듈"
-                                Background="{Binding SelectedCategory, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Special}}"
-                                Foreground="{Binding SelectedCategory, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Special}}"
-                                BorderBrush="{Binding SelectedCategory, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Special}}" />
+                                Background="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBg}, ConverterParameter={x:Static models:TaskCategory.Special}}"
+                                Foreground="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveFg}, ConverterParameter={x:Static models:TaskCategory.Special}}"
+                                BorderBrush="{Binding ActiveModuleCategoryHighlight, Converter={StaticResource CatActiveBorder}, ConverterParameter={x:Static models:TaskCategory.Special}}" />
                     </StackPanel>
                 </ScrollViewer>
 
@@ -527,8 +562,343 @@
                 </Border>
             </Grid>
 
+            <!-- ================= WORKSPACE 1: FRESH HANDOVER (DEFAULT) ================= -->
+            <Grid Grid.Row="1" Grid.RowSpan="3" Visibility="{Binding IsHandoverWorkspace, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Handover Top Summary & Primary Actions -->
+                <Border Grid.Row="0" Background="{DynamicResource BgCard}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="새 사용자 클린 환경 인수인계 (이전 사용자·로그인 세션 완전 제거)" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" />
+                            <TextBlock Text="{Binding HandoverStatusBanner}" FontSize="11.5" Foreground="{DynamicResource AccentCyan}" Margin="0,4,0,6" TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="탐지된 이전 사용자: " Foreground="{DynamicResource TextSecondary}" FontSize="12" />
+                                <TextBlock Text="{Binding DetectedPreviousProfilesCount}" FontWeight="Bold" Foreground="#F43F5E" FontSize="12" />
+                                <TextBlock Text="개  |  로그인 세션·흔적: " Foreground="{DynamicResource TextSecondary}" FontSize="12" />
+                                <TextBlock Text="{Binding DetectedSessionArtifactsCount}" FontWeight="Bold" Foreground="{DynamicResource AccentAmber}" FontSize="12" />
+                                <TextBlock Text="영역  |  선택 회수 예정: " Foreground="{DynamicResource TextSecondary}" FontSize="12" />
+                                <TextBlock Text="{Binding HandoverEstimatedSpaceText}" FontWeight="Bold" Foreground="{DynamicResource AccentGreen}" FontSize="13" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ComboBox Style="{StaticResource ThemeComboBoxStyle}"
+                                      ItemContainerStyle="{StaticResource ThemeComboBoxItemStyle}"
+                                      SelectedValue="{Binding CurrentTheme, Mode=TwoWay}"
+                                      SelectedValuePath="Tag"
+                                      Width="125" Height="30" VerticalAlignment="Center"
+                                      Margin="0,0,10,0"
+                                      ToolTip="UI 스타일 테마 선택 (다크 / 회색 / 화이트 / 베이지)">
+                                <ComboBoxItem Content="🌙 다크 테마" Tag="Dark" />
+                                <ComboBoxItem Content="🔘 회색 테마" Tag="Gray" />
+                                <ComboBoxItem Content="☀️ 화이트 테마" Tag="White" />
+                                <ComboBoxItem Content="📜 베이지 테마" Tag="Beige" />
+                            </ComboBox>
+
+                            <Button Style="{StaticResource ScanWhiteButton}" Content="🛡️ 예외 관리" Command="{Binding OpenHandoverExclusionModalCommand}" Margin="0,0,8,0"
+                                    ToolTip="보존 예외(Whitelist) 목록을 관리하여 특정 앱 세션이나 로컬 폴더를 소거 대상에서 영구 제외합니다." />
+                            <Button Style="{StaticResource ScanWhiteButton}" Content="🔍 환경 다시 스캔" Command="{Binding ScanHandoverCommand}" Margin="0,0,8,0"
+                                    ToolTip="이전 Windows 사용자 프로필, 브라우저 다중 프로필, 메신저/오피스 토큰 및 자격 증명 저장소를 재탐지합니다." />
+                            <Button Style="{StaticResource ActionPrimaryButton}" Background="#E11D48" Content="🧹 새 환경으로 완전 초기화" Command="{Binding OpenHandoverConfirmModalCommand}"
+                                    ToolTip="선택된 이전 사용자 프로필, 로그인 세션, 자격 증명 및 개인 폴더를 소거하고 잔여물 검증을 수행합니다." />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Handover Preset Policy & Filter Bar -->
+                <Grid Grid.Row="1" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="260" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding HandoverSearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                             Background="{DynamicResource BgCard}" Foreground="{DynamicResource TextPrimary}"
+                             BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" Padding="10,6" VerticalContentAlignment="Center" FontSize="12"
+                             ToolTip="탐지된 앱, 브라우저, 자격 증명 또는 경로를 검색합니다." />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <TextBlock Text="인수인계 정책: " Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11.5" />
+                        <Button Style="{StaticResource PresetButton}" Content="이전 사용자 + 모든 로그인 (권장)" Command="{Binding ApplyHandoverPresetCommand}" CommandParameter="PreviousUsersAndSessions" Foreground="#38BDF8"
+                                ToolTip="이전 사용자 계정 전체와 Chrome/Edge/Whale/Firefox/메신저/오피스 로그인 세션 및 자격 증명을 모두 선택합니다." />
+                        <Button Style="{StaticResource PresetButton}" Content="로그인·자격증명만 로그아웃" Command="{Binding ApplyHandoverPresetCommand}" CommandParameter="SessionsOnly" Foreground="#A855F7"
+                                ToolTip="Windows 계정은 보존하고 모든 브라우저·앱 로그인 토큰 및 자격 증명만 일괄 로그아웃합니다." />
+                        <Button Style="{StaticResource PresetButton}" Content="현재 계정 개인폴더 포함 전체" Command="{Binding ApplyHandoverPresetCommand}" CommandParameter="FullMachineReset" Foreground="#F43F5E" Margin="0"
+                                ToolTip="현재 계정의 바탕화면·문서·다운로드 개인 폴더까지 포함해 새 PC 수준으로 완전 초기화합니다." />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Live 4-Step Purging Progress & Verification Banner -->
+                <StackPanel Grid.Row="2" Margin="0,0,0,10">
+                    <Border Visibility="{Binding IsHandoverPurging, Converter={StaticResource BoolToVis}}"
+                            Background="{DynamicResource BgCard}" BorderBrush="#E11D48" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,8">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding HandoverCurrentStepText}" FontWeight="Bold" FontSize="12" Foreground="#FB7185" />
+                                <TextBlock Grid.Column="1" Text="{Binding HandoverProgressPercent, StringFormat='{}{0}%'}" FontFamily="Consolas" FontWeight="Bold" FontSize="12" Foreground="#F8FAFC" />
+                            </Grid>
+                            <ProgressBar Value="{Binding HandoverProgressPercent}" Minimum="0" Maximum="100" Height="6" Foreground="#E11D48" Background="#1E293B" Margin="0,0,0,6" />
+                            <ItemsControl ItemsSource="{Binding HandoverLiveLogs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="10.5" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Visibility="{Binding HasHandoverVerification, Converter={StaticResource BoolToVis}}"
+                            BorderThickness="1" CornerRadius="8" Padding="12,9">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#052E16" />
+                                <Setter Property="BorderBrush" Value="#16A34A" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsHandoverCleanVerified}" Value="False">
+                                        <Setter Property="Background" Value="#451A03" />
+                                        <Setter Property="BorderBrush" Value="#D97706" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding HandoverVerificationTitle}" FontWeight="Bold" FontSize="12">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#4ADE80" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsHandoverCleanVerified}" Value="False">
+                                                    <Setter Property="Foreground" Value="#FBBF24" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding HandoverVerificationMessage}" Foreground="#F8FAFC" FontSize="12" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding HandoverPendingRebootCount, StringFormat=' ({0}건 예약)'}"
+                                           Visibility="{Binding HasPendingRebootItems, Converter={StaticResource BoolToVis}}"
+                                           Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" VerticalAlignment="Center" Margin="4,0,0,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                                <Button Content="📄 인증서 저장" Command="{Binding ExportHandoverCertificateCommand}"
+                                        Background="#0F172A" Foreground="#E2E8F0" BorderBrush="#475569" BorderThickness="1"
+                                        Padding="10,5" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                </Button>
+                                <Button Content="🔄 지금 안전 재부팅" Command="{Binding RebootNowForPendingPurgeCommand}"
+                                        Visibility="{Binding HasPendingRebootItems, Converter={StaticResource BoolToVis}}"
+                                        Background="#D97706" Foreground="#FFFFFF" BorderThickness="0"
+                                        Padding="10,5" FontSize="11" FontWeight="Bold" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Split Discovery Lists: Profiles & Session Artifacts -->
+                <Grid Grid.Row="3" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="42*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="58*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Panel: Detected Windows User Profiles -->
+                    <Border Grid.Column="0" Background="{DynamicResource BgCard}" CornerRadius="10" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Padding="12,9" BorderBrush="{DynamicResource BorderDark}" BorderThickness="0,0,0,1">
+                                <TextBlock Text="👤 탐지된 Windows 사용자 프로필 (SID)" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource TextPrimary}" />
+                            </Border>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding HandoverProfiles}" Margin="6">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{DynamicResource BgCardItem}" BorderBrush="{DynamicResource BorderCardItem}" BorderThickness="1" CornerRadius="7" Padding="10,8" Margin="0,0,0,6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                              IsEnabled="{Binding IsDeletable}"
+                                                              VerticalAlignment="Center" Margin="0,0,10,0" />
+                                                    <StackPanel Grid.Column="1">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Username}" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource TextPrimary}" />
+                                                            <Border Background="{DynamicResource BgDark}" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="8,0,0,0">
+                                                                <TextBlock Text="{Binding AccountType}" FontSize="9.5" Foreground="{DynamicResource AccentCyan}" />
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding ProfilePath}" FontFamily="Consolas" FontSize="10.5" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0" />
+                                                        <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding FormattedSize}" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource AccentAmber}" HorizontalAlignment="Right" />
+                                                        <TextBlock Text="{Binding LastUsedTimeText}" FontSize="9.5" Foreground="{DynamicResource TextSecondary}" HorizontalAlignment="Right" Margin="0,2,0,0" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <!-- Right Panel: Detected App, Browser Multi-Profile, Credentials, Folders & Detail Inspector -->
+                    <Border Grid.Column="2" Background="{DynamicResource BgCard}" CornerRadius="10" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Padding="12,8" BorderBrush="{DynamicResource BorderDark}" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="🔐 세션 · 자격증명 · 개인폴더" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                        <Button Content="전체" Command="{Binding SetHandoverDomainFilterCommand}" CommandParameter="All" Style="{StaticResource PresetButton}"
+                                                Background="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBg}, ConverterParameter=All}"
+                                                Foreground="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterFg}, ConverterParameter=All}"
+                                                BorderBrush="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBorder}, ConverterParameter=All}"
+                                                Padding="7,3" FontSize="10.5" />
+                                        <Button Content="브라우저" Command="{Binding SetHandoverDomainFilterCommand}" CommandParameter="BrowserSession" Style="{StaticResource PresetButton}"
+                                                Background="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBg}, ConverterParameter=BrowserSession}"
+                                                Foreground="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterFg}, ConverterParameter=BrowserSession}"
+                                                BorderBrush="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBorder}, ConverterParameter=BrowserSession}"
+                                                Padding="7,3" FontSize="10.5" />
+                                        <Button Content="앱/개발" Command="{Binding SetHandoverDomainFilterCommand}" CommandParameter="AppSession" Style="{StaticResource PresetButton}"
+                                                Background="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBg}, ConverterParameter=AppSession}"
+                                                Foreground="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterFg}, ConverterParameter=AppSession}"
+                                                BorderBrush="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBorder}, ConverterParameter=AppSession}"
+                                                Padding="7,3" FontSize="10.5" />
+                                        <Button Content="자격증명" Command="{Binding SetHandoverDomainFilterCommand}" CommandParameter="CredentialAndNetwork" Style="{StaticResource PresetButton}"
+                                                Background="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBg}, ConverterParameter=CredentialAndNetwork}"
+                                                Foreground="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterFg}, ConverterParameter=CredentialAndNetwork}"
+                                                BorderBrush="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBorder}, ConverterParameter=CredentialAndNetwork}"
+                                                Padding="7,3" FontSize="10.5" />
+                                        <Button Content="개인폴더" Command="{Binding SetHandoverDomainFilterCommand}" CommandParameter="PersonalFolder" Style="{StaticResource PresetButton}"
+                                                Background="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBg}, ConverterParameter=PersonalFolder}"
+                                                Foreground="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterFg}, ConverterParameter=PersonalFolder}"
+                                                BorderBrush="{Binding HandoverDomainFilter, Converter={StaticResource HandoverFilterBorder}, ConverterParameter=PersonalFolder}"
+                                                Padding="7,3" FontSize="10.5" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Content="전체 선택" Command="{Binding SelectAllFilteredArtifactsCommand}" Style="{StaticResource PresetButton}" Padding="8,3" FontSize="10.5" />
+                                        <Button Content="해제" Command="{Binding DeselectAllFilteredArtifactsCommand}" Style="{StaticResource PresetButton}" Padding="8,3" FontSize="10.5" Margin="0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding FilteredHandoverArtifacts}" Margin="6">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{DynamicResource BgCardItem}" BorderBrush="{DynamicResource BorderCardItem}" BorderThickness="1" CornerRadius="7" Padding="10,8" Margin="0,0,0,6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                              IsEnabled="{Binding IsSelectable}"
+                                                              VerticalAlignment="Center" Margin="0,0,10,0" />
+                                                    <StackPanel Grid.Column="1">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextPrimary}" />
+                                                            <TextBlock Text=" · " FontSize="10" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding CategoryLabel}" FontSize="10" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center" />
+                                                            <TextBlock Text=" · " FontSize="10" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding UserScope}" FontSize="10" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding TargetPathsSummary}" FontFamily="Consolas" FontSize="10" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                                                        <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,0,8,0">
+                                                        <TextBlock Text="{Binding FormattedSize}" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource AccentGreen}" HorizontalAlignment="Right" />
+                                                        <TextBlock Text="{Binding DetectedCount, StringFormat='탐지 {0}건'}" FontSize="9.5" Foreground="{DynamicResource TextSecondary}" HorizontalAlignment="Right" Margin="0,2,0,0" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="3" Content="상세"
+                                                            Command="{Binding DataContext.InspectHandoverArtifactCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Background="{DynamicResource BgDark}" Foreground="{DynamicResource TextSecondary}"
+                                                            BorderBrush="{DynamicResource BorderDark}" BorderThickness="1"
+                                                            Padding="8,4" FontSize="10.5" VerticalAlignment="Center" Cursor="Hand" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <!-- Detail & Lock Inspection Drawer (Bottom Docked inside Right Panel) -->
+                            <Border Grid.Row="2" Visibility="{Binding IsHandoverDetailOpen, Converter={StaticResource BoolToVis}}"
+                                    Background="{DynamicResource BgDark}" BorderBrush="{DynamicResource BorderDark}" BorderThickness="0,1,0,0" Padding="12,10">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding SelectedInspectArtifact.Title}" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource TextPrimary}" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button Content="🛡️ 보존 예외 추가" Command="{Binding AddArtifactExclusionCommand}" CommandParameter="{Binding SelectedInspectArtifact}"
+                                                    Background="#0F172A" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" Padding="8,3" FontSize="10.5" Margin="0,0,6,0" Cursor="Hand" />
+                                            <Button Content="닫기" Command="{Binding CloseHandoverDetailCommand}"
+                                                    Background="Transparent" Foreground="{DynamicResource TextSecondary}" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" Padding="8,3" FontSize="10.5" Cursor="Hand" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="{Binding SelectedInspectArtifact.AssociatedProcessesSummary, StringFormat='연관 잠금 프로세스: {0}'}" FontSize="10.5" Foreground="#FBBF24" Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding SelectedInspectArtifactPathsText, Mode=OneWay}" IsReadOnly="True" MaxHeight="76" VerticalScrollBarVisibility="Auto"
+                                             FontFamily="Consolas" FontSize="10" Background="{DynamicResource BgCard}" Foreground="{DynamicResource TextSecondary}"
+                                             BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" Padding="6,4" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- ================= WORKSPACE 2: 144 OPTIMIZATION MODULES ================= -->
+            <Grid Grid.Row="1" Grid.RowSpan="3" Visibility="{Binding IsModulesWorkspace, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
             <!-- Top Dashboard Stats & Action Header -->
-            <Border Grid.Row="1" Background="{DynamicResource BgCard}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" Margin="0,0,0,12">
+            <Border Grid.Row="0" Background="{DynamicResource BgCard}" CornerRadius="10" Padding="16" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" Margin="0,0,0,12">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -573,7 +943,7 @@
             </Border>
 
             <!-- Filter, Search & Preset Toolbar -->
-            <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid Grid.Row="1" Margin="0,0,0,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="260" />
                     <ColumnDefinition Width="*" />
@@ -604,7 +974,7 @@
             </Grid>
 
             <!-- Central Tasks List -->
-            <Border Grid.Row="3" Background="{DynamicResource BgCard}" CornerRadius="10" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" Margin="0,0,0,12">
+            <Border Grid.Row="2" Background="{DynamicResource BgCard}" CornerRadius="10" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1" Margin="0,0,0,12">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="6">
                         <!-- Special Category Dedicated Launcher Banner -->
@@ -837,8 +1207,9 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     </StackPanel>
-                </ScrollViewer>
-            </Border>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
 
             <!-- Bottom Status Bar & Log Console -->
             <Border Grid.Row="4" Background="{DynamicResource BgCard}" CornerRadius="10" Padding="10" BorderBrush="{DynamicResource BorderDark}" BorderThickness="1">
@@ -1915,6 +2286,118 @@
                         </Grid>
                     </Border>
                 </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ================================================================= -->
+        <!-- MODAL: FRESH HANDOVER EXPLICIT CONFIRMATION DIALOG                -->
+        <!-- ================================================================= -->
+        <Grid Grid.Column="0" Grid.ColumnSpan="2" Visibility="{Binding IsHandoverConfirmModalOpen, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="1400" Background="#CC020617">
+            <Border Width="540" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#0F172A" BorderBrush="#E11D48" BorderThickness="1.5" CornerRadius="12" Padding="22" Effect="{DynamicResource WindowDropShadow}">
+                <StackPanel>
+                    <TextBlock Text="🧹 새 사용자 클린 환경 초기화 실행 확인" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC" />
+                    <TextBlock Text="선택된 이전 Windows 사용자 프로필·앱 로그인 세션·자격 증명이 영구적으로 소거됩니다. Windows 시스템 필수 계정(SYSTEM, Public, Default)과 현재 실행 중인 WinPurify Pro 파일은 안전 가드에 의해 자동 보호됩니다."
+                               FontSize="11.5" Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,8,0,12" LineHeight="17" />
+
+                    <Border Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock FontSize="12" Foreground="#F1F5F9" Margin="0,0,0,4">
+                                <Run Text="• 제거 대상 이전 사용자 프로필: " Foreground="#94A3B8" />
+                                <Run Text="{Binding SelectedHandoverProfilesCount, Mode=OneWay}" FontWeight="Bold" Foreground="#F43F5E" />
+                                <Run Text="개" Foreground="#F43F5E" />
+                            </TextBlock>
+                            <TextBlock FontSize="12" Foreground="#F1F5F9" Margin="0,0,0,4">
+                                <Run Text="• 로그아웃/초기화 대상 세션·폴더: " Foreground="#94A3B8" />
+                                <Run Text="{Binding SelectedHandoverArtifactsCount, Mode=OneWay}" FontWeight="Bold" Foreground="#38BDF8" />
+                                <Run Text="개 영역" Foreground="#38BDF8" />
+                            </TextBlock>
+                            <TextBlock FontSize="12" Foreground="#F1F5F9">
+                                <Run Text="• 예상 확보 공간: " Foreground="#94A3B8" />
+                                <Run Text="{Binding HandoverEstimatedSpaceText, Mode=OneWay}" FontWeight="Bold" Foreground="#4ADE80" />
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <CheckBox IsChecked="{Binding HandoverTerminateProcesses, Mode=TwoWay}" Content="파일 잠금 해제(브라우저·메신저·개발도구 백그라운드 프로세스 선종료 후 삭제)" Foreground="#E2E8F0" FontSize="11.5" Margin="0,0,0,6" />
+                    <CheckBox IsChecked="{Binding HandoverCreateSafepoint, Mode=TwoWay}" Content="실행 직전 Live Safepoint 레지스트리 스냅샷 자동 백업 (권장)" Foreground="#E2E8F0" FontSize="11.5" Margin="0,0,0,6" />
+                    <CheckBox IsChecked="{Binding HandoverSchedulePendingReboot, Mode=TwoWay}" Content="잠금 파일 잔존 시 다음 재부팅 자동 삭제 예약 (PendingFileRenameOperations)" Foreground="#FBBF24" FontSize="11.5" Margin="0,0,0,16" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="취소" Command="{Binding CloseHandoverConfirmModalCommand}"
+                                Width="96" Height="34" Background="#1E293B" Foreground="#E2E8F0" BorderBrush="#334155" BorderThickness="1" FontWeight="SemiBold" Margin="0,0,8,0" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                        <Button Content="확인 후 완전 초기화 실행" Command="{Binding ExecuteHandoverPurgeCommand}"
+                                Padding="16,0" Height="34" Background="#E11D48" Foreground="#FFFFFF" BorderThickness="0" FontWeight="Bold" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ================================================================= -->
+        <!-- MODAL: HANDOVER WHITELIST / EXCLUSION MANAGER                     -->
+        <!-- ================================================================= -->
+        <Grid Grid.Column="0" Grid.ColumnSpan="2" Visibility="{Binding IsHandoverExclusionModalOpen, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="1450" Background="#CC020617">
+            <Border Width="580" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#0F172A" BorderBrush="#0284C7" BorderThickness="1.5" CornerRadius="12" Padding="22" Effect="{DynamicResource WindowDropShadow}">
+                <StackPanel>
+                    <TextBlock Text="🛡️ Clean Handover 보존 예외 (Whitelist) 관리" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC" />
+                    <TextBlock Text="예외에 등록된 앱 영역이나 로컬 폴더 경로는 스캔·초기화·원격 배포 시 자동으로 소거 대상에서 보호됩니다."
+                               FontSize="11.5" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,6,0,12" />
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding NewExclusionPathInput, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="#1E293B" Foreground="#F8FAFC" BorderBrush="#334155" BorderThickness="1" Padding="8,6" FontSize="11.5" Margin="0,0,6,0"
+                                 ToolTip="예외 처리할 절대 폴더 경로를 입력하세요 (예: C:\Users\Operator\Documents\Work)" />
+                        <TextBox Grid.Column="1" Text="{Binding NewExclusionLabelInput, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="#1E293B" Foreground="#F8FAFC" BorderBrush="#334155" BorderThickness="1" Padding="8,6" FontSize="11.5" Margin="0,0,6,0"
+                                 ToolTip="예외 규칙 설명(선택)" />
+                        <Button Grid.Column="2" Content="경로 예외 추가" Command="{Binding AddPathExclusionCommand}"
+                                Background="#0284C7" Foreground="#FFFFFF" BorderThickness="0" Padding="12,6" FontWeight="Bold" FontSize="11.5" Cursor="Hand" />
+                    </Grid>
+
+                    <Border Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" MaxHeight="240" Margin="0,0,0,14">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding HandoverExclusions}" Margin="6">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#0F172A" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="10,7" Margin="0,0,0,5">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="12" Foreground="#F1F5F9" />
+                                                    <TextBlock Text="{Binding Value}" FontFamily="Consolas" FontSize="10" Foreground="#38BDF8" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="제거"
+                                                        Command="{Binding DataContext.RemoveExclusionRuleCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding Id}"
+                                                        Background="#7F1D1D" Foreground="#FECACA" BorderThickness="0" Padding="9,4" FontSize="10.5" VerticalAlignment="Center" Cursor="Hand" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="닫기" Command="{Binding CloseHandoverExclusionModalCommand}"
+                                Width="96" Height="34" Background="#1E293B" Foreground="#E2E8F0" BorderBrush="#334155" BorderThickness="1" FontWeight="SemiBold" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
             </Border>
         </Grid>
     </Grid>

@@ -1,6 +1,6 @@
-# WinPurifyAgentService Architecture & Management Guide
+# WinPurifyAgentService Architecture & Management Guide (`v4.71.1`)
 
-This document details the background **Windows Service (`WinPurifyAgentService`)** architecture in WinPurify Pro, enabling 24/7 autonomous fleet maintenance and real-time remote commands from **WinPurify Central Commander**.
+This document details the background **Windows Service (`WinPurifyAgentService`)** architecture in WinPurify Pro, enabling 24/7 autonomous fleet maintenance and Zero-Trust remote management from **WinPurify Central Commander** (WPF or Electron Desktop Console).
 
 ---
 
@@ -9,14 +9,15 @@ This document details the background **Windows Service (`WinPurifyAgentService`)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                 Central Commander Console                   │
-│              (WinPurifyCommander.exe / WPF)                 │
+│         (WinPurifyCommander.exe / Electron Desktop)         │
 └──────────────────────────────┬──────────────────────────────┘
                                │
-            ┌──────────────────┴──────────────────┐
-            │  HMAC-SHA256 Encrypted Protocol      │
-            │  • TCP 9870: REST & Action Endpoint │
-            │  • UDP 9871: Discovery Broadcast    │
-            └──────────────────┬──────────────────┘
+            ┌──────────────────┴──────────────────────┐
+            │  TLS 1.2/1.3 + HMAC-SHA256 + Nonce      │
+            │  • TCP 9874: Primary HTTPS TLS Endpoint │
+            │  • TCP 9870: Legacy HTTP Compatibility  │
+            │  • UDP 9871: LAN Auto-Discovery Beacon  │
+            └──────────────────┬──────────────────────┘
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                       Client Endpoint                       │
@@ -24,10 +25,13 @@ This document details the background **Windows Service (`WinPurifyAgentService`)
 │  Mode 1: Windows Service     │  Mode 2: Interactive Desktop │
 │  (WinPurifyAgentService)     │  (WinPurifyPro.exe GUI)      │
 │  - Session 0 Background      │  - User Interactive Session  │
-│  - Starts with OS Boot       │  - Real-time HUD Toast popup │
-│  - LocalSystem Privileges    │  - Visual Progress Indicator │
+│  - Starts with OS Boot       │  - Clean Handover Workspace  │
+│  - LocalSystem Privileges    │  - Real-time HUD & Tray      │
+│  - Disabled in Portable Mode │  - DPAPI Cluster Key Vault   │
 └──────────────────────────────┴──────────────────────────────┘
 ```
+
+> **Note**: For security, `RemoteAgentService` does **not** listen on network ports when launched as a standalone Portable executable (`AppEnvironment.IsPortable == true`). Remote command reception runs in installed Desktop / `WinPurifyAgentService` environments.
 
 ---
 
@@ -46,7 +50,7 @@ This document details the background **Windows Service (`WinPurifyAgentService`)
 
 ### 1. Built-in Application CLI Commands
 ```cmd
-:: Install and Start Service
+:: Install and Start Service (automatically provisions TCP 9874/9870 & UDP 9871 firewall rules)
 "C:\Program Files (x86)\WinPurify Pro\WinPurifyPro.exe" --install-service
 
 :: Stop and Uninstall Service
@@ -58,16 +62,9 @@ This document details the background **Windows Service (`WinPurifyAgentService`)
 
 ### 2. Windows Native `sc.exe` Commands
 ```cmd
-:: Query Service Status
 sc query WinPurifyAgentService
-
-:: Start Service
 sc start WinPurifyAgentService
-
-:: Stop Service
 sc stop WinPurifyAgentService
-
-:: Delete Service
 sc delete WinPurifyAgentService
 ```
 

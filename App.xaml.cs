@@ -113,6 +113,26 @@ namespace WinPurifyPro
                 return;
             }
 
+            // 1-3. 무인 클린 환경 인수인계 CLI 인수 처리 (--handover-auto, --zero-trace)
+            bool isHandoverAuto = false;
+            foreach (var arg in cmdArgs)
+            {
+                if (string.Equals(arg, "--handover-auto", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(arg, "--zero-trace", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(arg, "/handover-auto", StringComparison.OrdinalIgnoreCase))
+                {
+                    isHandoverAuto = true;
+                    break;
+                }
+            }
+
+            if (isHandoverAuto)
+            {
+                int handoverExit = FreshHandoverService.ExecuteHeadlessHandoverAsync(cmdArgs).GetAwaiter().GetResult();
+                Shutdown(handoverExit);
+                return;
+            }
+
             // 2. 중앙 관제 콘솔 전용 구동 모드 (--commander, -commander, /commander, --fleet 인수) 처리
             // (글로벌 Mutex 제거: 독립 프로세스 고유 식별자 기반 동시 실행 전면 지원)
             if (AppEnvironment.IsCommanderMode)

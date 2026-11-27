@@ -216,23 +216,59 @@ function purgeSimulatedTask(taskId) {
   }
 }
 
+const MAX_BODY_BYTES = 1024 * 1024; // 1MB cap
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => { resolve(body); });
-    req.on('error', err => { reject(err); });
+    let received = 0;
+    let aborted = false;
+    req.on('data', chunk => {
+      if (aborted) return;
+      received += chunk.length;
+      if (received > MAX_BODY_BYTES) {
+        aborted = true;
+        reject(new Error('Payload too large'));
+        return;
+      }
+      body += chunk.toString();
+    });
+    req.on('end', () => { if (!aborted) resolve(body); });
+    req.on('error', err => { if (!aborted) reject(err); });
   });
 }
 
+function isAllowedOrigin(origin, reqHost) {
+  if (!origin) return false;
+  try {
+    const parsed = new URL(origin);
+    if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') return true;
+    if (reqHost && parsed.host === reqHost) return true;
+  } catch {}
+  return false;
+}
+
 const server = http.createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const reqHost = req.headers.host;
+  if (isAllowedOrigin(origin, reqHost)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
     res.end();
+    return;
+  }
+
+  const reqPathOnly = (req.url || '/').split('?')[0];
+  if (reqPathOnly.startsWith('/api/') && req.headers['sec-fetch-site'] === 'cross-site') {
+    res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ success: false, error: 'Cross-site API requests are blocked' }));
     return;
   }
 
@@ -276,9 +312,8 @@ const server = http.createServer(async (req, res) => {
 
   // 2) Run system command fallback
   if (req.url === '/api/run-system-command' && req.method === 'POST') {
-    const bodyText = await readBody(req);
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     try {
+      const bodyText = await readBody(req);
       const { command } = JSON.parse(bodyText);
       const cmdStr = typeof command === 'object' && command !== null ? command.command : String(command);
       
@@ -314,8 +349,10 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ success: true, output, error: null }));
     } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ success: false, output: null, error: err.message }));
     }
     return;
@@ -323,9 +360,8 @@ const server = http.createServer(async (req, res) => {
 
   // 3) Scan Folders Sizes Native
   if (req.url === '/api/scan-folders-sizes-native' && req.method === 'POST') {
-    const bodyText = await readBody(req);
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     try {
+      const bodyText = await readBody(req);
       const { taskIds } = JSON.parse(bodyText);
       const resultObj = {};
       if (Array.isArray(taskIds)) {
@@ -333,9 +369,10 @@ const server = http.createServer(async (req, res) => {
           resultObj[id] = TASK_SIMULATED_SIZES[id] || 0;
         }
       }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(resultObj));
     } catch (err) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: err.message }));
     }
     return;
@@ -383,10 +420,14 @@ const server = http.createServer(async (req, res) => {
 
   // 7) Save and Open Log
   if (req.url === '/api/save-and-open-log' && req.method === 'POST') {
-    const bodyText = await readBody(req);
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     try {
+      const bodyText = await readBody(req);
       const { content } = JSON.parse(bodyText);
+      if (typeof content !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ success: false, error: 'Invalid log content' }));
+        return;
+      }
       const logDir = path.resolve('./WinPurify_Logs');
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true });
@@ -397,8 +438,10 @@ const server = http.createServer(async (req, res) => {
       fs.writeFileSync(filePath, content, 'utf8');
       
       console.log(`[Dev-Server] Saved log file: ${filePath}`);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ success: true, path: filePath, fileName }));
     } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ success: false, error: err.message }));
     }
     return;
@@ -418,13 +461,49 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Serve static files
-  let filePath = req.url === '/' ? './index.html' : '.' + req.url.split('?')[0];
-  filePath = path.resolve(filePath);
+  // Serve static web assets safely
+  let decodedPath = '/';
+  try {
+    decodedPath = decodeURIComponent((req.url || '/').split('?')[0]);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('Bad Request');
+    return;
+  }
+  if (decodedPath.includes('\0')) {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('Bad Request');
+    return;
+  }
 
-  // Prevent directory traversal
   const rootDir = path.resolve('.');
-  if (!filePath.startsWith(rootDir)) {
+  const relRequest = decodedPath === '/' ? 'index.html' : decodedPath.replace(/^\/+/, '');
+  const segments = relRequest.split(/[\\/]+/).filter(Boolean);
+
+  // Block hidden/dotfiles (.git, .env, .aistudio), logs, and sensitive source/config files
+  const blockedTopDirs = new Set(['winpurify_logs', 'services', 'models', 'viewmodels', 'converters', 'nativeengine', 'node_modules']);
+  const blockedExactFiles = new Set(['package.json', 'package-lock.json', 'bun.lock', 'dev-server.js', 'sync-version.js', 'electron-ipc-shared.js', 'electron-main.js', 'electron-remote-center.js']);
+  const allowedExtensions = new Set(['.html', '.css', '.js', '.png', '.jpg', '.gif', '.svg', '.ico', '.json', '.md']);
+
+  if (
+    segments.some(seg => seg.startsWith('.')) ||
+    (segments.length > 0 && blockedTopDirs.has(segments[0].toLowerCase())) ||
+    blockedExactFiles.has(relRequest.toLowerCase())
+  ) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Access Denied');
+    return;
+  }
+
+  const filePath = path.resolve(rootDir, relRequest);
+  if (filePath !== rootDir && !filePath.startsWith(rootDir + path.sep)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Access Denied');
+    return;
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+  if (!allowedExtensions.has(ext)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('Access Denied');
     return;
@@ -437,7 +516,6 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
     res.writeHead(200, { 'Content-Type': contentType });

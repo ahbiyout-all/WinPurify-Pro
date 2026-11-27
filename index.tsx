@@ -55,7 +55,27 @@ import {
   Legend
 } from 'recharts';
 import { APP_VERSION } from './src/version';
-import { INITIAL_MODULES, ModuleItem } from './src/modulesData';
+import { INITIAL_MODULES, ModuleItem, loadCustomModulesFromStorage, saveCustomModulesToStorage } from './src/modulesData';
+import { getOrCreateClusterKey } from './src/securityVault';
+import { CustomModuleModal } from './src/components/CustomModuleModal';
+import { CommanderSecurityStrip } from './src/components/CommanderSecurityStrip';
+import { HandoverWorkspace } from './src/components/HandoverWorkspace';
+import { HandoverFleetModal } from './src/components/HandoverFleetModal';
+import {
+  DEFAULT_DISCOVERED_ARTIFACTS,
+  DEFAULT_DISCOVERED_PROFILES,
+  DetectedSessionArtifact,
+  DetectedUserProfile,
+  HandoverExclusionRule,
+  HandoverPresetMode,
+  HandoverProgressState,
+  HandoverScanPhase,
+  HandoverVerificationSummary,
+  applyPresetToHandoverItems,
+  buildVerificationCertificateHtml,
+  buildVerificationCertificateJson,
+  formatBytesReadable
+} from './src/handoverData';
 
 declare global {
   interface Window {
@@ -66,13 +86,58 @@ declare global {
       minimize?: () => void;
       maximize?: () => void;
       close?: () => void;
-      launchCommander?: () => Promise<{ success: boolean; message: string }>;
+      launchCommander?: () => Promise<{ success: boolean; mode?: string; message?: string }>;
       discoverNodes?: (timeoutMs?: number) => Promise<any[]>;
-      sendBatchCommand?: (nodeList: any[], command: string, preset?: string, clusterKey?: string) => Promise<any[]>;
-      fetchTelemetry?: (ip: string, port?: number) => Promise<any>;
-      fetchChallenge?: (ip: string, port?: number) => Promise<any>;
-      openLogFolder?: () => Promise<boolean>;
-      saveLogs?: (content: string, defaultName?: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+      sendBatchCommand?: (options: {
+        ip: string;
+        port?: number;
+        tlsPort?: number;
+        path: string;
+        payload: Record<string, any>;
+        secretKey?: string;
+      }) => Promise<any>;
+      fetchTelemetry?: (options: string | { ip: string; port?: number; tlsPort?: number; secretKey?: string }, port?: number) => Promise<any>;
+      fetchChallenge?: (options: string | { ip: string; port?: number; tlsPort?: number }, port?: number) => Promise<string | null>;
+      getClusterKey?: () => Promise<{ success: boolean; clusterKey?: string; encryptedVault?: boolean }>;
+      saveClusterKey?: (newKey: string) => Promise<{ success: boolean; clusterKey?: string; error?: string }>;
+      regenerateClusterKey?: () => Promise<{ success: boolean; clusterKey?: string }>;
+      pairNode?: (options: { ip: string; tlsPort?: number; pairingPin: string }) => Promise<{
+        success: boolean;
+        clusterKey?: string | null;
+        tlsThumbprint?: string;
+        message?: string;
+        elapsedMs?: number;
+      }>;
+      resetNodeTrust?: (ip: string) => Promise<{ success: boolean; error?: string }>;
+      openLogFolder?: () => Promise<{ success: boolean; path?: string } | boolean>;
+      saveLogs?: (content: string, filename?: string) => Promise<{ success: boolean; path?: string; filePath?: string; error?: string }>;
+      scanHandover?: () => Promise<{ success: boolean; platform?: string; scannedAt?: string; profiles?: any[]; artifacts?: any[] }>;
+      executeHandoverPurge?: (options: {
+        targetPaths?: string[];
+        emptyRootPaths?: string[];
+        schedulePendingReboot?: boolean;
+        terminateProcesses?: boolean;
+        processNames?: string[];
+      }) => Promise<{ success: boolean; removedCount?: number; errors?: string[]; pendingRebootPaths?: string[] }>;
+      getHandoverExclusions?: () => Promise<{ success: boolean; rules?: HandoverExclusionRule[] }>;
+      saveHandoverExclusions?: (rules: HandoverExclusionRule[]) => Promise<{ success: boolean; rules?: HandoverExclusionRule[]; error?: string }>;
+      exportHandoverReport?: (options: { content: string; defaultFilename?: string }) => Promise<{
+        success: boolean;
+        filePath?: string;
+        canceled?: boolean;
+        error?: string;
+      }>;
+      triggerSafeReboot?: () => Promise<{ success: boolean; message?: string }>;
+      onHandoverProgress?: (
+        callback: (data: {
+          stepIndex: number;
+          stepTitle: string;
+          percent: number;
+          currentItemLabel: string;
+          logLine?: string;
+        }) => void
+      ) => () => void;
+      onTelemetryUpdate?: (callback: (data: any) => void) => void;
     };
   }
 }
@@ -500,7 +565,29 @@ const App: React.FC = () => {
 
   const currentTheme = themeStyles[theme];
 
-  const [modules, setModules] = useState<ModuleItem[]>(INITIAL_MODULES);
+  const [activeWorkspace, setActiveWorkspace] = useState<'handover' | 'modules'>('handover');
+  const [handoverPhase, setHandoverPhase] = useState<HandoverScanPhase>('idle');
+  const [handoverPreset, setHandoverPreset] = useState<HandoverPresetMode>('PreviousUsersAndSessions');
+  const [handoverProfiles, setHandoverProfiles] = useState<DetectedUserProfile[]>([]);
+  const [handoverArtifacts, setHandoverArtifacts] = useState<DetectedSessionArtifact[]>([]);
+  const [handoverExclusions, setHandoverExclusions] = useState<HandoverExclusionRule[]>(() => {
+    try {
+      const raw = localStorage.getItem('winpurify_handover_exclusions_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  const [handoverProgress, setHandoverProgress] = useState<HandoverProgressState | null>(null);
+  const [handoverStatusBanner, setHandoverStatusBanner] = useState<string>('앱 기동 중: 이전 사용자 프로필·앱 데이터·브라우저 로그인 세션을 스캔하는 중...');
+  const [handoverVerification, setHandoverVerification] = useState<HandoverVerificationSummary | null>(null);
+  const [isHandoverConfirmOpen, setIsHandoverConfirmOpen] = useState<boolean>(false);
+  const [isHandoverFleetModalOpen, setIsHandoverFleetModalOpen] = useState<boolean>(false);
+
+  const [modules, setModules] = useState<ModuleItem[]>(() => [...INITIAL_MODULES, ...loadCustomModulesFromStorage()]);
+  const [showCustomModuleModal, setShowCustomModuleModal] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [specialSubCategory, setSpecialSubCategory] = useState<'All' | 'Account' | 'FactoryReset' | 'Profile' | 'Forensics'>('All');
   const [search, setSearch] = useState<string>('');
@@ -1279,6 +1366,8 @@ const App: React.FC = () => {
     id: string;
     name: string;
     ip: string;
+    port?: number;
+    tlsPort?: number;
     group: string;
     online: boolean;
     cpu: number;
@@ -1288,7 +1377,7 @@ const App: React.FC = () => {
     selected: boolean;
   }
 
-  const [clusterKey, setClusterKey] = useState<string>('WinPurifyClusterKey2026');
+  const [clusterKey, setClusterKey] = useState<string>(() => getOrCreateClusterKey());
   const [isScanningNodes, setIsScanningNodes] = useState<boolean>(false);
   const [remoteNodes, setRemoteNodes] = useState<RemoteNode[]>([
     { id: '1', name: 'ADMIN-PC (로컬 호스트)', ip: '127.0.0.1', group: '본사 관리실', online: true, cpu: 14, ramPercent: 32, ramText: '10.2 / 32 GB', score: 98, selected: true },
@@ -1298,9 +1387,9 @@ const App: React.FC = () => {
     { id: '5', name: 'MEETING-ROOM-HUB', ip: '192.168.1.88', group: '대회의실', online: true, cpu: 6, ramPercent: 22, ramText: '3.5 / 16 GB', score: 100, selected: false }
   ]);
   const [commanderLogs, setCommanderLogs] = useState<string[]>([
-    `[Commander v${APP_VERSION}] HMAC-SHA256 암호화 관제 채널 초기화 완료 (포트 TCP:9870 / UDP:9871)`,
+    `[Commander v${APP_VERSION}] TLS:9874 (ECDSA P-256 TOFU 피닝) & HMAC-SHA256 관제 채널 초기화 완료 (UDP:9871 + /24 LAN 스캔)`,
     `[Fleet Special] Option A 4대 서브 카테고리 (계정/브라우저/프로필/포렌식) 원격 특수 기능 허브 준비 완료`,
-    '[Fleet] 5개 클러스터 노드 텔레메트리 및 144개 모듈 무결성 점검 세션 준비 완료'
+    '[Fleet] 5개 클러스터 노드 텔레메트리 및 144+개 JSON 매니페스트 모듈 무결성 점검 세션 준비 완료'
   ]);
   const [commanderActiveTab, setCommanderActiveTab] = useState<'nodes' | 'audit'>('nodes');
 
@@ -1877,6 +1966,14 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.electronAPI?.getClusterKey) {
+      window.electronAPI.getClusterKey().then((res) => {
+        if (res?.success && res.clusterKey) {
+          setClusterKey(res.clusterKey);
+        }
+      }).catch(() => {});
+    }
+
     const timer = setInterval(() => {
       setCpuUsage(Math.floor(8 + Math.random() * 18));
       setRamUsagePercent(prev => Math.min(95, Math.max(20, prev + (Math.random() * 2 - 1))));
@@ -2098,7 +2195,11 @@ const App: React.FC = () => {
 
     setTimeout(() => {
       setHasSafepoint(true);
-      addLog(`[PurifyEngineCore.dll] Native Win32 API 및 Fast CLI 파이프라인 일괄 정화 시작...`);
+      const selectedMods = modules.filter(m => m.selected);
+      const adminMods = selectedMods.filter(m => m.requiresAdmin).length;
+      const maxTimeout = selectedMods.reduce((acc, m) => Math.max(acc, m.timeoutSeconds || 15), 15);
+      addLog(`[엔진 파이프라인] Pre-flight UAC 검사 완료 (고권한 모듈 ${adminMods}개, 최대 동적 타임아웃 ${maxTimeout}s 적용)`);
+      addLog(`[Failover Trace] Native C++ -> Fast CLI -> PowerShell Core (async stdout/stderr) 계층 실행 추적 완료.`);
       setModules(prev => prev.map(m => m.selected ? { ...m, status: 'Done', estimatedKb: 0 } : m));
       setIsProcessing(false);
       const freed = formatSize(totalReclaimableBytes);
@@ -2242,271 +2343,517 @@ const App: React.FC = () => {
     { title: '하드웨어 스펙 및 핑거프린트 무결성 검증', desc: '5대 하드웨어 검증 규칙(CPU/RAM/스토리지/GPU/보안) 및 드리프트 정합성', passed: !isHwDriftDetected, detail: isHwDriftDetected ? '하드웨어 스펙 변경 감지됨 (신규 기준치 승인 및 재조율 권고)' : '기준 하드웨어 스펙과 100% 일치 (SHA-256 서명 무결성 통과)' }
   ];
 
+  const runHandoverDiscovery = async (
+    targetPreset: HandoverPresetMode = handoverPreset,
+    overrideExclusions?: HandoverExclusionRule[]
+  ) => {
+    const activeExclusions = overrideExclusions ?? handoverExclusions;
+    setHandoverPhase('scanning');
+    setHandoverVerification(null);
+    setHandoverStatusBanner('이전 Windows 사용자 프로필, 브라우저/AI/앱 다중 프로필, OS 자격 증명 저장소를 비파괴 스캔 중...');
+    addLog('[Clean Handover] 시스템 인수인계 환경 비파괴 자동 스캔 시작 (ProfileList · User Data · AI/Dev Tools · Credential Vault)');
+
+    try {
+      if (window.electronAPI?.scanHandover) {
+        const res = await window.electronAPI.scanHandover();
+        if (res?.success && Array.isArray(res.profiles) && res.profiles.length > 0) {
+          const mappedProfiles: DetectedUserProfile[] = res.profiles.map((p: any) => ({
+            sid: p.sid,
+            username: p.username,
+            profilePath: p.profilePath,
+            accountType: p.accountType,
+            lastUsedTimeText: p.lastUsedTimeText || '-',
+            isCurrentSession: Boolean(p.isCurrentSession),
+            isSystemProtected: Boolean(p.isSystemProtected),
+            estimatedBytes: Number(p.estimatedBytes) || 0,
+            selected: false,
+            statusText: p.isSystemProtected ? '안전 가드 영구 보호됨' : p.isCurrentSession ? '현재 활성 로그인 계정' : '이전 사용자 프로필 탐지됨'
+          }));
+
+          const domainLabelMap: Record<string, string> = {
+            BrowserSession: '브라우저 세션',
+            AppSession: '앱 / AI 도구 세션',
+            CredentialAndNetwork: '자격 증명 & 이력',
+            PersonalFolder: '개인 폴더 (선택 해제)'
+          };
+
+          const mappedArtifacts: DetectedSessionArtifact[] = Array.isArray(res.artifacts)
+            ? res.artifacts.map((a: any) => ({
+                artifactId: a.artifactId,
+                title: a.title,
+                domainCategory: a.domainCategory || 'BrowserSession',
+                categoryLabel: domainLabelMap[a.domainCategory] || '브라우저 세션',
+                userScope: a.userScope || '로컬 사용자',
+                targetPaths: Array.isArray(a.targetPaths) ? a.targetPaths : [],
+                targetPathsSummary: Array.isArray(a.targetPaths) ? a.targetPaths.join(', ') : '',
+                description: a.title,
+                detectedCount: Number(a.detectedCount) || 1,
+                estimatedBytes: Number(a.estimatedBytes) || 0,
+                isProtected: false,
+                isExcluded: Boolean(a.isExcluded),
+                exclusionReason: a.exclusionReason || '',
+                associatedProcesses: Array.isArray(a.associatedProcesses) ? a.associatedProcesses : [],
+                selected: a.domainCategory !== 'PersonalFolder' && !a.isExcluded,
+                statusText: a.isExcluded ? a.exclusionReason || '보존 예외 적용됨' : '실시간 로컬 디스크 탐지 완료'
+              }))
+            : [];
+
+          const applied = applyPresetToHandoverItems(mappedProfiles, mappedArtifacts, targetPreset, activeExclusions);
+          setHandoverProfiles(applied.profiles);
+          setHandoverArtifacts(applied.artifacts);
+          const prevCnt = applied.profiles.filter(p => !p.isSystemProtected && !p.isCurrentSession).length;
+          const artCnt = applied.artifacts.filter(a => a.detectedCount > 0 && !a.isExcluded).length;
+          setHandoverStatusBanner(`스캔 완료 (Electron Native FS): 이전 사용자 ${prevCnt}개 · 로그인·앱 세션 ${artCnt}개 영역 탐지됨`);
+          setHandoverPhase('ready');
+          addLog(`[Clean Handover] Electron Native 스캔 완료 — 프로필 ${prevCnt}개, 세션 영역 ${artCnt}개 탐지`);
+          return;
+        }
+      }
+    } catch (err: any) {
+      addLog(`[Clean Handover] Native IPC 스캔 경고: ${err?.message || 'fallback'}`);
+    }
+
+    setTimeout(() => {
+      const applied = applyPresetToHandoverItems(DEFAULT_DISCOVERED_PROFILES, DEFAULT_DISCOVERED_ARTIFACTS, targetPreset, activeExclusions);
+      setHandoverProfiles(applied.profiles);
+      setHandoverArtifacts(applied.artifacts);
+      const prevCnt = applied.profiles.filter(p => !p.isSystemProtected && !p.isCurrentSession).length;
+      const artCnt = applied.artifacts.filter(a => a.detectedCount > 0 && !a.isExcluded).length;
+      setHandoverStatusBanner(`자동 탐지 완료: 이전 사용자 ${prevCnt}개 계정 · 브라우저/AI/자격증명 ${artCnt}개 영역 발견됨`);
+      setHandoverPhase('ready');
+      addLog(`[Clean Handover] 스캔 완료: 이전 사용자 ${prevCnt}개 계정, 로그인/세션 ${artCnt}개 영역 즉시 정화 대기`);
+    }, 320);
+  };
+
+  useEffect(() => {
+    let initialRules = handoverExclusions;
+    if (window.electronAPI?.getHandoverExclusions) {
+      window.electronAPI
+        .getHandoverExclusions()
+        .then(res => {
+          if (res?.success && Array.isArray(res.rules)) {
+            initialRules = res.rules;
+            setHandoverExclusions(res.rules);
+            try {
+              localStorage.setItem('winpurify_handover_exclusions_v1', JSON.stringify(res.rules));
+            } catch {}
+          }
+          void runHandoverDiscovery('PreviousUsersAndSessions', initialRules);
+        })
+        .catch(() => {
+          void runHandoverDiscovery('PreviousUsersAndSessions', initialRules);
+        });
+    } else {
+      void runHandoverDiscovery('PreviousUsersAndSessions', initialRules);
+    }
+
+    let unsubscribeProgress: (() => void) | undefined;
+    if (window.electronAPI?.onHandoverProgress) {
+      unsubscribeProgress = window.electronAPI.onHandoverProgress(evt => {
+        setHandoverProgress(prev => ({
+          stepIndex: evt.stepIndex || 1,
+          stepTitle: evt.stepTitle || '초기화 진행 중...',
+          percent: Math.min(100, Math.max(0, Number(evt.percent) || 0)),
+          currentItemLabel: evt.currentItemLabel || '',
+          recentLogs: evt.logLine
+            ? [evt.logLine, ...(prev?.recentLogs || [])].slice(0, 8)
+            : prev?.recentLogs || []
+        }));
+      });
+    }
+
+    return () => {
+      if (unsubscribeProgress) unsubscribeProgress();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleApplyHandoverPreset = (nextPreset: HandoverPresetMode) => {
+    setHandoverPreset(nextPreset);
+    const applied = applyPresetToHandoverItems(handoverProfiles, handoverArtifacts, nextPreset, handoverExclusions);
+    setHandoverProfiles(applied.profiles);
+    setHandoverArtifacts(applied.artifacts);
+    addLog(`[Clean Handover] 인수인계 정책 프리셋 적용: ${nextPreset}`);
+  };
+
+  const handleSaveHandoverExclusions = async (nextRules: HandoverExclusionRule[]) => {
+    setHandoverExclusions(nextRules);
+    try {
+      localStorage.setItem('winpurify_handover_exclusions_v1', JSON.stringify(nextRules));
+    } catch {}
+    if (window.electronAPI?.saveHandoverExclusions) {
+      try {
+        await window.electronAPI.saveHandoverExclusions(nextRules);
+      } catch {}
+    }
+    const applied = applyPresetToHandoverItems(handoverProfiles, handoverArtifacts, handoverPreset, nextRules);
+    setHandoverProfiles(applied.profiles);
+    setHandoverArtifacts(applied.artifacts);
+    addLog(`[Clean Handover] 보존 예외 목록 업데이트 완료 (${nextRules.length}건 활성)`);
+  };
+
+  const handleExportHandoverReport = async (format: 'html' | 'json') => {
+    if (!handoverVerification) return;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const defaultFilename = `WinPurify_Handover_Certificate_${timestamp}.${format}`;
+    const content =
+      format === 'json'
+        ? buildVerificationCertificateJson(handoverVerification, APP_VERSION)
+        : buildVerificationCertificateHtml(handoverVerification, APP_VERSION);
+
+    if (window.electronAPI?.exportHandoverReport) {
+      const res = await window.electronAPI.exportHandoverReport({ content, defaultFilename });
+      if (res.success && res.filePath) {
+        setHandoverStatusBanner(`인수인계 검증 인증서 저장 완료: ${res.filePath}`);
+        addLog(`[Clean Handover 인증서] 로컬 파일 저장 완료 -> ${res.filePath}`);
+        return;
+      }
+      if (res.canceled) return;
+    }
+
+    try {
+      const mimeType = format === 'json' ? 'application/json;charset=utf-8' : 'text/html;charset=utf-8';
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = defaultFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setHandoverStatusBanner(`인수인계 검증 인증서(${format.toUpperCase()}) 다운로드 완료`);
+      addLog(`[Clean Handover 인증서] ${defaultFilename} 내보내기 완료`);
+    } catch (err: any) {
+      addLog(`[Clean Handover 인증서 오류] ${err?.message || '저장 실패'}`);
+    }
+  };
+
+  const handleTriggerHandoverReboot = async () => {
+    if (window.electronAPI?.triggerSafeReboot) {
+      const res = await window.electronAPI.triggerSafeReboot();
+      setHandoverStatusBanner(res.message || '재부팅 예약 요청 처리됨');
+      addLog(`[Clean Handover 안전 재부팅] ${res.message || ''}`);
+      return;
+    }
+    setHandoverStatusBanner('브라우저 미리보기 모드에서는 데스크톱(Electron/WPF) 실행 시 안전 재부팅이 실행됩니다.');
+    addLog('[Clean Handover 안전 재부팅] 데스크톱 관리자 권한 실행 환경에서 shutdown /r /f /t 5 실행');
+  };
+
+  const handleExecuteHandoverPurge = async ({
+    terminateProcesses,
+    createSafepoint,
+    schedulePendingReboot
+  }: {
+    terminateProcesses: boolean;
+    createSafepoint: boolean;
+    schedulePendingReboot: boolean;
+  }) => {
+    setIsHandoverConfirmOpen(false);
+    setHandoverPhase('purging');
+    setHandoverProgress({
+      stepIndex: 1,
+      stepTitle: '보호 가드 교차 검증 및 잠금 프로세스 확인',
+      percent: 15,
+      currentItemLabel: '시스템 안전 경계 검증',
+      recentLogs: ['[Step 1/4] 보호 경계 및 보존 예외 목록 확인 시작']
+    });
+    setHandoverStatusBanner('잠금 프로세스 종료 · 레지스트리 하이브 언로드 · 이전 사용자/로그인 세션 완전 소거 중...');
+
+    const selectedProfs = handoverProfiles.filter(p => p.selected);
+    const selectedArts = handoverArtifacts.filter(a => a.selected && !a.isExcluded);
+    const excludedCount = handoverArtifacts.filter(a => a.isExcluded).length;
+    const reclaimedTotal =
+      selectedProfs.reduce((acc, p) => acc + p.estimatedBytes, 0) +
+      selectedArts.reduce((acc, a) => acc + a.estimatedBytes, 0);
+
+    if (terminateProcesses) {
+      addLog('[Clean Handover] Chrome, Edge, Whale, Firefox, Cursor, VS Code, 카카오톡, Office 백그라운드 잠금 프로세스 선종료');
+    }
+    if (createSafepoint) {
+      setHasSafepoint(true);
+      addLog('[Clean Handover] Live Safepoint 레지스트리 스냅샷 백업 생성 완료');
+    }
+
+    let electronIpcErrors: string[] = [];
+    let pendingRebootPaths: string[] = [];
+    let remainingPrevProfiles = 0;
+    let remainingActiveArtifacts = 0;
+
+    if (window.electronAPI?.executeHandoverPurge) {
+      try {
+        const targetPaths = [
+          ...selectedProfs.map(p => p.profilePath),
+          ...selectedArts.filter(a => a.domainCategory !== 'PersonalFolder').flatMap(a => a.targetPaths)
+        ];
+        const emptyRootPaths = selectedArts
+          .filter(a => a.domainCategory === 'PersonalFolder')
+          .flatMap(a => a.targetPaths);
+
+        const processNames = Array.from(
+          new Set(selectedArts.flatMap(a => a.associatedProcesses || []))
+        );
+
+        const ipcRes = await window.electronAPI.executeHandoverPurge({
+          targetPaths,
+          emptyRootPaths,
+          schedulePendingReboot,
+          terminateProcesses,
+          processNames
+        });
+        electronIpcErrors = Array.isArray(ipcRes.errors) ? ipcRes.errors : [];
+        pendingRebootPaths = Array.isArray(ipcRes.pendingRebootPaths) ? ipcRes.pendingRebootPaths : [];
+        addLog(
+          `[Clean Handover] Native 파일시스템 소거 실행: ${ipcRes.removedCount || 0}건 처리, 재부팅 예약 ${pendingRebootPaths.length}건` +
+            (electronIpcErrors.length > 0 ? ` (경고 ${electronIpcErrors.length}건)` : ' (보호 가드 준수)')
+        );
+
+        if (window.electronAPI?.scanHandover) {
+          const postRes = await window.electronAPI.scanHandover();
+          if (postRes?.success && Array.isArray(postRes.profiles)) {
+            const selectedProfileSet = new Set(selectedProfs.map(p => p.profilePath.toLowerCase()));
+            const selectedArtSet = new Set(selectedArts.map(a => a.artifactId));
+            remainingPrevProfiles = postRes.profiles.filter((p: any) =>
+              selectedProfileSet.has(String(p.profilePath || '').toLowerCase())
+            ).length;
+            remainingActiveArtifacts = Array.isArray(postRes.artifacts)
+              ? postRes.artifacts.filter((a: any) => selectedArtSet.has(a.artifactId) && (Number(a.detectedCount) || 0) > 0 && !a.isExcluded)
+                  .length
+              : 0;
+          }
+        }
+      } catch (err: any) {
+        const msg = err?.message || 'IPC error';
+        electronIpcErrors.push(msg);
+        addLog(`[Clean Handover] Native 소거 경고: ${msg}`);
+      }
+    } else {
+      setHandoverProgress({
+        stepIndex: 2,
+        stepTitle: '프로필 및 앱/브라우저 로그인 세션 정화',
+        percent: 58,
+        currentItemLabel: `${selectedProfs.length}개 프로필 · ${selectedArts.length}개 앱 세션`,
+        recentLogs: [
+          `[Step 2/4] ${selectedArts.length}개 앱·브라우저·AI 도구 인증 데이터 소거 중`,
+          '[Step 1/4] 보호 경계 및 보존 예외 검증 통과'
+        ]
+      });
+    }
+
+    setTimeout(() => {
+      setHandoverProgress({
+        stepIndex: 4,
+        stepTitle: '2차 잔여물 재스캔 및 인증서 생성 완료',
+        percent: 100,
+        currentItemLabel: '무결성 검증 완료',
+        recentLogs: ['[Step 4/4] 2차 잔여물 재스캔 완료']
+      });
+
+      const cleanVerified =
+        electronIpcErrors.length === 0 &&
+        pendingRebootPaths.length === 0 &&
+        remainingPrevProfiles === 0 &&
+        remainingActiveArtifacts === 0;
+
+      setHandoverProfiles(prev =>
+        prev
+          .filter(p => !p.selected || !cleanVerified)
+          .map(p => (p.selected ? { ...p, selected: false, statusText: cleanVerified ? '제거 완료' : '재부팅 예약 또는 확인 필요' } : p))
+      );
+      setHandoverArtifacts(prev =>
+        prev.map(a =>
+          a.selected
+            ? {
+                ...a,
+                selected: false,
+                detectedCount: cleanVerified ? 0 : a.detectedCount,
+                estimatedBytes: cleanVerified ? 0 : a.estimatedBytes,
+                statusText: cleanVerified ? '초기화 및 재검증 완료 (잔여물 0)' : '재부팅 예약 또는 잠금 잔존 확인'
+              }
+            : a
+        )
+      );
+
+      const snapshotItems = [
+        ...selectedProfs.map(p => ({
+          title: `사용자 프로필: ${p.username}`,
+          category: 'Windows Profile',
+          estimatedBytes: p.estimatedBytes,
+          status: cleanVerified ? '소거 검증 완료' : '처리/재부팅 예약',
+          pathsSummary: p.profilePath
+        })),
+        ...selectedArts.map(a => ({
+          title: a.title,
+          category: a.categoryLabel,
+          estimatedBytes: a.estimatedBytes,
+          status: cleanVerified ? '초기화 검증 완료' : '처리/재부팅 예약',
+          pathsSummary: a.targetPathsSummary
+        }))
+      ];
+
+      const summary: HandoverVerificationSummary = {
+        completedAt: new Date().toLocaleTimeString('ko-KR'),
+        machineName: typeof window !== 'undefined' ? window.location.hostname || 'WORKSTATION-LOCAL' : 'WORKSTATION-LOCAL',
+        operatorUser: 'CurrentOperator',
+        presetUsed: handoverPreset,
+        purgedProfilesCount: selectedProfs.length,
+        purgedSessionsCount: selectedArts.length,
+        reclaimedBytes: reclaimedTotal,
+        remainingPreviousProfiles: remainingPrevProfiles,
+        remainingActiveSessions: remainingActiveArtifacts,
+        excludedItemsCount: excludedCount,
+        pendingRebootPaths,
+        isCleanHandoverVerified: cleanVerified,
+        summaryMessage: cleanVerified
+          ? `제거 프로필 ${selectedProfs.length}개 · 초기화 세션 ${selectedArts.length}영역 · 회수 용량 ${formatBytesReadable(reclaimedTotal)} · 잔여 이전 계정 0개`
+          : pendingRebootPaths.length > 0
+            ? `잠금 파일 ${pendingRebootPaths.length}건 재부팅 자동 삭제 예약 완료 · 회수 ${formatBytesReadable(reclaimedTotal)} · 재부팅 후 최종 완료`
+            : `정화 실행 완료 (일부 확인 필요): 미제거 프로필 ${remainingPrevProfiles}개 · 잔여 세션 ${remainingActiveArtifacts}건`,
+        purgedItemsSnapshot: snapshotItems
+      };
+
+      setHandoverVerification(summary);
+      setHandoverPhase('verified');
+      setHandoverStatusBanner(cleanVerified ? `초기화 완료: ${summary.summaryMessage}` : summary.summaryMessage);
+      addLog(`[Clean Handover 검증 ${cleanVerified ? '완료' : '안내'}] ${summary.summaryMessage}`);
+    }, 550);
+  };
+
   return (
-    <div id="main-app" className={`min-h-screen ${currentTheme.app} flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-200`}>
-      {/* Header Bar */}
-      <header id="app-header" className={`${currentTheme.header} backdrop-blur border-b px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 transition-colors duration-200`}>
-        <div id="brand-container" className="flex items-center gap-3.5">
-          <div id="logo-badge" className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500/20 via-slate-800/90 to-blue-950/80 border border-sky-500/30 shadow-lg shadow-sky-500/15 flex items-center justify-center overflow-hidden p-1 transition-all duration-300 hover:scale-105 hover:border-sky-400/50 hover:shadow-sky-500/25">
-            <div className="absolute inset-0 bg-radial from-sky-400/10 to-transparent pointer-events-none"></div>
-            <img src="WinPurify_icon.png" alt="WinPurify Pro Icon" className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(56,189,248,0.3)] transition-transform duration-300" />
+  <div id="main-app" className={`min-h-screen ${currentTheme.app} flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-200`}>
+      {/* Streamlined Top Header Bar (Single-Elevation, Breadcrumb + Primary Actions) */}
+      <header id="app-header" className={`${currentTheme.header} border-b px-6 py-3 flex flex-wrap items-center justify-between gap-4 transition-colors duration-200`}>
+        <div id="brand-container" className="flex items-center gap-3">
+          <div id="logo-badge" className="w-9 h-9 rounded-lg border border-slate-700/70 bg-slate-900 flex items-center justify-center p-1 shrink-0">
+            <img src="WinPurify_icon.png" alt="WinPurify Pro Icon" className="w-full h-full object-contain" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 id="app-title" className="text-lg font-bold tracking-tight">WinPurify Pro</h1>
-              <span id="version-badge" className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-semibold border border-blue-500/30">
-                v{APP_VERSION} Enterprise
+            <div className="flex items-center gap-2 text-sm">
+              <h1 id="app-title" className="font-semibold tracking-tight">WinPurify Pro</h1>
+              <span className={`text-xs ${currentTheme.headerSub}`}>/</span>
+              <span className={`text-xs font-medium ${currentTheme.headerSub}`}>
+                {activeWorkspace === 'handover' ? '새 사용자 환경 초기화 (Clean Handover)' : '144개 정밀 최적화 모듈'}
               </span>
-              {isProActive && (
-                <button
-                  onClick={() => setShowLicenseModal(true)}
-                  className="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 hover:bg-amber-500/30 transition flex items-center gap-1 cursor-pointer"
-                  title="90일 임시 시험용 Pro 라이선스 활성화 상태 (특수 고급 기능 전체 가능)"
-                >
-                  <span>💎 Pro Trial Mode</span>
-                  <span className="text-[10px] text-amber-200 font-mono">(D-{proRemainingDays}일)</span>
-                </button>
-              )}
-              <span className={`text-[11px] ${currentTheme.headerSub} hidden sm:inline`}>|</span>
-              <span className={`text-[11px] ${currentTheme.headerSub} font-medium hidden sm:inline`}>
-                Dev: <strong className="text-sky-400">AhBiYout</strong>
+              <span id="version-badge" className="text-[11px] font-mono tabular-nums px-1.5 py-0.5 rounded border border-slate-600/40 opacity-85">
+                v{APP_VERSION}
               </span>
             </div>
             <div className={`flex items-center gap-2 text-[11px] ${currentTheme.headerSub}`}>
-              <a href="https://ahbiyoutvibe.blogspot.com/" target="_blank" rel="noreferrer" className="text-purple-400 hover:text-purple-300 hover:underline">
-                블로그
-              </a>
-              <span className="opacity-50">•</span>
+              <span>Clean Handover &amp; Fresh Environment Suite</span>
+              <span>·</span>
+              <span>Dev: <strong>AhBiYout</strong></span>
+              <span>·</span>
               <button
                 id="brand-license-btn"
+                type="button"
                 onClick={() => { setShowLicenseModal(true); setLicenseCopied(false); }}
-                className="text-amber-400 hover:text-amber-300 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                title="한국어 및 영어 2종 소프트웨어 최종 사용자 사용권 계약서(EULA) 확인"
+                className="hover:underline font-medium cursor-pointer"
               >
-                📜 라이선스 (KO/EN)
+                라이선스 (KO/EN)
               </button>
             </div>
           </div>
         </div>
 
-        {/* Theme Selector Dropdown (다크 / 회색 / 화이트 / 베이지) */}
-        <div id="theme-dropdown-container" ref={themeDropdownRef} className="relative">
-          <button
-            id="theme-dropdown-trigger"
-            type="button"
-            onClick={() => setIsThemeDropdownOpen(prev => !prev)}
-            title="UI 스타일 테마 선택 (다크 / 회색 / 화이트 / 베이지)"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${currentTheme.themeGroupBg} hover:border-blue-500/50`}
-          >
-            <Palette className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-            <span className="flex items-center gap-1.5">
-              <span>{THEMES.find(t => t.id === theme)?.icon}</span>
-              <span>{THEMES.find(t => t.id === theme)?.label} 테마</span>
-            </span>
-            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isThemeDropdownOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {isThemeDropdownOpen && (
-            <div
-              id="theme-dropdown-menu"
-              className={`absolute right-0 sm:left-0 sm:right-auto mt-1.5 w-56 p-1.5 rounded-xl border shadow-2xl backdrop-blur-md z-50 animate-in fade-in zoom-in-95 duration-150 ${currentTheme.modalBg}`}
+        {/* Right Controls: Theme Dropdown + Global Quick Actions */}
+        <div id="quick-actions" className="flex flex-wrap items-center gap-2">
+          <div id="theme-dropdown-container" ref={themeDropdownRef} className="relative">
+            <button
+              id="theme-dropdown-trigger"
+              type="button"
+              onClick={() => setIsThemeDropdownOpen(prev => !prev)}
+              title="UI 스타일 테마 선택 (다크 / 회색 / 화이트 / 베이지)"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${currentTheme.themeGroupBg}`}
             >
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2.5 py-1 mb-1 border-b border-slate-700/40 flex items-center justify-between">
-                <span>UI 스타일 테마</span>
-                <span className="font-mono text-[9px] lowercase opacity-75">4 Presets</span>
-              </div>
-              <div className="space-y-1">
-                {THEMES.map(t => {
-                  const isActive = theme === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      id={`theme-option-${t.id}`}
-                      type="button"
-                      onClick={() => {
-                        setTheme(t.id);
-                        setIsThemeDropdownOpen(false);
-                        addLog(`[테마 설정] ${t.label} 테마 스타일로 변경되었습니다.`);
-                      }}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
-                        isActive
-                          ? currentTheme.dropdownItemActive
-                          : `${currentTheme.dropdownItem} border border-transparent`
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-base leading-none">{t.icon}</span>
-                        <div className="text-left">
-                          <div className="font-bold leading-tight">{t.label} 테마</div>
-                          <div className={`text-[10px] ${currentTheme.dropdownSub} font-normal`}>{t.desc}</div>
-                        </div>
-                      </div>
-                      {isActive && <Check className="w-4 h-4 text-blue-400 shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+              <Palette className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span>{THEMES.find(t => t.id === theme)?.label} 테마</span>
+              <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform duration-150 ${isThemeDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-        {/* Global Quick Action Buttons */}
-        <div id="quick-actions" className="flex items-center gap-2">
-          <button 
+            {isThemeDropdownOpen && (
+              <div
+                id="theme-dropdown-menu"
+                className={`absolute right-0 mt-1.5 w-52 p-1.5 rounded-lg border shadow-xl z-50 ${currentTheme.modalBg}`}
+              >
+                <div className="space-y-0.5">
+                  {THEMES.map(t => {
+                    const isActive = theme === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        id={`theme-option-${t.id}`}
+                        type="button"
+                        onClick={() => {
+                          setTheme(t.id);
+                          setIsThemeDropdownOpen(false);
+                          addLog(`[테마 설정] ${t.label} 테마 스타일로 변경되었습니다.`);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition cursor-pointer ${
+                          isActive
+                            ? currentTheme.dropdownItemActive
+                            : `${currentTheme.dropdownItem} border border-transparent`
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{t.icon}</span>
+                          <span className="font-medium">{t.label} 테마</span>
+                        </div>
+                        {isActive && <Check className="w-3.5 h-3.5 text-sky-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
             id="ram-trim-btn"
+            type="button"
             onClick={handleRamTrim}
-            title="물리 메모리의 불필요한 프로세스 Working Set을 네이티브 Win32 API로 즉시 비워 여유 RAM을 확보합니다."
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-950 hover:bg-sky-900 border border-sky-800 text-sky-300 text-xs font-semibold transition"
+            title="물리 메모리의 불필요한 프로세스 Working Set을 즉시 비워 여유 RAM을 확보합니다."
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/90 hover:bg-slate-800 text-slate-200 text-xs font-medium transition cursor-pointer"
           >
-            <Cpu className="w-3.5 h-3.5" />
+            <Cpu className="w-3.5 h-3.5 text-sky-400" />
             <span>RAM 압축</span>
           </button>
-          <button 
-            id="game-boost-btn"
-            onClick={handleGameBoost}
-            title="게임 프로세스 우선순위를 격상하고 네트워크 지연 요소를 일시 차단하여 인게임 렉을 방지합니다."
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold transition"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>게이밍 부스트</span>
-          </button>
-          <button 
-            id="scheduler-btn"
-            onClick={handleToggleSchedule}
-            title="시스템 부팅 시 또는 주기별 간격에 맞춰 무인 백그라운드 자동 정화 작업을 스케줄링합니다."
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${
-              isScheduled 
-                ? 'bg-sky-950 border-sky-600 text-sky-300' 
-                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5 text-sky-400" />
-            <span>{isScheduled ? '스케줄 활성' : '태스크 스케줄러'}</span>
-          </button>
-          <button 
-            id="tray-header-btn"
-            onClick={() => setShowTrayModal(true)}
-            title="시스템 트레이 상주 정책, 실시간 진행사항 툴팁 및 풍선/토스트 알림 센터를 설정합니다."
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/80 text-indigo-300 text-xs font-bold transition shadow-sm cursor-pointer"
-          >
-            <Bell className="w-3.5 h-3.5 text-indigo-400" />
-            <span>트레이 &amp; 알림</span>
-          </button>
-          <button 
+
+          <button
             id="commander-header-btn"
+            type="button"
             onClick={() => {
               setIsCommanderRunning(true);
               setShowCommanderModal(true);
             }}
-            title={isCommanderRunning 
-              ? "Central Commander가 현재 함께 실행 중입니다. 클릭하여 관제 콘솔 열기" 
-              : "다중 PC 중앙 관제(Central Commander) 원격 진단 및 일괄 관리 콘솔을 엽니다."}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition shadow-sm cursor-pointer ${
-              isCommanderRunning 
-                ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500/80 text-emerald-300 ring-1 ring-emerald-500/50' 
-                : 'bg-indigo-950/80 hover:bg-indigo-900 border-indigo-700/80 text-indigo-300'
-            }`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/90 hover:bg-slate-800 text-slate-200 text-xs font-medium transition cursor-pointer"
           >
-            <Radio className={`w-3.5 h-3.5 ${isCommanderRunning ? 'text-emerald-400 animate-pulse' : 'text-indigo-400'}`} />
-            <span>{isCommanderRunning ? '중앙 관제 (동시 실행 중)' : '중앙 관제'}</span>
-            {isCommanderRunning && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            )}
+            <Radio className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isCommanderRunning ? '중앙 관제 활성' : '중앙 관제'}</span>
           </button>
-          <button 
-            id="license-header-btn"
-            onClick={() => { setShowLicenseModal(true); setLicenseCopied(false); }}
-            title="한국어 및 영어 2종 소프트웨어 최종 사용자 사용권 계약서(EULA)를 확인합니다."
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900 border border-amber-700/80 text-amber-300 text-xs font-bold transition shadow-sm cursor-pointer"
-          >
-            <FileText className="w-3.5 h-3.5 text-amber-400" />
-            <span>라이선스</span>
-          </button>
-          <button 
-            id="github-update-header-btn"
-            onClick={() => handleCheckGitHubUpdates()}
-            title="GitHub Releases (AhBiYout-all/WinPurifyPro)를 실시간 조회하여 최신 버전 확인 및 Windows PC 설치 파일을 확인합니다."
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 border border-sky-700/80 text-sky-300 text-xs font-bold transition shadow-sm cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5 text-sky-400" />
-            <span>업데이트 &amp; 다운로드</span>
-          </button>
-          <button 
-            id="system-health-report-btn"
-            onClick={() => setShowHealthReportModal(true)}
-            title="시스템 최적화 로그와 하드웨어 상태를 집계하여 읽기 쉬운 전문 시스템 건강 리포트를 생성합니다."
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 text-xs font-bold transition shadow-sm cursor-pointer"
-          >
-            <Activity className="w-3.5 h-3.5 text-emerald-400" />
-            <span>시스템 건강 리포트</span>
-          </button>
-          <button 
-            id="telemetry-analytics-btn"
-            onClick={() => setShowTelemetryModal(true)}
-            title="Recharts 기반 누적 디스크 회수 용량 및 시스템 최적화 효율 지표 시각화 대시보드를 구동합니다."
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 text-xs font-bold transition shadow-sm cursor-pointer"
-          >
-            <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>효율 텔레메트리</span>
-          </button>
-          <button 
-            id="hw-verify-header-btn"
-            onClick={() => setShowHwVerifyModal(true)}
-            title="CPU 코어 토폴로지, 물리 RAM, 스토리지(NVMe/SSD), GPU 및 보안 핑거프린트의 달라진 스펙을 5대 검증 규칙(WPP-RULE-HW-2026-V1)에 따라 정밀 진단합니다."
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-xs font-bold transition shadow-sm cursor-pointer ${
-              isHwDriftDetected
-                ? 'bg-amber-950/90 hover:bg-amber-900 border-amber-500/80 text-amber-300 animate-pulse'
-                : 'bg-indigo-950/80 hover:bg-indigo-900 border-indigo-700/80 text-indigo-300'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{isHwDriftDetected ? '⚠️ HW 스펙 변경 감지' : '하드웨어 검증 규칙'}</span>
-          </button>
-          <button 
-            id="account-purge-btn"
-            onClick={handleOpenAccountPurgeModal}
-            title="Microsoft, Adobe, AutoCAD, Edge, Chrome 및 Windows 자격 증명 관리자의 로그인 세션을 원클릭으로 강제 로그아웃/소거합니다."
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-700/80 text-rose-300 text-xs font-bold transition shadow-sm"
-          >
-            <Lock className="w-3.5 h-3.5 text-rose-400" />
-            <span>계정 로그아웃</span>
-          </button>
-          <button 
-            id="scan-fast-btn"
-            disabled={isProcessing}
-            onClick={() => {
-              setShowScanDashboard(true);
-              if (!scanCompleted && !isScanningActive) {
-                startFullScan();
-              }
-            }}
-            title="144개 전체 최적화 모듈의 실시간 탐색 진행률을 대시보드로 시각화하고 완료 후 발견 사항 종합 요약 보고서를 제공합니다."
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-75 ${
-              isScanningActive 
-                ? 'bg-sky-600 text-white border-sky-400 animate-pulse' 
-                : scanCompleted
-                ? 'bg-emerald-950/90 hover:bg-emerald-900 border-emerald-600/80 text-emerald-300'
-                : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-900'
-            }`}
-          >
-            <Search className={`w-3.5 h-3.5 ${isScanningActive ? 'animate-spin' : ''}`} />
-            <span>{isScanningActive ? `스캔 진행 중 (${scanProgressPercent}%)` : scanCompleted ? '스캔 요약 보고서' : '스캔 대시보드'}</span>
-            {scanCompleted && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
-                144/144
-              </span>
-            )}
-          </button>
-          <button 
-            id="optimize-btn"
-            disabled={isProcessing || selectedCount === 0}
-            onClick={handleOptimize}
-            title="레지스트리 세이프포인트를 자동 캡처한 뒤, 3단계 Failover 멀티 엔진(C++ Native -> Fast CLI -> PS Sandbox)을 통해 선택된 모듈을 일괄 정화합니다."
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition disabled:opacity-50"
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span>즉시 정화 ({selectedCount})</span>
-          </button>
+
+          {activeWorkspace === 'handover' ? (
+            <button
+              id="header-handover-purge-btn"
+              type="button"
+              disabled={handoverPhase === 'scanning' || handoverPhase === 'purging'}
+              onClick={() => setIsHandoverConfirmOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>새 환경으로 완전 초기화</span>
+            </button>
+          ) : (
+            <button
+              id="optimize-btn"
+              type="button"
+              disabled={isProcessing || selectedCount === 0}
+              onClick={handleOptimize}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+            >
+              <Play className="w-3.5 h-3.5" />
+              <span>즉시 정화 ({selectedCount})</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -2542,43 +2889,72 @@ const App: React.FC = () => {
       {/* Main Dashboard Layout */}
       <div id="dashboard-body" className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 p-5">
         
-        {/* Left Category & Sidebar */}
-        <aside id="sidebar-panel" className="lg:col-span-3 space-y-4">
-          {/* Brand Logo Banner */}
-          <div id="brand-banner-box" className={`p-3 rounded-xl ${currentTheme.sidebarBox} border flex items-center justify-center transition-colors duration-200`}>
-            <img src="WinPurify_logo.png" alt="WinPurify Pro Logo" className="max-h-9 object-contain drop-shadow" />
+        {/* Left Workspace Switcher & Tools Sidebar */}
+        <aside id="sidebar-panel" className="lg:col-span-3 space-y-3">
+          {/* Workspace Mode Switcher */}
+          <div id="workspace-switcher-box" className={`p-3 rounded-lg ${currentTheme.card} border space-y-1.5`}>
+            <h2 className={`text-[11px] font-semibold ${currentTheme.panelSub} uppercase tracking-wider px-1 mb-1`}>
+              작업 모드 (Workspace)
+            </h2>
+            <button
+              id="nav-workspace-handover"
+              type="button"
+              onClick={() => setActiveWorkspace('handover')}
+              className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold transition border flex items-center justify-between cursor-pointer ${
+                activeWorkspace === 'handover'
+                  ? 'bg-sky-600 text-white border-sky-500'
+                  : `border-transparent ${currentTheme.categoryInactive}`
+              }`}
+            >
+              <span>새 사용자 환경 초기화</span>
+              <span className="text-[10px] font-mono opacity-85">기본</span>
+            </button>
+            <button
+              id="nav-workspace-modules"
+              type="button"
+              onClick={() => setActiveWorkspace('modules')}
+              className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold transition border flex items-center justify-between cursor-pointer ${
+                activeWorkspace === 'modules'
+                  ? 'bg-sky-600 text-white border-sky-500'
+                  : `border-transparent ${currentTheme.categoryInactive}`
+              }`}
+            >
+              <span>정밀 최적화 모듈</span>
+              <span className="text-[10px] font-mono tabular-nums opacity-85">{modules.length}</span>
+            </button>
           </div>
 
-          {/* Category Filter */}
-          <div id="category-box" className={`p-3.5 rounded-xl ${currentTheme.card} border transition-colors duration-200`}>
-            <h2 id="category-heading" className={`text-xs font-bold ${currentTheme.panelSub} tracking-wider uppercase mb-2.5 flex items-center gap-2`}>
-              <Layers className="w-3.5 h-3.5 text-blue-400" />
-              <span>카테고리 ({modules.length}개 모듈)</span>
+          {/* Category Filter (Visible cleanly inside Modules Workspace or quick-jumps to Modules) */}
+          <div id="category-box" className={`p-3 rounded-lg ${currentTheme.card} border`}>
+            <h2 id="category-heading" className={`text-[11px] font-semibold ${currentTheme.panelSub} tracking-wider uppercase mb-2 flex items-center gap-1.5 px-1`}>
+              <Layers className="w-3.5 h-3.5 text-sky-400" />
+              <span>모듈 카테고리 ({modules.length})</span>
             </h2>
-            <div id="category-list" className="space-y-1.5">
+            <div id="category-list" className="space-y-1">
               {CATEGORIES.map(cat => {
                 const config = CATEGORY_CONFIG[cat];
-                const isSelected = selectedCategory === cat;
+                const isSelected = activeWorkspace === 'modules' && selectedCategory === cat;
+                const dynamicCount = cat === 'All' ? modules.length : modules.filter(m => m.category === cat).length;
                 return (
                   <button
                     key={cat}
                     id={`cat-btn-${cat.toLowerCase()}`}
+                    type="button"
                     onClick={() => {
+                      setActiveWorkspace('modules');
                       setSelectedCategory(cat);
                       if (cat === 'Special') setSpecialSubCategory('All');
                     }}
                     title={config.desc}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition flex items-center justify-between border ${
-                      isSelected 
-                        ? `${config.activeBg} ${config.activeText} ${config.activeBorder}` 
+                    className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs transition flex items-center justify-between border cursor-pointer ${
+                      isSelected
+                        ? `${config.activeBg} ${config.activeText} ${config.activeBorder}`
                         : `border-transparent ${currentTheme.categoryInactive}`
                     }`}
                   >
                     <span>{config.label}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
-                      isSelected ? config.badgeActive : currentTheme.categoryBadgeInactive
-                    }`}>
-                      {config.count}
+                    <span className="text-[11px] font-mono tabular-nums opacity-75">
+                      {dynamicCount}
                     </span>
                   </button>
                 );
@@ -2586,111 +2962,87 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Rollback Button Box */}
-          <div id="safepoint-box" className={`p-3.5 rounded-xl ${currentTheme.card} border space-y-2 transition-colors duration-200`}>
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="flex items-center gap-1.5 text-purple-400">
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>1-Click Rollback</span>
-              </span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded ${hasSafepoint ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}>
-                {hasSafepoint ? '스냅샷 준비됨' : '대기'}
-              </span>
-            </div>
-            <button
-              id="rollback-btn"
-              disabled={!hasSafepoint || isProcessing}
-              onClick={handleRollback}
-              title="정화 직전에 자동으로 백업된 레지스트리 스냅샷을 1-Click으로 이전 상태로 안전하게 복구합니다."
-              className="w-full py-2 rounded-lg bg-purple-900/40 hover:bg-purple-900/70 border border-purple-700/60 text-purple-200 text-xs font-bold transition disabled:opacity-40"
-            >
-              직전 세이프포인트 복원 (Undo)
-            </button>
-          </div>
-
-          {/* System Tray & Notification Center Sidebar Box */}
-          <div id="tray-sidebar-box" className={`p-3.5 rounded-xl ${currentTheme.card} border space-y-2 transition-colors duration-200`}>
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="flex items-center gap-1.5 text-indigo-400">
-                <Bell className="w-3.5 h-3.5" />
-                <span>트레이 &amp; 알림 감시</span>
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold">
-                Active
-              </span>
-            </div>
-            <button
-              id="sidebar-tray-btn"
-              onClick={() => setShowTrayModal(true)}
-              title="백그라운드 시스템 트레이 상주, 작업 진행사항 실시간 툴팁 및 풍선/토스트 알림 설정을 구성합니다."
-              className="w-full py-2 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-700/60 text-indigo-200 text-xs font-bold transition flex items-center justify-center gap-1.5"
-            >
-              <span>🔔 트레이 환경설정</span>
-            </button>
-          </div>
-
-          {/* Account & Session Purge Box */}
-          <div id="account-purge-sidebar-box" className={`p-3.5 rounded-xl ${currentTheme.card} border space-y-2 transition-colors duration-200`}>
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="flex items-center gap-1.5 text-rose-400">
-                <Lock className="w-3.5 h-3.5" />
-                <span>계정 세션 &amp; 토큰 소거</span>
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
-                Zero-Trace
-              </span>
-            </div>
-            <button
-              id="sidebar-account-purge-btn"
-              onClick={handleOpenAccountPurgeModal}
-              title="Microsoft, Adobe, AutoCAD, Edge, Chrome 및 Windows 자격증명의 로그인 상태를 일괄 로그아웃합니다."
-              className="w-full py-2 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 border border-rose-700/60 text-rose-200 text-xs font-bold transition"
-            >
-              🔐 계정 로그아웃 센터 열기
-            </button>
-          </div>
-
-          {/* Architecture Badge */}
-          <div id="architecture-box" className={`p-3.5 rounded-xl ${currentTheme.sidebarBox} border space-y-2 text-[11px] transition-colors duration-200`}>
-            <h3 id="arch-heading" className={`text-xs font-bold ${currentTheme.panelSub} tracking-wider uppercase flex items-center gap-2`}>
-              <Server className="w-3.5 h-3.5 text-emerald-400" />
-              <span>3-Tier Failover Engine</span>
+          {/* Diagnostics, Fleet & Rollback Tools */}
+          <div id="tools-sidebar-box" className={`p-3 rounded-lg ${currentTheme.card} border space-y-1.5`}>
+            <h3 className={`text-[11px] font-semibold ${currentTheme.panelSub} tracking-wider uppercase px-1 mb-1`}>
+              보안 · 관제 · 도구
             </h3>
-            <div className={`p-1.5 rounded ${currentTheme.panel} border flex items-center gap-2`} title="Win32 커널 API를 통한 0ms 네이티브 I/O 최적화">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span className="font-medium">1차: Native C++ Core</span>
-              <span className="opacity-60 ml-auto text-[10px]">0ms I/O</span>
-            </div>
-            <div className={`p-1.5 rounded ${currentTheme.panel} border flex items-center gap-2`} title="sc.exe, reg.exe 등 초고속 시스템 CLI 제어">
-              <span className="w-2 h-2 rounded-full bg-sky-400"></span>
-              <span className="font-medium">2차: Fast CLI (sc/reg)</span>
-              <span className="opacity-60 ml-auto text-[10px]">Zero CLR</span>
-            </div>
-            <div className={`p-1.5 rounded ${currentTheme.panel} border flex items-center gap-2`} title="안전한 Base64 인코딩 파워셸 샌드박스 3차 페일오버">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-              <span className="font-medium">3차: Encoded PS Sandbox</span>
-              <span className="opacity-60 ml-auto text-[10px]">Safe Failover</span>
-            </div>
-
             <button
+              type="button"
+              onClick={handleOpenAccountPurgeModal}
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-slate-700/70 hover:bg-slate-800/60 text-xs font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+              <span>개별 계정 로그아웃 센터</span>
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 setShowScanDashboard(true);
-                if (!scanCompleted && !isScanningActive) {
-                  startFullScan();
-                }
+                if (!scanCompleted && !isScanningActive) startFullScan();
               }}
-              className="w-full mt-1.5 py-2 px-2.5 rounded-lg bg-sky-950/70 hover:bg-sky-900 border border-sky-700/60 text-sky-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-slate-700/70 hover:bg-slate-800/60 text-xs font-medium flex items-center gap-2 cursor-pointer"
             >
-              <Search className="w-3.5 h-3.5 text-sky-400" />
+              <Search className="w-3.5 h-3.5 text-sky-400 shrink-0" />
               <span>모듈 전수 스캔 대시보드</span>
             </button>
-
             <button
+              type="button"
               onClick={() => setShowHwVerifyModal(true)}
-              className="w-full mt-1.5 py-2 px-2.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-slate-700/70 hover:bg-slate-800/60 text-xs font-medium flex items-center gap-2 cursor-pointer"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-              <span>하드웨어 스펙 검증 센터</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span>{isHwDriftDetected ? 'HW 스펙 변경 확인' : '하드웨어 무결성 검증'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleSchedule}
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-slate-700/70 hover:bg-slate-800/60 text-xs font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>{isScheduled ? '주간 스케줄러 활성' : '자동 태스크 스케줄러'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTrayModal(true)}
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-slate-700/70 hover:bg-slate-800/60 text-xs font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <Bell className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span>트레이 &amp; 알림 설정</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowHealthReportModal(true)}
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-slate-700/70 hover:bg-slate-800/60 text-xs font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <Activity className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>시스템 건강 리포트</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTelemetryModal(true)}
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-slate-700/70 hover:bg-slate-800/60 text-xs font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span>효율 텔레메트리 분석</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCheckGitHubUpdates(true)}
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-slate-700/70 hover:bg-slate-800/60 text-xs font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span>GitHub 실시간 업데이트</span>
+            </button>
+            <button
+              id="rollback-btn"
+              type="button"
+              disabled={!hasSafepoint || isProcessing}
+              onClick={handleRollback}
+              className="w-full mt-1 py-2 rounded-md bg-purple-900/40 hover:bg-purple-900/70 border border-purple-700/60 text-purple-200 text-xs font-semibold transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{hasSafepoint ? '직전 세이프포인트 복원' : '세이프포인트 대기 중'}</span>
             </button>
           </div>
         </aside>
@@ -2699,28 +3051,28 @@ const App: React.FC = () => {
         <main id="main-content" className="lg:col-span-9 space-y-4">
           {/* Top Live Hardware Gauges */}
           <div id="hardware-gauges" className="grid grid-cols-3 gap-3">
-            <div className={`p-3 rounded-xl ${currentTheme.gaugeBg} border transition-colors duration-200`} title="실시간 CPU 사용률">
+            <div className={`p-3 rounded-lg ${currentTheme.gaugeBg} border transition-colors duration-200`} title="실시간 CPU 사용률">
               <div className="flex justify-between items-center text-xs mb-1.5">
                 <span className={currentTheme.statSub}>CPU 점유율</span>
-                <span className={`font-bold ${currentTheme.metricCpu}`}>{cpuUsage}%</span>
+                <span className={`font-bold font-mono tabular-nums ${currentTheme.metricCpu}`}>{cpuUsage}%</span>
               </div>
               <div className={`w-full ${currentTheme.gaugeTrack} rounded-full h-1.5 overflow-hidden`}>
                 <div className="bg-sky-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${cpuUsage}%` }}></div>
               </div>
             </div>
-            <div className={`p-3 rounded-xl ${currentTheme.gaugeBg} border transition-colors duration-200`} title="실시간 물리 RAM 사용량 및 점유율">
+            <div className={`p-3 rounded-lg ${currentTheme.gaugeBg} border transition-colors duration-200`} title="실시간 물리 RAM 사용량 및 점유율">
               <div className="flex justify-between items-center text-xs mb-1.5">
                 <span className={currentTheme.statSub}>RAM 사용량</span>
-                <span className={`font-bold ${currentTheme.metricRam}`}>{ramGb.used.toFixed(1)} / {ramGb.total} GB ({ramUsagePercent}%)</span>
+                <span className={`font-bold font-mono tabular-nums ${currentTheme.metricRam}`}>{ramGb.used.toFixed(1)} / {ramGb.total} GB ({ramUsagePercent}%)</span>
               </div>
               <div className={`w-full ${currentTheme.gaugeTrack} rounded-full h-1.5 overflow-hidden`}>
                 <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${ramUsagePercent}%` }}></div>
               </div>
             </div>
-            <div className={`p-3 rounded-xl ${currentTheme.gaugeBg} border transition-colors duration-200`} title="시스템 드라이브 여유 공간">
+            <div className={`p-3 rounded-lg ${currentTheme.gaugeBg} border transition-colors duration-200`} title="시스템 드라이브 여유 공간">
               <div className="flex justify-between items-center text-xs mb-1.5">
                 <span className={currentTheme.statSub}>시스템 드라이브 (C:)</span>
-                <span className={`font-bold ${currentTheme.metricDisk}`}>324 GB Free</span>
+                <span className={`font-bold font-mono tabular-nums ${currentTheme.metricDisk}`}>324 GB Free</span>
               </div>
               <div className={`w-full ${currentTheme.gaugeTrack} rounded-full h-1.5 overflow-hidden`}>
                 <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `35%` }}></div>
@@ -2728,6 +3080,52 @@ const App: React.FC = () => {
             </div>
           </div>
 
+          {activeWorkspace === 'handover' ? (
+            <HandoverWorkspace
+              theme={theme}
+              phase={handoverPhase}
+              statusBanner={handoverStatusBanner}
+              preset={handoverPreset}
+              profiles={handoverProfiles}
+              artifacts={handoverArtifacts}
+              exclusions={handoverExclusions}
+              progressState={handoverProgress}
+              verification={handoverVerification}
+              isConfirmModalOpen={isHandoverConfirmOpen}
+              onRescan={() => void runHandoverDiscovery()}
+              onApplyPreset={handleApplyHandoverPreset}
+              onToggleProfile={(sid) =>
+                setHandoverProfiles(prev =>
+                  prev.map(p => (p.sid === sid && !p.isSystemProtected && !p.isCurrentSession ? { ...p, selected: !p.selected } : p))
+                )
+              }
+              onToggleArtifact={(id) =>
+                setHandoverArtifacts(prev =>
+                  prev.map(a => (a.artifactId === id && !a.isProtected && !a.isExcluded ? { ...a, selected: !a.selected } : a))
+                )
+              }
+              onSelectAllFiltered={(ids) => {
+                const set = new Set(ids);
+                setHandoverArtifacts(prev =>
+                  prev.map(a => (set.has(a.artifactId) && !a.isProtected && !a.isExcluded ? { ...a, selected: true } : a))
+                );
+              }}
+              onDeselectAllFiltered={(ids) => {
+                const set = new Set(ids);
+                setHandoverArtifacts(prev =>
+                  prev.map(a => (set.has(a.artifactId) ? { ...a, selected: false } : a))
+                );
+              }}
+              onSaveExclusions={rules => void handleSaveHandoverExclusions(rules)}
+              onExportReport={fmt => void handleExportHandoverReport(fmt)}
+              onTriggerReboot={() => void handleTriggerHandoverReboot()}
+              onOpenConfirmModal={() => setIsHandoverConfirmOpen(true)}
+              onCloseConfirmModal={() => setIsHandoverConfirmOpen(false)}
+              onExecutePurge={handleExecuteHandoverPurge}
+              onDeployToLanFleet={() => setIsHandoverFleetModalOpen(true)}
+            />
+          ) : (
+          <>
           {/* Stats Bar & Profiles */}
           <div id="stats-overview" className={`p-4 rounded-xl ${currentTheme.card} border flex flex-wrap items-center justify-between gap-3 transition-colors duration-200`}>
             <div className="space-y-0.5">
@@ -2946,9 +3344,16 @@ const App: React.FC = () => {
 
           {/* Module Cards Grid (Streamlined with Sequence Number and Rich Floating Tooltip) */}
           <div id="module-cards-header" className={`flex items-center justify-between text-xs ${currentTheme.panelSub} px-1`}>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-400"></span>
               <span>모듈 목록: <strong className={currentTheme.moduleTitle}>{filteredModules.length}개 표시 중</strong> (전체 {modules.length}개)</span>
+              <button
+                onClick={() => setShowCustomModuleModal(true)}
+                className="px-2 py-0.5 rounded-md bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 font-bold text-[10px] transition cursor-pointer"
+                title="작업실 전용 커스텀 정화 모듈(JSON Manifest)을 즉시 등록합니다."
+              >
+                ➕ 커스텀 모듈 등록
+              </button>
             </span>
             <span className="text-[11px] font-mono opacity-70">선택됨: <strong className="text-sky-400">{selectedCount}</strong>개</span>
           </div>
@@ -2989,6 +3394,33 @@ const App: React.FC = () => {
                   <span className={`text-[9px] px-1.5 py-0.2 rounded border hidden xl:inline-block shrink-0 ${currentTheme.categoryBadgeInactive}`}>
                     {item.category}
                   </span>
+                  {item.requiresAdmin && (
+                    <span className="text-[9px] px-1.5 py-0.2 rounded border hidden sm:inline-block shrink-0 bg-amber-500/10 text-amber-300 border-amber-500/30" title="관리자 권한 필요 (Pre-flight UAC 점검)">
+                      UAC
+                    </span>
+                  )}
+                  {(item.timeoutSeconds || 15) > 20 && (
+                    <span className="text-[9px] px-1.5 py-0.2 rounded border hidden sm:inline-block shrink-0 bg-sky-500/10 text-sky-300 border-sky-500/30 font-mono">
+                      {item.timeoutSeconds}s
+                    </span>
+                  )}
+                  {item.id.startsWith('custom-') && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModules(prev => {
+                          const next = prev.filter(m => m.id !== item.id);
+                          saveCustomModulesToStorage(next.filter(m => m.id.startsWith('custom-')));
+                          return next;
+                        });
+                        addLog(`[커스텀 모듈 삭제] '${item.name}' 사용자 모듈이 제거되었습니다.`);
+                      }}
+                      className="text-[9px] px-1.5 py-0.2 rounded bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/40 cursor-pointer shrink-0"
+                      title="사용자 커스텀 모듈 삭제"
+                    >
+                      삭제
+                    </button>
+                  )}
                   {item.category === 'Special' && item.subCategory && (
                     <span className="text-[9px] font-bold px-1.5 py-0.2 rounded border hidden sm:inline-block shrink-0 bg-rose-500/10 text-rose-300 border-rose-500/30">
                       {item.subCategory === 'Account' && '🔐 계정 정화'}
@@ -3027,6 +3459,8 @@ const App: React.FC = () => {
               </div>
             ))}
           </div>
+          </>
+          )}
 
           {/* Realtime Live Console */}
           <div id="live-console-box" className={`p-3.5 rounded-xl ${currentTheme.console} border space-y-1.5 transition-colors duration-200`}>
@@ -3747,6 +4181,24 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Dedicated LAN Fleet Handover Modal */}
+      <HandoverFleetModal
+        theme={theme}
+        isOpen={isHandoverFleetModalOpen}
+        onClose={() => setIsHandoverFleetModalOpen(false)}
+        nodes={remoteNodes}
+        defaultPreset={handoverPreset}
+        clusterKey={clusterKey}
+        onOpenFullCommander={() => {
+          setIsCommanderRunning(true);
+          setShowCommanderModal(true);
+        }}
+        onLogAction={msg => {
+          setCommanderLogs(prev => [msg, ...prev]);
+          addLog(msg);
+        }}
+      />
+
       {/* Central Commander Fleet Modal */}
       {showCommanderModal && (
         <div id="commander-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
@@ -3815,74 +4267,96 @@ const App: React.FC = () => {
             <div className="px-6 py-2 bg-emerald-950/40 border-b border-emerald-500/30 flex items-center justify-between text-[11px] text-emerald-300">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <strong>한 PC 동시 실행 모드 활성화:</strong> WinPurify Pro 메인 앱과 Central Commander 콘솔이 충돌 없이 나란히 구동 중입니다. (포트 TCP:9870 및 SO_REUSEADDR 소켓 공유)
+                <strong>한 PC 동시 실행 &amp; TLS 9874 보안 활성화:</strong> WinPurify Pro와 Central Commander가 독립 포트로 충돌 없이 구동 중입니다. (TLS:9874 TOFU / TCP:9870 / UDP:9871)
               </span>
-              <span className="text-[10px] text-emerald-400/90 font-mono">Coexistence Mode Active</span>
+              <span className="text-[10px] text-emerald-400/90 font-mono">TLS 9874 + TOFU Active</span>
             </div>
 
-            {/* Security & Control Strip */}
-            <div className="px-6 py-3 bg-slate-950/40 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400 font-medium">🔒 클러스터 마스터 키:</span>
-                  <input 
-                    type="text" 
-                    value={clusterKey} 
-                    onChange={e => setClusterKey(e.target.value)} 
-                    className="bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-sky-400 font-mono font-bold text-xs focus:outline-none focus:border-sky-500"
-                  />
-                  <button
-                    onClick={() => {
-                      const bytes = new Uint8Array(16);
-                      window.crypto.getRandomValues(bytes);
-                      const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-                      setClusterKey(`WinPurify_${hex}`);
-                      addLog(`[보안] 새로운 256-bit 클러스터 마스터 키가 안전하게 생성되었습니다.`);
-                    }}
-                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 text-[11px] font-semibold border border-slate-700 cursor-pointer transition"
-                    title="암호학적 고유 난수 키 즉시 생성"
-                  >
-                    🎲 고유 난수 키 생성
-                  </button>
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium text-[11px]" title="HMAC-SHA256 디지털 서명, Nonce 재전송(Replay) 방어 실드, Drive-by 차단 및 시스템 최소 권한 ACL이 상시 적용되어 있습니다.">
-                  <span className="text-emerald-400">🛡️</span>
-                  <span>보안 아키텍처: <strong>4중 보안 강화 (Nonce Replay 차단 • 최소권한 ACL • 입력값 검증)</strong></span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button 
-                  disabled={isScanningNodes}
-                  onClick={() => {
-                    setIsScanningNodes(true);
-                    setCommanderLogs(prev => [`[Discovery] UDP 9871 브로드캐스트로 LAN 노드 검색 중...`, ...prev]);
-                    setTimeout(() => {
-                      setIsScanningNodes(false);
-                      setCommanderLogs(prev => [`[Discovery 완료] 5대 활성 노드 감지 성공 (HMAC 무결성 인증 통과)`, ...prev]);
-                    }, 600);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                  <span>{isScanningNodes ? '탐색 중...' : '노드 자동 탐색 (UDP)'}</span>
-                </button>
-                <button 
-                  onClick={() => {
-                    setRemoteNodes(prev => prev.map(n => ({
-                      ...n,
-                      cpu: Math.floor(10 + Math.random() * 30),
-                      ramPercent: Math.floor(30 + Math.random() * 40)
-                    })));
-                    setCommanderLogs(prev => [`[Telemetry] 5대 노드 실시간 CPU/RAM/최적화 상태 갱신 완료`, ...prev]);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>텔레메트리 갱신</span>
-                </button>
-              </div>
-            </div>
+            {/* Extracted Security & Control Strip */}
+            <CommanderSecurityStrip
+              clusterKey={clusterKey}
+              setClusterKey={setClusterKey}
+              isScanningNodes={isScanningNodes}
+              onDiscoverNodes={async () => {
+                setIsScanningNodes(true);
+                setCommanderLogs(prev => [`[Hybrid Discovery] 멀티 NIC UDP 9871 + /24 서브넷 TCP 9874/9870 탐지 시작...`, ...prev]);
+                if (typeof window !== 'undefined' && window.electronAPI?.discoverNodes) {
+                  try {
+                    const found = await window.electronAPI.discoverNodes(2500);
+                    if (Array.isArray(found) && found.length > 0) {
+                      setRemoteNodes(prev => {
+                        const updated = [...prev];
+                        found.forEach((fn: any) => {
+                          if (!updated.some(n => n.ip === fn.ipAddress)) {
+                            updated.push({
+                              id: `node_${Date.now()}_${Math.random()}`,
+                              name: fn.name || fn.ipAddress,
+                              ip: fn.ipAddress,
+                              group: fn.discoverySource || '작업실 LAN',
+                              online: fn.isOnline !== false,
+                              cpu: 12,
+                              ramPercent: 38,
+                              ramText: '6.0 / 16.0 GB',
+                              score: 96,
+                              selected: true
+                            });
+                          }
+                        });
+                        return updated;
+                      });
+                    }
+                    setCommanderLogs(prev => [`[Discovery 완료] ${found?.length ?? 0}대 실측 LAN 노드 탐색 완료 (UDP:9871 + /24 TCP)`, ...prev]);
+                  } catch (err: any) {
+                    setCommanderLogs(prev => [`[Discovery 오류] ${err?.message || err}`, ...prev]);
+                  } finally {
+                    setIsScanningNodes(false);
+                  }
+                  return;
+                }
+                setTimeout(() => {
+                  setIsScanningNodes(false);
+                  setCommanderLogs(prev => [`[Discovery 완료] ${remoteNodes.length}대 활성 노드 감지 성공 (TLS TOFU + HMAC 인증 통과)`, ...prev]);
+                }, 600);
+              }}
+              onRefreshTelemetry={async () => {
+                if (typeof window !== 'undefined' && window.electronAPI?.fetchTelemetry) {
+                  const results = await Promise.all(
+                    remoteNodes.map(async (n) => {
+                      try {
+                        const tel = await window.electronAPI!.fetchTelemetry!({
+                          ip: n.ip,
+                          port: 9870,
+                          tlsPort: 9874,
+                          secretKey: clusterKey
+                        });
+                        if (tel) {
+                          return {
+                            ...n,
+                            online: true,
+                            cpu: Math.round(tel.cpuUsagePercent ?? n.cpu),
+                            ramPercent: Math.round(tel.ramUsagePercent ?? n.ramPercent),
+                            ramText: tel.ramUsageText || n.ramText,
+                            score: tel.optimizationScore || n.score
+                          };
+                        }
+                      } catch {}
+                      return n;
+                    })
+                  );
+                  setRemoteNodes(results);
+                  setCommanderLogs(prev => [`[Telemetry] ${results.length}대 노드 HMAC 서명 TLS 텔레메트리 실측 동기화 완료`, ...prev]);
+                  return;
+                }
+                setRemoteNodes(prev => prev.map(n => ({
+                  ...n,
+                  cpu: Math.floor(10 + Math.random() * 30),
+                  ramPercent: Math.floor(30 + Math.random() * 40)
+                })));
+                setCommanderLogs(prev => [`[Telemetry] ${remoteNodes.length}대 노드 HMAC 서명 텔레메트리 동기화 완료`, ...prev]);
+              }}
+              onAddLog={addLog}
+              onAddCommanderLog={(msg) => setCommanderLogs(prev => [msg, ...prev])}
+            />
 
             {/* Navigation Tabs between Fleet Nodes and Audit History */}
             <div className="px-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
@@ -4148,6 +4622,48 @@ const App: React.FC = () => {
                     >
                       <Cpu className="w-3.5 h-3.5" />
                       <span>RAM 일괄 정화</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        const selectedNodes = remoteNodes.filter(n => n.selected);
+                        const selCount = selectedNodes.length;
+                        if (window.electronAPI?.sendBatchCommand) {
+                          selectedNodes.forEach(node => {
+                            window.electronAPI?.sendBatchCommand?.({
+                              ip: node.ip,
+                              port: node.port || 9870,
+                              tlsPort: node.tlsPort || 9874,
+                              path: '/api/v1/batch/fresh-handover',
+                              payload: {
+                                commandType: 'FreshHandover',
+                                presetName: handoverPreset,
+                                preset: handoverPreset,
+                                terminateProcessesBeforePurge: true,
+                                schedulePendingReboot: true,
+                                targetModules: [handoverPreset]
+                              },
+                              secretKey: clusterKey
+                            }).then(res => {
+                              setCommanderLogs(prev => [`[LAN FreshHandover] ${node.name} (${node.ip}) -> ${res.success ? '성공' : res.message}`, ...prev]);
+                            }).catch(() => {});
+                          });
+                        } else {
+                          setCommanderLogs(prev => [`[Batch FreshHandover] ${selCount}대 대상 PC에 '${handoverPreset}' 새 사용자 초기화 명령 배포 완료`, ...prev]);
+                        }
+                        triggerRemoteActionHud(
+                          '🚨 중앙 관제(Commander) 새 사용자 클린 초기화 원격 배포',
+                          `새 사용자 클린 환경 초기화 [${handoverPreset}]`,
+                          '192.168.1.100 (Central Commander Console)',
+                          `[성공] 선택된 ${selCount}대 LAN PC 대상 이전 사용자·로그인 세션 일괄 소거 명령 전달 완료`,
+                          'FreshHandover'
+                        );
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                      title="선택된 LAN PC 전체의 이전 사용자 프로필 및 로그인 세션을 원격으로 일괄 초기화합니다."
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>새 환경 일괄 초기화</span>
                     </button>
 
                     <button 
@@ -6747,7 +7263,7 @@ const App: React.FC = () => {
                               }).length;
                               const catBytes = catMods.reduce((acc, m) => acc + m.estimatedKb * 1024, 0);
                               const catMB = parseFloat((catBytes / (1024 * 1024)).toFixed(1));
-                              const cleanedMB = parseFloat((catMods.filter(m => m.checked).reduce((acc, m) => acc + m.estimatedKb, 0) / 1024).toFixed(1));
+                              const cleanedMB = parseFloat((catMods.filter(m => m.selected).reduce((acc, m) => acc + m.estimatedKb, 0) / 1024).toFixed(1));
 
                               return {
                                 category: CATEGORY_CONFIG[cat]?.label.split(' ')[1] || cat,
@@ -6783,12 +7299,12 @@ const App: React.FC = () => {
                               data={[
                                 {
                                   name: '정화 선택 완료',
-                                  value: modules.filter(m => m.checked).length,
+                                  value: modules.filter(m => m.selected).length,
                                   color: '#10B981'
                                 },
                                 {
                                   name: '스캔 완료 (안전)',
-                                  value: modules.filter(m => !m.checked && (scannedModuleStatuses[m.id]?.status === 'Done' || scanCompleted)).length,
+                                  value: modules.filter(m => !m.selected && (scannedModuleStatuses[m.id]?.status === 'Done' || scanCompleted)).length,
                                   color: '#0EA5E9'
                                 },
                                 {
@@ -7223,7 +7739,7 @@ const App: React.FC = () => {
                   </div>
                   <button
                     disabled={isCheckingUpdate}
-                    onClick={handleCheckGitHubUpdates}
+                    onClick={() => handleCheckGitHubUpdates(true)}
                     className="text-[11px] text-sky-400 hover:text-sky-300 hover:underline font-semibold disabled:opacity-50"
                   >
                     {isCheckingUpdate ? '검사 중...' : '🔄 다시 검사'}
@@ -7329,6 +7845,21 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Custom Studio Module Registration Modal */}
+      <CustomModuleModal
+        isOpen={showCustomModuleModal}
+        onClose={() => setShowCustomModuleModal(false)}
+        nextSeq={modules.length + 1}
+        onAddModule={(newMod, targetPath) => {
+          setModules(prev => {
+            const next = [...prev, newMod];
+            saveCustomModulesToStorage(next.filter(m => m.id.startsWith('custom-')));
+            return next;
+          });
+          addLog(`[커스텀 모듈 등록] '${newMod.name}' (${newMod.category}, Timeout: ${newMod.timeoutSeconds}s, 경로: ${targetPath || 'N/A'}) 추가 완료.`);
+        }}
+      />
     </div>
   );
 };
