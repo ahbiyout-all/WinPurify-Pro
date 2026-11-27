@@ -1,5 +1,5 @@
 // WinPurify Pro Service Worker for Offline PWA Support
-const CACHE_NAME = 'winpurify-pro-v4.34.0';
+const CACHE_NAME = 'winpurify-pro-v4.71.1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

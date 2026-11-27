@@ -277,6 +277,33 @@ function syncVersion() {
     }
   }
 
+  // 11. Sync manifest.json & sw.js (PWA metadata and cache version)
+  const manifestJsonPath = path.resolve(__dirname, 'manifest.json');
+  if (fs.existsSync(manifestJsonPath)) {
+    try {
+      const pwaManifest = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf8'));
+      if (pwaManifest.description) {
+        pwaManifest.description = pwaManifest.description.replace(/v\d+\.\d+(\.\d+)?/g, `v${semverStr}`);
+      }
+      fs.writeFileSync(manifestJsonPath, JSON.stringify(pwaManifest, null, 2) + '\n', 'utf8');
+      console.log(`[Version Sync] Updated manifest.json -> v${semverStr}`);
+    } catch(e) {
+      console.error('[Version Sync Error] Failed updating manifest.json:', e.message);
+    }
+  }
+
+  const swJsPath = path.resolve(__dirname, 'sw.js');
+  if (fs.existsSync(swJsPath)) {
+    try {
+      let swContent = fs.readFileSync(swJsPath, 'utf8');
+      swContent = swContent.replace(/winpurify-pro-v\d+\.\d+(\.\d+)?/g, `winpurify-pro-v${semverStr}`);
+      fs.writeFileSync(swJsPath, swContent, 'utf8');
+      console.log(`[Version Sync] Updated sw.js -> winpurify-pro-v${semverStr}`);
+    } catch(e) {
+      console.error('[Version Sync Error] Failed updating sw.js:', e.message);
+    }
+  }
+
   return semverStr;
 }
 

@@ -14,7 +14,6 @@ import {
   Search,
   Activity,
   Server,
-  Stethoscope,
   Lock,
   Gamepad2,
   Calendar,
@@ -323,13 +322,6 @@ Developer: AhBiYout
 Blog: https://ahbiyoutvibe.blogspot.com/
 ================================================================================`;
 
-interface DiagnosticItem {
-  title: string;
-  desc: string;
-  passed: boolean;
-  detail: string;
-}
-
 const CATEGORIES = ['All', 'Privacy', 'Browser', 'Security', 'Registry', 'Update', 'System', 'Storage', 'Special'];
 
 const CATEGORY_CONFIG: Record<string, { label: string; count: number; desc: string; activeBg: string; activeText: string; activeBorder: string; badgeActive: string }> = {
@@ -593,7 +585,6 @@ const App: React.FC = () => {
   const [search, setSearch] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [hasSafepoint, setHasSafepoint] = useState<boolean>(false);
-  const [showDiagModal, setShowDiagModal] = useState<boolean>(false);
   const [isScheduled, setIsScheduled] = useState<boolean>(false);
   const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
   const [showCommanderModal, setShowCommanderModal] = useState<boolean>(false);
@@ -659,7 +650,6 @@ const App: React.FC = () => {
   const [scanProgressPercent, setScanProgressPercent] = useState<number>(0);
   const [currentScanningIndex, setCurrentScanningIndex] = useState<number>(0);
   const [scanCategoryFilter, setScanCategoryFilter] = useState<string>('All');
-  const [scanRiskFilter, setScanRiskFilter] = useState<'All' | 'Safe' | 'Deep' | 'Risky'>('All');
   const [scanSearchQuery, setScanSearchQuery] = useState<string>('');
   const [scanCompleted, setScanCompleted] = useState<boolean>(false);
   const [scanTab, setScanTab] = useState<'progress' | 'summary' | 'modules'>('progress');
@@ -1098,7 +1088,6 @@ const App: React.FC = () => {
     setHasSafepoint(true);
     playAlertSound('complete');
 
-    const timestamp = new Date().toLocaleString('ko-KR');
     const msg1 = `[Live Safepoint] 하드웨어 스펙 갱신 전 레지스트리 안전 스냅샷 자동 생성 완료 (#${Date.now().toString().slice(-4)})`;
     const msg2 = `[HW-BASELINE-RENEW] 신규 하드웨어 기준치(Baseline) 승인 완료: RAM ${currentSpec.ramTotalGb}GB, 스토리지 ${currentSpec.storageType} (${currentSpec.storageCapacityGb}GB)`;
     const msg3 = `[HW-RE-TUNE] 144개 최적화 모듈 재조율 완결 (Working Set 트림 주기 완화, VSS 한도 10% 재할당, 스레드 풀 확장)`;
@@ -1848,7 +1837,7 @@ const App: React.FC = () => {
     playAlertSound('warning');
     setRemoteAction({
       isOpen: true,
-      title: '🚨 중앙 관제(Commander) 원격 명령 동작 중',
+      title: title || '🚨 중앙 관제(Commander) 원격 명령 동작 중',
       commandName,
       sourceIp,
       status: '원격 최적화 엔진 동작 중...',
@@ -2227,11 +2216,6 @@ const App: React.FC = () => {
     addLog(`[PurifyEngineCore] CompressPhysicalRAM() & PurgeSystemStandbyListNative(4) 실행 -> 142개 프로세스 Working Set Trim 및 NT 커널 대기 메모리(Standby List) 완전 정화 (3.4 GB RAM 즉시 가용 전환)`);
   };
 
-  const handleGameBoost = () => {
-    setCpuUsage(8);
-    addLog(`[Game Boost] SetKernelGameBoost(1) 실행 -> MMCSS 격상, 전력 스로틀링 해제, Memory Priority 5단계, DnsFlushResolverCache() 및 DefaultTTL 64 튜닝 완료.`);
-  };
-
   const handleToggleSchedule = () => {
     setShowScheduleModal(true);
   };
@@ -2333,15 +2317,6 @@ const App: React.FC = () => {
     setShowScheduleModal(false);
     addLog(`[Task Scheduler] Windows 작업 스케줄러 등록 작업(WinPurifyPro_AutoMaintenance) 제거 완료`);
   };
-
-  const diagnosticsList: DiagnosticItem[] = [
-    { title: '관리자 권한 (Administrator Elevation)', desc: '시스템 서비스 제어 및 커널 레지스트리 수정 권한 검증', passed: true, detail: '관리자 권한으로 정상 실행 중입니다.' },
-    { title: 'Native C++ Core 엔진 바인딩', desc: 'PurifyEngineCore.dll P/Invoke 및 Win32 커널 API 상태', passed: true, detail: 'PurifyEngineCore.dll 정상 연결 (C-Linkage Hash: 0x5E81A2)' },
-    { title: 'Robocopy 가상 I/O 스캐너', desc: 'Stutter-Free /L /BYTES 비동기 메타데이터 쿼리 가용성', passed: true, detail: 'Windows Robocopy 가상 I/O 엔진 사용 가능' },
-    { title: '세이프포인트 스토리지 쓰기 권한', desc: '1-Click Undo 롤백 및 .reg 백업 스냅샷 저장소 접근성', passed: true, detail: '로컬 백업 디렉터리 읽기/쓰기 정상' },
-    { title: '144개 최적화 모듈 데이터셋 무결성', desc: '8개 전체 카테고리 및 Failover 파이프라인 매핑 정합성', passed: true, detail: '144개 전수 모듈 데이터 매핑 완결' },
-    { title: '하드웨어 스펙 및 핑거프린트 무결성 검증', desc: '5대 하드웨어 검증 규칙(CPU/RAM/스토리지/GPU/보안) 및 드리프트 정합성', passed: !isHwDriftDetected, detail: isHwDriftDetected ? '하드웨어 스펙 변경 감지됨 (신규 기준치 승인 및 재조율 권고)' : '기준 하드웨어 스펙과 100% 일치 (SHA-256 서명 무결성 통과)' }
-  ];
 
   const runHandoverDiscovery = async (
     targetPreset: HandoverPresetMode = handoverPreset,

@@ -1420,7 +1420,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <RadioButton Grid.Column="0" Content="전체 (132개)" GroupName="ScheduleProfile" IsChecked="{Binding ScheduleProfile, Converter={StaticResource EqToBool}, ConverterParameter=all, Mode=TwoWay}" Foreground="#38BDF8" FontWeight="Bold" Margin="0,0,2,0" />
+                        <RadioButton Grid.Column="0" Content="전체 (144개)" GroupName="ScheduleProfile" IsChecked="{Binding ScheduleProfile, Converter={StaticResource EqToBool}, ConverterParameter=all, Mode=TwoWay}" Foreground="#38BDF8" FontWeight="Bold" Margin="0,0,2,0" />
                         <RadioButton Grid.Column="1" Content="안전 (Safe)" GroupName="ScheduleProfile" IsChecked="{Binding ScheduleProfile, Converter={StaticResource EqToBool}, ConverterParameter=safe, Mode=TwoWay}" Foreground="#22C55E" FontWeight="Bold" Margin="0,0,2,0" />
                         <RadioButton Grid.Column="2" Content="딥클린" GroupName="ScheduleProfile" IsChecked="{Binding ScheduleProfile, Converter={StaticResource EqToBool}, ConverterParameter=deep, Mode=TwoWay}" Foreground="#F59E0B" FontWeight="Bold" Margin="0,0,2,0" />
                         <RadioButton Grid.Column="3" Content="게이밍" GroupName="ScheduleProfile" IsChecked="{Binding ScheduleProfile, Converter={StaticResource EqToBool}, ConverterParameter=gaming, Mode=TwoWay}" Foreground="#60A5FA" FontWeight="Bold" Margin="0,0,2,0" />
