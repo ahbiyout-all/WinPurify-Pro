@@ -356,6 +356,14 @@ if ($created -or ($latest -ne $null)) {{
             }
         }
 
+        public static SafepointRecord? GetLatestSafepoint()
+        {
+            var points = GetAvailableSafepoints();
+            if (points.Count == 0) return null;
+            points.Sort((a, b) => b.Timestamp.CompareTo(a.Timestamp));
+            return points[0];
+        }
+
         public static List<SafepointRecord> GetAvailableSafepoints()
         {
             var list = new List<SafepointRecord>();

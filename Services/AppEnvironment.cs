@@ -25,6 +25,8 @@ namespace WinPurifyPro.Services
             }
         }
 
+        public static string DisplayVersion => AppVersion;
+
         /// <summary>
         /// 현재 프로세스 고유 인스턴스 식별자 (Process ID + 고유 해시)
         /// 다중 프로세스 동시 실행 시 각 인스턴스를 독립적으로 고유하게 식별합니다.
