@@ -158,7 +158,7 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""W
 ; =====================================================================
 ; [3] 메인 클라이언트 애플리케이션 실행
 ; =====================================================================
-Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: """{app}\{#MyAppExeName}"""; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 ; =====================================================================
