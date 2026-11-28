@@ -457,9 +457,12 @@ if exist "LICENSE_KO.txt" copy /y "LICENSE_KO.txt" "!PUBLISH_DIR!\App\LICENSE_KO
 if exist "LICENSE_EN.txt" copy /y "LICENSE_EN.txt" "!PUBLISH_DIR!\App\LICENSE_EN.txt" >nul 2>&1
 echo 1 > "!PUBLISH_DIR!\App\installed.tag"
 
+if not exist "publish\App" md "publish\App" >nul 2>&1
+xcopy /s /e /y "!PUBLISH_DIR!\App\*" "publish\App\" >nul 2>&1
+
 echo.
 echo =====================================================================
-echo  [SUCCESS] Unpacked Directory Built: !PUBLISH_DIR!\App
+echo  [SUCCESS] Unpacked Directory Built: !PUBLISH_DIR!\App (and mirrored to publish\App)
 echo =====================================================================
 if "%TARGET_CHOICE%"=="2" goto :COMPILE_INNO_SETUP
 if "%TARGET_CHOICE%"=="5" goto :BUILD_ALL_NEXT_1
