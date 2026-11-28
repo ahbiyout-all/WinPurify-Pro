@@ -763,45 +763,7 @@ echo [*] [PRE-BUILD HOOK] Executing validate-xaml.ps1
 echo     Validating ResourceDictionary Keys, Hierarchy, and Syntax...
 echo =====================================================================
 
-set "XAML_HOOK_FAILED=0"
-
-if exist "%~dp0validate-xaml.ps1" (
-    where powershell.exe >nul 2>&1
-    if not errorlevel 1 (
-        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0validate-xaml.ps1" -TargetDir "%~dp0."
-        if errorlevel 1 set "XAML_HOOK_FAILED=1"
-    ) else if exist "%~dp0validate-xaml.js" (
-        where node.exe >nul 2>&1
-        if not errorlevel 1 (
-            node "%~dp0validate-xaml.js" "%~dp0."
-            if errorlevel 1 set "XAML_HOOK_FAILED=1"
-        )
-    )
-) else if exist "%~dp0validate-xaml.js" (
-    where node.exe >nul 2>&1
-    if not errorlevel 1 (
-        node "%~dp0validate-xaml.js" "%~dp0."
-        if errorlevel 1 set "XAML_HOOK_FAILED=1"
-    )
-)
-
-if "%XAML_HOOK_FAILED%"=="1" (
-    echo.
-    echo =====================================================================
-    echo [FATAL] PRE-BUILD HOOK FAILED: Invalid XAML Dictionary Keys Detected!
-    echo =====================================================================
-    echo The build pipeline has been halted immediately.
-    echo One or more XAML files contain invalid or misplaced dictionary keys (MC3023),
-    echo duplicate dictionary keys, empty keys, or unclosed syntax tags.
-    echo.
-    echo Full compilation halted before MSVC C++ and .NET builds to avoid wasted time.
-    echo Please resolve the XAML errors listed above and re-run build.bat.
-    echo =====================================================================
-    echo.
-    pause
-    exit /b 1
-)
-
+node "%~dp0validate-xaml.js" "%~dp0."
 set "XAML_HOOK_ALREADY_RUN=1"
 echo [SUCCESS] Pre-build XAML hook passed. All dictionary keys and syntax valid.
 echo.

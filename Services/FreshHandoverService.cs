@@ -767,7 +767,7 @@ namespace WinPurifyPro.Services
             return new DetectedSessionArtifact
             {
                 ArtifactId = "os-cred-rdp-mru",
-                Title: "Windows 자격 증명 볼트 · RDP 접속 기록 · SMB 공유 · 점프리스트",
+                Title = "Windows 자격 증명 볼트 · RDP 접속 기록 · SMB 공유 · 점프리스트",
                 DomainCategory = HandoverDomainCategory.CredentialAndNetwork,
                 CategoryLabel = "자격 증명 & 이력",
                 UserScope = "시스템 전역 & 전 사용자",
@@ -818,7 +818,7 @@ namespace WinPurifyPro.Services
             return new DetectedSessionArtifact
             {
                 ArtifactId = "current-personal-folders",
-                Title: $"현재 사용자 개인 폴더 ({Path.GetFileName(currentUserProfile)}: 바탕화면·문서·다운로드 등)",
+                Title = $"현재 사용자 개인 폴더 ({Path.GetFileName(currentUserProfile)}: 바탕화면·문서·다운로드 등)",
                 DomainCategory = HandoverDomainCategory.PersonalFolder,
                 CategoryLabel = "현재 계정 개인 파일",
                 UserScope = Environment.UserName,
